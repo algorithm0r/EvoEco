@@ -3,7 +3,8 @@
 *A design bible: amended in place, current truth. History of how decisions were reached goes in
 DEVLOG.md. Structure follows the ODD protocol (Grimm et al. 2006; updated 2020).*
 
-**Status:** draft v0.1, 2026-11-01. Built from a question-by-question design conversation between
+**Status:** draft v0.2, 2026-11-01 (v0.1 from the PA session; v0.2 from the EvoEco session the
+same day). Built from a question-by-question design conversation between
 Chris and Claude. Every entry marked **Decided** was Chris's call (some on Claude's proposal);
 **Default** means Claude proposed it and Chris did not object; **Open** means not yet discussed.
 No code exists yet.
@@ -67,7 +68,7 @@ Chris's reading (median stagnates only once hoarding arrives).
 
 ### Households (Decided)
 - A **light formal unit**: a pair with a strong mutual tie forms a household, shares shelter,
-  decides on children together and pools labor. Membership comes from ties, so households
+  decides on children together and pools labor (by planning together, §7.6). Membership comes from ties, so households
   form and dissolve as ties do.
 - Larger groups (tribes) are **not** entities. They emerge as clusters of strong ties.
 
@@ -103,7 +104,19 @@ Three parts, **reported separately, never combined into one score** (Default):
 - The **supply chain permits the level.** Better tools improve circulation, which allows better
   tools. Breakdown loses key supplies, and production falls back to an earlier level.
 - Supply-chain stages (from the opening discussion): extract → process → components →
-  assemble → distribute; services; waste/recycling. How many of these the foundation needs is Open.
+  assemble → distribute; services; waste/recycling. Stages need not be listed: they are the
+  depth of the recipe tree, which grows as quality levels are discovered.
+- **The recipe tree is hand-crafted (Decided — Chris)** to mirror reality's complexity: real
+  goods, real inputs. **Random trees** generated from parameters run beside it as a robustness
+  check, so a result cannot be blamed on the one tree we wrote.
+- **Reach: up to about the iron age, and narrow to start (Decided — Chris, on Claude's
+  proposal).** The model is already complex; the tree starts small and grows. Target: four or
+  five quality levels per need (foraging → farming; carried water → pots → wells; lean-to →
+  hut → house), tools stone → copper → bronze → iron, recipe depth up to about four.
+  Reasons: the later technologies are social, not material, and sit on a pre-industrial tree;
+  the scale runs (1×, 10×, 100×) use a productivity multiplier, not deeper tech; and a real
+  tree brings its own fragility (bronze needs copper and tin from far apart, so long-distance
+  trade and its breakdown come from the tree itself; Cline 2014).
 
 ### Tools (Decided)
 - A tool is a **multiplier on production for its task**. Tool quality sets the multiplier.
@@ -133,8 +146,27 @@ Three parts, **reported separately, never combined into one score** (Default):
 
 ## 3. Process overview and scheduling
 
-**Open.** The daily order (plan → travel → work → exchange → consume → learn → age/birth/death)
-has not been discussed.
+**Synchronized phases (Decided).** All agents pass through each phase of the day before any
+agent enters the next; no agent lives its whole day ahead of another. The model has no clock
+inside the day, so:
+- **Meeting is co-location:** two agents meet if they spent part of the same day at the same place.
+- **Contested resources** (a field, a spring) are drawn from in a random order, reshuffled daily.
+
+**Phase order (Decided — Chris, after review):**
+1. **Plan:** routes for the day (§7.6); households plan together.
+2. **Travel and work:** walk the route, gather or make, wear tools; care comes out of rest
+   hours; chat with up to k of the people met (§4.6).
+3. **Exchange, at each place:** gifts to ties in need, strongest ties first (household
+   members are the strongest), then barter among the rest, scarcest first (§4.7).
+4. **Consume:** meet needs from holdings; store the rest (perishables decay).
+5. **Learn:** habits from own day; norms from own day plus chat.
+6. **Aging, births and deaths.**
+
+Work comes before exchange, so goods gathered today can be traded today. Household pooling is
+not a separate step: it is gifting to those in need within the household (Chris). What sets a
+household apart is that it plans together (§7.6).
+
+Known cost: "same place, same day" is coarse; it ignores whether two agents were there at the same hour.
 
 ---
 
@@ -177,7 +209,8 @@ To be extended as rules are written: every new rule gets checked against this li
 - **Arbitration — Default (proposed):** weight habit and norm by recent reliability (precision
   weighting: norm as prior, habit as evidence). Equal reliability gives a blend; unequal acts as a switch.
 - **Observation is passive and costs no hours**; it happens where agents meet (shelter, field,
-  water source). What can be learned depends on where you are.
+  water source), by seeing and by chat with the people met, capped at k a day (§4.6). What can
+  be learned depends on where you are and whom you meet.
 - Expected consequence: norms carry survivorship bias (you only see those who return).
 - **Curiosity term — Default:** a small bonus for uncertain options (the epistemic term of active inference, cheapest form).
 - **Particular others — option:** separate models of specific agents, perhaps only for tied
@@ -188,14 +221,79 @@ To be extended as rules are written: every new rule gets checked against this li
 - Child-bearing is an ROI decision (§7.4).
 
 ### 4.6 Sensing
-- Agents observe what happens around them (trips, returns, work, trades). Range and fidelity: Open.
+- **You learn from the people you meet (Decided — Chris).** Agents who meet during the day
+  (co-location, §3) chat and share their details: where they went, how long, what they got,
+  what they traded and at what rate. Each agent updates its norms from these reports and from
+  what it saw itself. Returners at a shared shelter are one case of this.
+- Consequences: information travels along the meeting network; places where many meet
+  (shelters, emerging markets) become information hubs. Chat transfers facts about days, not
+  know-how: crafts are still learned only by watching them done (§7.3).
+- **Details — Default:**
+  - Reports are first-hand only (each agent's own day); no passing on what you heard.
+  - Reports are honest; others' reports carry noise, your own experience is exact. That noise
+    is one source of the differing cost estimates in §7.2.
+  - Chat costs no hours (as observation, §4.4).
+- **Chat is capped (Decided — Chris):** unlimited chat would swamp processing (60 agents at a
+  market is 3,600 exchanges of news per place per day). **Default:** each agent chats with at
+  most k agents a day (k ≈ 5), ties present first, then others at random. Cost at k = 5: a few
+  hundred agents × 5 × 9,000 days ≈ 10⁷ report updates per generation. Expected consequence of
+  ties-first: news circulates within clusters faster than between them, so cost knowledge
+  is most uneven between groups.
 
 ### 4.7 Interaction
 - **Reciprocity** between tied agents; **barter** between strangers (§7.1–7.2).
-- Partner search (how strangers find each other to barter): Open.
+- Partner search: strangers can barter only if they met (co-location, §3). No separate search
+  rule is needed to bring them together: the route planner values trade by how reliably it has
+  happened at each place (§7.6), so agents with goods to trade route through those places.
+  Markets as places can emerge this way. Who trades with whom at one place: scarcest first (below).
+  - **Rejected — one side picks its best partner** (Claude's proposal; Chris's objection): the
+    two sides would pick different best partners, and letting one side pick forces the other into
+    its worst acceptable deal. Whoever picks first gains, so random turn order would decide
+    outcomes. This is a classic matching result: in deferred acceptance the proposing side gets
+    its best stable partner and the receiving side its worst (Gale & Shapley 1962).
+  - **Under discussion:** (a) *mutual best* (Claude): pair agents who are each other's first
+    choice, repeat; random acceptable pair when preferences loop. (b) *short side picks*
+    (Chris): whichever side is scarcer at the place (buyers' or sellers' market) gets the
+    picking power. Claude's note: (a) gives the short side picking power without a rule saying
+    so (one smith among five buyers is everyone's first choice and pairs with the buyer it likes
+    best; one buyer among five smiths pairs with the cheapest). (b) writes into a rule
+    the power-from-alternatives that §4.2 says must emerge, and needs buyer and seller roles,
+    which barter does not have (each trader is both).
+  - **Chris's challenge: how often does mutual best resolve a round?** Toy test (Claude,
+    2026-11-01; agents with one surplus good each, need-based double coincidence, the bid
+    rule's split modeled as 0.5 ± noise for differing cost estimates). Share of pairings found
+    by mutual best rather than the fallback:
+
+    | market (agents, goods) | equal estimates | noise 0.1 | noise 0.25 | random preferences |
+    |---|---|---|---|---|
+    | 5, 3 | 100% | 98% | 89% | 64% |
+    | 20, 4 | 100% | 80% | 46% | 34% |
+    | 60, 5 | 100% | 48% | 18% | 15% |
+
+    With equal estimates the two shares are equal, so the pair with the largest joint gain is
+    always mutual. Once estimates differ (§7.2, which Chris showed is the general case), the
+    fallback decides most pairings in a crowded market. The fallback is one side picking, the
+    rule already rejected. The exact numbers depend on the toy; the direction (worse with more
+    agents and with more disagreement) is the finding. **Mutual best alone is not enough.**
+  - **Matching: scarcest first (Decided — Chris's mechanism).** At a site, trades are processed
+    in order of scarcity, from the scarcest good to the most abundant. Holders of the scarcest
+    good pick partners first, by their own expected gain; the picked agent accepts if the
+    walk-away guard passes. This is the sellers'/buyers' market idea stated per good, so it
+    works in barter, where every trader is both buyer and seller, and reduces to buyers and
+    sellers once currency exists. The rule says scarcity confers the choice; who is scarce
+    still emerges (location, specialization, luck).
+    - **Scarcity — Default:** for each good at the site, quantity wanted by agents present
+      ÷ quantity held there, computed once at the start of the exchange phase. An agent
+      holding several goods takes its turn with its scarcest one.
+    - **Ties — Default:** holders of equally scarce goods go in random order, reshuffled daily.
+      Option if order among equals matters: let them all offer at once and each target accept
+      its best offer (deferred acceptance within the tier).
 
 ### 4.8 Stochasticity
-- Discovery of new quality levels is stochastic (§7.3). Resource yields vary by season. Others: Open.
+- Discovery of new quality levels is stochastic (§7.3). Resource yields vary by season.
+- Random orders, reshuffled daily: draws on contested resources (§3), ties among equally
+  scarce holders in matching (§4.7), who plans first in a household (§7.6), and whom an
+  agent chats with beyond its ties (§4.6). Noise on others' reports (§4.6). Others: Open.
 
 ### 4.9 Collectives
 - Households (light formal unit); tribes as emergent tie clusters.
@@ -211,7 +309,25 @@ To be extended as rules are written: every new rule gets checked against this li
 
 ## 5. Initialization
 
-**Open.**
+**Blank start at zero (Decided — Chris).** Agents are placed on the landscape with the lowest
+quality level of know-how, no ties, no households, and near-empty norms. Households, tribes,
+trade places and price norms must all form.
+
+**Scaffolding (Decided — Chris; rules Default).** Some scaffolding may be needed to get the
+first economy going (candidates: starter stores so nobody starves before learning anything;
+agents starting in small groups near water so meetings repeat). Rules for any scaffold:
+- used only during burn-in, and removed before anything is measured;
+- listed here, each one;
+- never one of the things in the emergent ledger (§4.2): no prebuilt ties, households or prices.
+
+**Burn-in (Decided — Chris).** The foundation runs alone until the §1 patterns settle. If they
+never settle, the foundation has failed.
+- If burn-in is **short and reliable**, every experiment reruns it from zero.
+- Otherwise, **matched runs fork from a saved snapshot** of a settled world: with and without
+  the technology, same agents, landscape and random draws from the fork on (Claude's proposal).
+- **Reliability check — Default:** run several independent burn-ins and compare the
+  foundations they reach. If they differ a lot, use several snapshots, not one, so a result
+  does not rest on one history.
 
 ## 6. Input data
 
@@ -225,6 +341,12 @@ None planned (existence proof, no calibration). **Open** for later stylized-fact
 An agent short on something asks tied agents nearby. A tied agent gives if it has surplus
 beyond its own buffer, with willingness scaled by the tie tally. Trust rises in both
 directions when gifts come back and fades when they don't.
+- **No price between ties (Decided — Chris).** Ties are trusted reciprocal swappers. If a
+  trusted tie needs a resource I have, I give it; there is no bargaining window. A couple who
+  gather complementary resources and meet each other's needs every day or so will bond
+  tightly and become each other's regular partners.
+- **Order in the exchange phase — Default (follows from the above):** gifts to ties in need
+  happen first; barter among the rest, scarcest first (§4.7), comes after.
 
 ### 7.2 Barter and price (Decided)
 - Each agent values a good by its estimate of the hours it would cost to get it itself,
@@ -233,11 +355,52 @@ directions when gifts come back and fades when they don't.
   8 hours to make an axe, so pays at most 10 bunches. The smith makes 4 axes in 8 hours (2 h
   each); if the smith picks at the same rate, the least they'd take is 2.5 bunches. Any rate
   from 2.5 to 10 benefits both (gains from trade).
+- **What a barter price is (Decided — Chris's question, Claude's answer):** an **exchange
+  ratio** between two goods (bunches per axe). Each side values both goods in its own hours,
+  and its hours convert to the ratio: the picker's limit is axe-hours ÷ hours per bunch =
+  8 ÷ 0.8 = 10 bunches. Hours are not comparable across agents (a picker's hour and a smith's
+  hour yield different things), so the ratio, not hours, is what the two sides agree on.
+- **Middles are geometric (Decided — Chris confirmed).** An arithmetic middle depends on which way the ratio
+  is quoted: bunches per axe gives 6.25, axes per bunch gives 1/0.25 = 4. The geometric mean
+  (√(2.5 × 10) = 5) is the same either way. So the fair bid and the midpoint of two bids are
+  geometric means.
+- **Price norms are per pair of goods.** With n goods there are n(n−1)/2 going rates, and
+  nothing forces them to agree (berries→fish→axe need not match berries→axe). An agent may
+  have seen no trade of the pair it wants. This is barter's own cost, and what currency later
+  fixes as a unit of account, a benefit of currency separate from its storability.
 - **Two kinds of norm feed the bargain (Decided):**
   - **Cost norms**, from watching others work: estimate the other side's cost (the range).
   - **Price norms**, from watching trades: where in the range deals land here (the going rate).
-- The gap between price norm and cost norm is where premiums, and emergent power, show up.
-- Where the rate lands inside the range (split the difference vs. better fallback gets better terms): Open.
+- The gap between price norm and cost norm is where premiums show up. Whether a premium
+  reflects power or only a knowledge gap or need is decomposed below ("Measurement").
+- **Where the rate lands (Decided — Chris's mechanism):**
+  1. Each side knows its own cost and estimates the other's from the particular other (a
+     model of that agent) or the generalized other (cost norms). If a gap exists, the
+     **fair bid** is its (geometric) middle.
+  2. Each side compares the fair bid with the **going rate** (price norm) and bids whichever
+     gives it the larger gain.
+  3. The deal lands at the **midpoint of the two bids**. Both bid the going rate → the going
+     rate. Both haggle → split the difference.
+  - **Walk-away guard — Default:** each side accepts only if the midpoint still leaves it a
+    gain by its own cost. Without it, a seller bidding a going rate above the buyer's limit
+    could pull the midpoint past that limit.
+  - **Expected consequence (corrected after Chris's challenge: the two sides need not estimate
+    costs alike; Chris confirmed this picture fits).** Each side has its own fair middle (buyer Mb, seller Ms).
+    - If Mb > Ms (the buyer thinks the fair price is higher than the seller does), any going
+      rate between them is **stable**: both bid it. A going rate outside the band is pulled to
+      its nearer edge. Convention picks the price inside the band; history matters there.
+      Example: buyer limit 10, true smith cost 2.5; buyer guesses smith cost 4 (Mb = √40 ≈
+      6.32), smith guesses buyer limit 8 (Ms = √20 ≈ 4.47). A going rate of 6 holds; 8 is
+      pulled down to 6.32.
+    - If Mb < Ms, the price goes to the midpoint of the two fair bids and the going rate drops out.
+    - Only when both estimate alike does every trade pull the price to a single fair point.
+    - So the room for a conventional premium is the gap in cost knowledge. That gap should
+      grow where agents don't watch each other's work: strangers, the far away, and crafts that
+      specialization makes opaque.
+    - Other sources of a persistent premium: need shifting one side's limit; one side lacking
+      alternatives (partner search, §4.7).
+    - **Measurement:** the model knows true costs, so log each agent's estimate error. A premium
+      can then be split into knowledge gap, need and lack of alternatives rather than read as power outright.
 
 ### 7.3 Discovery, adoption and loss of know-how (Decided)
 - New quality levels are discovered **by chance as a byproduct of tool work**. More hours of
@@ -264,20 +427,56 @@ directions when gifts come back and fades when they don't.
   to trusted peers in proportion to trust; kin-only property (a later technology).
 
 ### 7.6 Daily planning, production, consumption
-**Open.** Specialization is expected mainly from time and space: needs are spread across the
+**Route planning (Decided — Chris's mechanism).** Each day an agent chooses the route (a sequence
+of places and what to do at each) that gives the most return on its homeostatic needs for the
+least cost: a shortest path for energy minimizing.
+- **Learn per activity, plan per route (Default).** The habit and norm tables hold values for
+  single activities at single places (hours spent, load returned). The planner combines them
+  into routes, charging travel between stops. Learning stays cheap; planning sees combinations.
+- Because need costs are convex, the second unit of the same good is worth less than the first,
+  so routes spread across needs without a rule saying so.
+- This is policy selection in the active-inference sense: whole sequences of actions are scored, not single steps.
+- **Compute — Default:** search only places within a day's reach, with a small cap on stops.
+  Habit as a cached plan: reuse yesterday's route unless conditions changed. Cost estimate: a few
+  hundred agents × 9,000 days × a few thousand candidate routes is ~10¹⁰ route evaluations per
+  generation if searched exhaustively every day, so caching or pruning is needed.
+- **Horizon: one day (Decided).** Long-term thinking is approximated inside the daily plan's
+  valuation, not by planning across days.
+- **Trade enters the plan (Decided).** A good the agent does not need itself still has value if a
+  reliable trade for some other need is expected. Chris: a second basket of berries makes sense
+  if a trade is waiting at the end of the day.
+- **End-of-day holdings: best of three uses (Decided, on Claude's proposal).** Each good held
+  at dark is worth the most it could do of:
+  1. **Keep:** the future need it covers, discounted by how it stores (berries rot, axes
+     don't). Expected future need comes from seasonal norms. Currency plugs in here later.
+  2. **Trade:** what it fetches at the going rate (price norms) in a needed good, scaled by how
+     reliably that trade has happened at places on the route. Reliability is learned.
+  3. **Give:** to a tied agent. Chris: the gift is a **trade for belonging**. It pays in the
+     belonging need now (convex, so an agent short on belonging values giving more) and in
+     likelier help later.
+  All three values come from learned norms; none is set by rule.
+
+- **Households plan together (Decided — Chris).** This is how they pool labor: the plan
+  can split the work so that the swap at home benefits both.
+  - **Mechanism — Default:** sequential best response. One member plans; the next plans
+    knowing that route; order random each day. Cost: about one individual plan per member,
+    where a truly joint search would multiply the route spaces (thousands × thousands).
+  - **Ties outside the household (Decided — Chris):** an agent anticipates a tie's route
+    from its model of that particular other (yesterday's habit), and values gifts to that tie
+    accordingly. The difference between household and tie is information: a household shares
+    today's plan, a tie is predicted from the past.
+  - Chris's summary: planning is **noisy pathfinding**, a shortest path through a world partly
+    known (norms, chat) and partly predicted (ties' habits).
+
+Specialization is expected mainly from time and space: needs are spread across the
 landscape and the day is limited, so splitting the work saves hours ("you get food, I'll get
 water, meet at the shelter at dark").
 
 ---
 
 ## Open questions (next in the design conversation)
-1. Process scheduling: the daily order (§3).
-2. Partner search for barter; sensing range (§4.6–4.7).
-3. Where a barter rate lands inside the range (§7.2).
-4. Daily planning: how an agent allocates its hour budget (§7.6).
-5. How many supply-chain stages the foundation needs (§2 Goods).
-6. Initialization (§5).
-7. Chris disagreed with Claude on "where it could fail" (trickle-down); partly settled — see §4.2.
+1. Ledger audit: check every rule added on 2026-11-01 against §4.2.
+2. Chris disagreed with Claude on "where it could fail" (trickle-down); partly settled — see §4.2.
 
 ---
 
