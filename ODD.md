@@ -7,7 +7,8 @@ DEVLOG.md. Structure follows the ODD protocol (Grimm et al. 2006; updated 2020).
 same day; v0.3 from the audit responses and the first recipe tree). Built from a
 question-by-question design conversation between Chris and Claude. Every entry marked **Decided** was Chris's call (some on Claude's proposal);
 **Default** means Claude proposed it and Chris did not object; **Open** means not yet discussed.
-No code exists yet.
+No model code exists yet; the repo is scaffolded from engine v2 and the build plan is
+`DEVPLAN.md`.
 
 ---
 

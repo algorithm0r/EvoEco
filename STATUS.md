@@ -1,24 +1,26 @@
 # EvoEco sim — STATUS
 
-**Updated:** 2026-11-01 (session close; commit on top of f10d748)
-**Verified:** never (no cold audit yet)
+**Updated:** 2026-11-02 (scaffold + build plan)
+**Verified:** never (the 2026-11-01 cold ledger audit checked ODD v0.2, not the code or v0.3)
 
-**Stage:** design (ODD). No DEVPLAN yet; no code.
+**Stage:** DEVPLAN Stage 1 — the world: hex map, resources, seasons `[ ACTIVE ]`, not started.
 
 **State:**
-- `ODD.md` draft v0.2. Every ODD section has a first answer. Unverified: no cold read of the
-  rules against the emergent-vs-imposed ledger (§4.2); citations from memory, unchecked.
+- `ODD.md` draft v0.3. All 12 audit items resolved or deferred. Defaults added this session
+  by Claude are not cold-checked.
+- Engine v2 scaffold in place; the demo drifters model still runs. Smoke PASS (demo drift
+  check) @ 2026-11-02, scaffold commit. No EvoEco model code.
 
-**Metrics:** none (no code). One toy test of matching rules (in DEVLOG 2026-11-01).
+**Metrics:** none yet.
 
 **Branches:** `main` only, local; no remote.
 
 **Open:**
-- Cold ledger audit of all Decided/Default rules (§4.2).
-- Output measures beyond §4.10; the trickle-down note (ODD open questions).
-- First concrete recipe tree (iron age, narrow).
-- Citation check.
+- Numbers (hours, yields, decay, wear, rates) to be balanced while building.
+- Citation check (Backlog). Further output measures and run comparison: later research.
+- Forgetting mechanism (random vs per-agent) taken as both at once: a Default.
 
-**Next action:** cold ledger audit, on Chris's approval (~50k tokens).
+**Next action:** Stage 1 — hex grid, map generator, resource mechanism, seasons; replace the
+demo model and its smoke check.
 
 **Blockers:** none.
