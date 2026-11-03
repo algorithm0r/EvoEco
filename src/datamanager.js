@@ -18,12 +18,19 @@ var DataManager = class DataManager {
     this.flushed = false;
   }
 
+  // Stage 2 adds the living agents' mean need levels and hours (the full percentile
+  // measures of ODD §4.10 come with the foundation, Stage 7).
   sample() {
-    const w = this.world;
+    const w = this.world, L = w.agents;
+    const mean = (f) => L.length ? L.reduce((s, a) => s + f(a), 0) / L.length : null;
     return {
       day: w.day,
       plants: w.stockFraction('plants'), wood: w.stockFraction('wood'),
       soil: w.stockFraction('soil'), water: w.stockFraction('water'),
+      alive: L.length, dead: w.dead.length,
+      food: mean((a) => a.need.food), waterNeed: mean((a) => a.need.water),
+      warmth: mean((a) => a.need.warmth), rest: mean((a) => a.need.rest),
+      busy: mean((a) => a.busy), heldFood: mean((a) => a.hold.food),
     };
   }
 
@@ -31,7 +38,7 @@ var DataManager = class DataManager {
     if (this.world.day % PARAMETERS.reportingPeriod === 0) {
       const s = this.sample();
       this.samples.push(s);
-      if (this.graph) this.graph.push(s.water);
+      if (this.graph) this.graph.push(s.food == null ? 0 : clamp(s.food, 0, 1));
     }
     if (!this.flushed && this.world.day >= PARAMETERS.epoch) {
       this.flushed = true;

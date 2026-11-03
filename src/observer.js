@@ -25,6 +25,7 @@ var Observer = class Observer {
       }
       Observer.hex(ctx, c.x, c.y, s, fill);
     }
+    this.drawAgents(ctx, s);
     if (shade) return;
     // deposits (one dot per kind present, side by side) and springs
     const kinds = ['flint', 'clay', 'copper', 'tin', 'iron'];
@@ -47,6 +48,32 @@ var Observer = class Observer {
         ctx.beginPath(); ctx.arc(c.x, c.y, s * 0.5, 0, TAU); ctx.stroke();
       }
     }
+  }
+
+  // today's routes as thin lines from home through each stop and back, and each home as a
+  // dot coloured by the agent's most lacking need (green = all met, red = at or below 0)
+  drawAgents(ctx, s) {
+    const w = this.world, g = w.grid;
+    ctx.save();
+    ctx.lineWidth = 1;
+    ctx.strokeStyle = 'rgba(255,240,200,0.55)';
+    for (const a of w.agents) {
+      if (!a.plan.length) continue;
+      const h = g.centre(a.home, s);
+      ctx.beginPath();
+      ctx.moveTo(h.x, h.y);
+      for (const st of a.plan) { const c = g.centre(st.hex, s); ctx.lineTo(c.x, c.y); }
+      ctx.lineTo(h.x, h.y);
+      ctx.stroke();
+    }
+    for (const a of w.agents) {
+      const h = g.centre(a.home, s);
+      const worst = Math.min(a.need.food, a.need.water, a.need.warmth, a.need.rest);
+      ctx.fillStyle = hsl(120 * clamp(worst, 0, 1), 80, 55);
+      ctx.strokeStyle = '#000';
+      ctx.beginPath(); ctx.arc(h.x, h.y, s * 0.55, 0, TAU); ctx.fill(); ctx.stroke();
+    }
+    ctx.restore();
   }
 
   static hex(ctx, x, y, s, fill) {

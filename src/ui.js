@@ -11,11 +11,14 @@ function buildControls() {
     const input = document.createElement('input');
     input.type = 'range';
     input.min = spec.min; input.max = spec.max; input.step = spec.step;
-    input.value = PARAMETERS[spec.key];
+    // keys may be dotted paths into PARAMETERS ('agents.n')
+    const path = spec.key.split('.'), last = path.pop();
+    const obj = path.reduce((o, k) => o[k], PARAMETERS);
+    input.value = obj[last];
     const val = document.createElement('span');
-    val.textContent = ' ' + PARAMETERS[spec.key];
+    val.textContent = ' ' + obj[last];
     input.oninput = function () {
-      PARAMETERS[spec.key] = parseFloat(input.value);
+      obj[last] = parseFloat(input.value);
       val.textContent = ' ' + input.value;
       if (spec.resets && typeof reset === 'function') reset();
     };

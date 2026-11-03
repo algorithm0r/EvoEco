@@ -4,6 +4,33 @@
 
 <!-- append new entries above this line -->
 
+## 2026-11-02 — Stage 2 (in progress): agents with needs, route planning, perception
+
+**Done:** `agent.js` (needs, holdings, lean-to, evening consumption, perception and habits,
+aging and death), `planner.js` (candidate stops, greedy route, Keep projection, curiosity),
+world phases in ODD §3 order (plan → travel and work in random order → consume → learn →
+aging), drinking from lake shores, agents and routes drawn, Stage 2 samples, Agents slider.
+Getting agents to live took five fixes, each found by tracing a dying agent:
+(1) homes beside lakes could not drink (lakes impassable) → drink from the shore;
+(2) food clamped at 0, then at -1, hid the gain from a small meal from a starving agent →
+levels unfloored inside the planner; (3) one shortlist for all candidates let thirst crowd
+foraging out → best 4 per activity; (4) blind per-hex yield habits sent agents back to hexes
+they had stripped → agents see fullness of nearby hexes and learn one rate per activity;
+(5) food rotting 15%/day with a 5-day, 0.9 Keep could not carry anyone through winter → rot
+1%/day, Keep 20 days at 0.97. Plants raised (r 0.1, plains cap 40, 6 units/h).
+**Changed:** new `src/agent.js`, `src/planner.js`; `src/world.js`, `src/params.js`,
+`src/observer.js`, `src/datamanager.js`, `src/main.js`, `src/ui.js`, `index.html`,
+`runner.mjs`, `smoketest.mjs`. ODD §7.6 gains a Stage 2 Default block.
+**State:** smoke 19 PASS, 1 FAIL. Stage 1 checks all pass. Stage 2: same seed → same
+histories; rich map (plants ×3, 8 agents, a year) mean food 0.974, water 1.000 but **7/8
+survive** (FAIL: the dead agent's forest home had 8 hexes within 3 h, the fewest); winter
+8.2 h worked vs summer 5.9; barren map all 8 starve by day 29; a stripped favourite hex
+(used 9× in 40 days) used 0× after. Planner 0.26 ms per agent-day → ~700 s per generation at
+300 agents × 9,000 days. Default map, 8 agents, 3 seeds: 3–5 of 8 survive year 1 (forest
+homes die in late winter), survivors then live through years 2–3. Seen in the browser, no
+console errors.
+**Next:** Chris's call on fixed homes (may agents move camp?), then close Stage 2.
+
 ## 2026-11-02 — Stage 1: the world (hex map, resources, seasons, travel)
 
 **Done:** Built DEVPLAN Stage 1 on Opus (Chris: Opus for the build, Fable optional for the

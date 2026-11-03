@@ -35,7 +35,7 @@ var PARAMETERS = {
   // season: 'growth' (regrows spring–summer only), 'rain', or 'none'.
   // capBy: units per hex by terrain.
   resources: {
-    plants: { kind: 'renewable', r: 0.06, floor: 0.05, season: 'growth', capBy: { plains: 20, forest: 8, hills: 6 } },
+    plants: { kind: 'renewable', r: 0.1, floor: 0.05, season: 'growth', capBy: { plains: 40, forest: 16, hills: 12 } },
     wood:   { kind: 'renewable', r: 0.004, floor: 0.1, season: 'growth', capBy: { forest: 200, plains: 10, hills: 20 } },
     soil:   { kind: 'renewable', r: 0.01, floor: 0.2, season: 'none', capBy: { plains: 6, forest: 6, hills: 2 },
               floodplainBonus: 2, floodplainRange: 1 },  // fertile land near water
@@ -46,6 +46,51 @@ var PARAMETERS = {
     tin:    { kind: 'deposit', deposit: 150, clusters: 1, radius: 0, fill: 1, on: ['hills'],
               distanceFromCopper: 25 },  // hexes; ODD §2: tin far from the copper (Cline 2014)
     iron:   { kind: 'deposit', deposit: 400, clusters: 3, radius: 1, fill: 0.5, on: ['hills', 'forest'] },
+  },
+
+  // --- needs (ODD §2 Needs: levels in 0..1, set point 1, convex cost) ---
+  needs: {
+    foodDecay: 0.3,     // food level lost per day
+    workBurn: 0.02,     // extra food lost per hour of travel and work (ODD §4.3: work burns food)
+    waterDecay: 0.5,    // water level lost per day
+    restSet: 6,         // free hours a day that meet the rest need
+  },
+
+  // --- goods (ODD §2 First tree v0, levels 0–1 only in Stage 2) ---
+  goods: {
+    plants: { perHour: 6 },   // units gathered per hour from a full hex (falls with stock)
+    wood:   { perHour: 4 },
+    food:   { restores: 0.08, cookedBonus: 1.5, rot: 0.01 },  // per unit of wild plants (nuts and roots keep, berries don't); rots daily
+    gourd: 0.5,               // water carried home (in need units)
+    drinkDraw: 1,             // water units taken from the source per drink
+    fireWood: 2,              // wood burned per evening fire
+    fireHeat: 0.35,           // warmth a fire adds
+    leanTo: { wood: 10, hours: 4, insulation: 0.45, wear: 0.01 },  // build cost; warmth; daily wear
+  },
+
+  // --- agents (Stage 2: solitary; ODD §2 Agents, §4.4, §7.6) ---
+  agents: {
+    n: 20,
+    startAgeYears: 20,
+    starterFood: 15,      // burn-in scaffold (ODD §5): food in hand on day 1
+    wakingHours: 14,      // hours for travel, work and rest each day
+    sight: 2,             // hexes known around home at the start
+    // death: days at zero before it kills; old age: Gompertz hazard per year, work declines
+    deathDays: { food: 20, water: 3, warmth: 5 },
+    oldAge: { gompertzA: 0.0003, gompertzB: 0.08, declineStart: 50, declineSpan: 30, floor: 0.3 },
+    // planning (ODD §7.6)
+    maxStops: 3, chunk: 2, drinkHours: 0.25, scoutHours: 0.5,
+    topPerActivity: 4, maxGreedySteps: 8, scoutCandidates: 8,
+    horizon: 20,          // days of Keep projection
+    discount: 0.97,       // per day; swept (ODD §7.6)
+    typicalBusy: 6,       // hours assumed worked on projected days
+    // learning and curiosity (ODD §4.4)
+    learnRate: 0.3,
+    priorPerHour: { forage: 3, wood: 3 },  // starting guess of the yield per hour from a full hex
+    sightSd: 0.5,         // uncertainty (in fullness) of a sighting once it is old
+    sightMemory: 30,      // days for a sighting to grow most of that uncertainty
+    curiosity: 1.0,       // optimism per sd of uncertainty
+    scoutValue: 0.005,    // bonus per unseen hex a scouting stop would reveal
   },
 
   // --- engine ---
@@ -68,5 +113,6 @@ var PARAMETERS = {
 // Schema drives the auto-generated control panel (ui.js). One entry per live-tunable.
 var PARAM_SCHEMA = [
   { key: 'seed', label: 'Seed', min: 1, max: 100, step: 1, resets: true },
+  { key: 'agents.n', label: 'Agents', min: 0, max: 60, step: 1, resets: true },
   { key: 'updatesPerDraw', label: 'Days per frame', min: 1, max: 30, step: 1 },
 ];

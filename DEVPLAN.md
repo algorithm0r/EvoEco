@@ -43,20 +43,24 @@ seasonal regrowth, deposits, bounds over 900 days, travel); map seen in the brow
 Ledger check: Stage 1 adds landscape rules only; resource placement may make location matter,
 which ODD §2 intends (inequality from the world), and nothing about exchange, ties or prices.
 
-### Stage 2 — One agent alive: needs, hours, route planning  [ PLANNED ]
+### Stage 2 — One agent alive: needs, hours, route planning  [ ACTIVE ]
 ODD §2 (Needs, Scales), §4.3, §4.4 (habits), §7.6 (route planning).
-- [ ] Needs with set points and convex cost: food, water, warmth (shelter level + daily
+- [x] Needs with set points and convex cost: food, water, warmth (shelter level + daily
       fire), rest; belonging present but inert until Stage 4
-- [ ] Hour budget per day; work burns food
-- [ ] Starting know-how (ODD §5): fire, stone tools, level 1 of each ladder (cooked wild
-      food, gourd, lean-to)
-- [ ] Route planner: stops at useful hexes only, one-day horizon, habit as cached plan;
-      end-of-day holdings valued by Keep (future need, discounted by storage)
-- [ ] Consume, store, perishables decay
-- [ ] Habit learning: one error-driven update per activity per hex
-- [ ] Aging and death (no births yet)
-- [ ] Measure planner cost per agent-day (ODD §7.6 estimated ~10¹⁰ evaluations per
-      generation if exhaustive)
+- [x] Hour budget per day; work burns food
+- [x] Starting know-how (ODD §5): fire, level 1 of each ladder (cooked wild food, gourd,
+      lean-to). Stone tools wait for Stage 3 (tools are its subject)
+- [x] Route planner: stops at useful hexes only, one-day horizon; end-of-day holdings valued
+      by Keep (future need, discounted by storage). Habit as a cached plan not needed yet
+      (0.26 ms per agent-day)
+- [x] Consume, store, perishables decay
+- [x] Habit learning: one error-driven update per activity (yield from a full hex), with
+      sightings of each hex's fullness remembered (ODD §7.6 Stage 2 block)
+- [x] Scouting by the curiosity term (moved up from Stage 3: perception needed it)
+- [x] Aging and death (no births yet)
+- [x] Measure planner cost per agent-day (ODD §7.6 estimated ~10¹⁰ evaluations per
+      generation if exhaustive): 0.26 ms → ~700 s per generation at 300 agents
+- [ ] Settle the fixed-home question (asked of Chris): hemmed-in homes starve in late winter
 **Done when:** solitary agents keep needs near set points on a rich map and fail on a barren
 one; route choice responds to season and depletion; planner cost per agent-day is measured
 and projected to a few hundred agents × 9,000 days.
@@ -67,7 +71,7 @@ ODD §2 (Goods and quality, First tree v0, Tools), §4.5, §7.3, §7.6 (partial 
 - [ ] Task-specific tools (axe, hoe/sickle, pick) as production multipliers; wear and repair
 - [ ] Intermediates: wood, charcoal, fired clay, metals
 - [ ] Partial projects carry partial value across days; future discount as a swept parameter
-- [ ] Tinkering and scouting as activities, scored by the curiosity term
+- [ ] Tinkering as an activity, scored by the curiosity term (~~scouting~~ → **Stage 2**)
 - [ ] Know-how lives in agents; lost when no one practices for a generation
 - [ ] Quality valued intrinsically and instrumentally (food restores more, tools last longer)
 **Done when:** without exchange, agents holding the right inputs discover level 2+ by

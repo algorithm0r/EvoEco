@@ -1,29 +1,28 @@
 # EvoEco sim — STATUS
 
-**Updated:** 2026-11-02 (Stage 1 closed)
+**Updated:** 2026-11-02 (Stage 2 in progress)
 **Verified:** never (the 2026-11-01 cold ledger audit checked ODD v0.2, not the code or v0.3)
 
-**Stage:** Stage 1 `[ DONE ]`; Stage 2 (one agent alive) next, `[ PLANNED ]`, not started.
+**Stage:** Stage 2 — one agent alive `[ ACTIVE ]`; blocked on one design question.
 
 **State:**
-- The world runs: seeded hex map (64 × 48; plains, forest, hills, rivers, lakes), springs,
-  deposits, one resource mechanism, seasons, terrain-weighted travel hours, fixed-map export.
-  Smoke PASS (13 checks) @ Stage 1 commit, 2026-11-02. Drawn in the browser with terrain and
-  resource layers; no console errors.
-- No agents yet. `runner.mjs` updated for the world but not run (needs the DB).
-- `ODD.md` v0.3 plus a Stage 1 Default block (map choices). Defaults from this session are
-  not cold-checked.
+- Stage 1 world done (smoke checks pass).
+- Stage 2 agents live, plan routes, store food for winter, learn, age and die. Smoke 19 PASS,
+  1 FAIL @ Stage 2 WIP commit, 2026-11-02: on a rich map 7 of 8 survive a year; the one who
+  dies has a hemmed-in forest home. Seen in the browser; no console errors.
+- `ODD.md` v0.3 plus Stage 1 and Stage 2 Default blocks (not reviewed by Chris).
 
-**Metrics:** terrain plains 46.9 / forest 25.5 / hills 21.6 / river 2.0 / lake 4.0 %;
-tin–copper 25 hexes; world.update 0.08 ms/day; 40 hexes within 4 h of a central plains hex.
+**Metrics:** rich map mean food 0.974, water 1.000; hours winter 8.2 vs summer 5.9; barren map
+all starve by day 29; planner 0.26 ms per agent-day (~700 s per generation at 300 agents).
 
 **Branches:** `main` only, local; no remote.
 
 **Open:**
-- Numbers are first guesses (plants regrow ~95% in a season; water in ~6% of hexes).
-- Citation check (Backlog). Output measures and run comparison: later research.
+- Fixed homes: agents can't move camp, so hemmed-in homes starve in late winter (asked of Chris).
+- Stage 2 Defaults await Chris's review (need levels, death, Keep, perception, planner).
+- Numbers are first guesses. Citation check (Backlog).
 
-**Next action:** Stage 2: needs, hour budget, route planner, habits, aging and death; measure
-planner cost per agent-day.
+**Next action:** Chris's answer on moving camp; implement it; the rich-map check should then
+pass and Stage 2 can close.
 
-**Blockers:** none.
+**Blockers:** the design question above.

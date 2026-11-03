@@ -1,4 +1,5 @@
-// No-DB sanity run. Checks the Stage 1 world (map, resources, seasons, travel) and prints
+// No-DB sanity run. Checks the Stage 1 world (map, resources, seasons, travel) and the
+// Stage 2 agents (survival, failure, learning, season, planner cost), and prints
 // the numbers that belong in the DEVLOG entry (proof coupled to log). Exits non-zero on
 // failure.
 //   node smoketest.mjs
@@ -15,7 +16,7 @@ import path from 'path';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const indirectEval = eval; // aliased → runs in the global (sloppy) realm, so `var` leaks to globalThis
-for (const f of ['util.js', 'params.js', 'engine.js', 'hex.js', 'mapgen.js', 'world.js']) {
+for (const f of ['util.js', 'params.js', 'engine.js', 'hex.js', 'mapgen.js', 'agent.js', 'planner.js', 'world.js']) {
   let src = readFileSync(path.join(__dirname, 'src', f), 'utf8');
   src = src.replace(/^\s*(['"])use strict\1;?/, ''); // strip directive so declarations leak to global
   indirectEval(src);
@@ -40,9 +41,9 @@ function mapHash(w) {
 
 // ── 1. determinism ────────────────────────────────────────────────────────────────────
 P.seed = 1;
-const w1 = new World(), w1b = new World();
+const w1 = new World({ agents: 0 }), w1b = new World({ agents: 0 });
 P.seed = 2;
-const w2 = new World();
+const w2 = new World({ agents: 0 });
 P.seed = 1;
 check('same seed → same map', mapHash(w1) === mapHash(w1b), mapHash(w1));
 check('different seed → different map', mapHash(w1) !== mapHash(w2), mapHash(w2));
@@ -63,11 +64,11 @@ check('tin sits ~distanceFromCopper from copper', Math.abs(tinD - P.resources.ti
   'tin–copper ' + tinD + ' hexes (target ' + P.resources.tin.distanceFromCopper + ')');
 
 // ── 3. fixed map round trip ───────────────────────────────────────────────────────────
-const wf = new World({ map: JSON.parse(JSON.stringify(w1.exportMap())) });
+const wf = new World({ map: JSON.parse(JSON.stringify(w1.exportMap())), agents: 0 });
 check('exported map reloads identically', mapHash(wf) === mapHash(w1));
 
 // ── 4. resources and seasons ──────────────────────────────────────────────────────────
-const w = new World();
+const w = new World({ agents: 0 });
 const Y = P.year.days;
 let inBounds = true;
 const t0 = Date.now();
@@ -127,5 +128,56 @@ const reach = w1.travelFrom(home, 4).filter((x) => x <= 4).length;
 console.log('hexes within 4 hours of a plains hex: ' + reach + ' (open plain would give 61)');
 
 console.log('world.update: ' + ms.toFixed(3) + ' ms/day (' + n + ' hexes, includes bounds checks)');
+
+// ── 6. agents (Stage 2) ───────────────────────────────────────────────────────────────
+// A world with its plant caps scaled, then `nAgents` placed (same rng as the map).
+function agentWorld(plantScale, nAgents) {
+  const aw = new World({ agents: 0 });
+  for (const i of aw.active.plants) { aw.caps.plants[i] *= plantScale; aw.stock.plants[i] = aw.caps.plants[i]; }
+  if (plantScale === 0) aw.active.plants = new Int32Array(0);
+  aw.placeAgents(nAgents);
+  return aw;
+}
+const snapshot = (aw) => JSON.stringify(aw.agents.map((a) => [a.home, a.need, a.hold, a.shelter]).concat(aw.dead.map((a) => [a.id, a.deathDay])));
+const da = agentWorld(1, 8), db = agentWorld(1, 8);
+for (let d = 0; d < 120; d++) { da.update(); db.update(); }
+check('same seed → same agent histories', snapshot(da) === snapshot(db));
+
+// rich map: plants ×3; 8 agents for a year
+const rich = agentWorld(3, 8);
+const bySeason = { spring: [], summer: [], autumn: [], winter: [] };
+let foodSum = 0, waterSum = 0, k = 0;
+const t1 = Date.now();
+for (let d = 0; d < Y; d++) {
+  rich.update();
+  for (const a of rich.agents) { foodSum += Math.min(1, a.need.food); waterSum += a.need.water; k++; bySeason[rich.season().name].push(a.busy); }
+}
+const msAgentDay = (Date.now() - t1) / (Y * 8);
+check('rich map: all survive a year', rich.agents.length === 8, rich.agents.length + '/8 alive, deaths ' + JSON.stringify(rich.dead.map((a) => a.cause)));
+check('rich map: needs near set points', foodSum / k > 0.9 && waterSum / k > 0.95,
+  'mean food ' + (foodSum / k).toFixed(3) + ', water ' + (waterSum / k).toFixed(3));
+check('more hours worked in winter than summer', mean(bySeason.winter) > mean(bySeason.summer),
+  'mean hours: spring ' + mean(bySeason.spring).toFixed(1) + ', summer ' + mean(bySeason.summer).toFixed(1) +
+  ', autumn ' + mean(bySeason.autumn).toFixed(1) + ', winter ' + mean(bySeason.winter).toFixed(1));
+
+// barren map: no wild plants at all
+const barren = agentWorld(0, 8);
+for (let d = 0; d < 90 && barren.agents.length; d++) barren.update();
+check('barren map: all starve', barren.agents.length === 0 && barren.dead.every((a) => a.cause === 'hunger'),
+  barren.dead.length + ' died of ' + [...new Set(barren.dead.map((a) => a.cause))].join(',') + ' by day ' + Math.max(...barren.dead.map((a) => a.deathDay)));
+
+// depletion: one agent; strip the hex it forages most, behind its back; it should find out
+// once and stop going there
+const solo = agentWorld(3, 1), ag = solo.agents[0];
+const visits = new Map();
+for (let d = 0; d < 40; d++) { solo.update(); for (const st of ag.plan) if (st.act === A_FORAGE) visits.set(st.hex, (visits.get(st.hex) || 0) + 1); }
+const fav = [...visits.entries()].sort((a, b) => b[1] - a[1])[0][0];
+solo.stock.plants[fav] = 0;
+let after = 0;
+for (let d = 0; d < 20; d++) { solo.update(); for (const st of ag.plan) if (st.act === A_FORAGE && st.hex === fav) after++; }
+check('stops foraging a hex it finds stripped', after <= 1, 'favourite hex used ' + visits.get(fav) + 'x in 40 days; ' + after + 'x in the 20 days after stripping');
+
+const proj = msAgentDay * 300 * 9000 / 1000;
+console.log('planner cost: ' + msAgentDay.toFixed(3) + ' ms per agent-day → ~' + proj.toFixed(0) + ' s per generation for 300 agents × 9,000 days');
 console.log('smoke: ' + (failed ? failed + ' FAILED' : 'PASS'));
 process.exit(failed ? 1 : 0);

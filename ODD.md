@@ -627,6 +627,37 @@ least cost: a shortest path for energy minimizing.
   - Chris's summary: planning is **noisy pathfinding**, a shortest path through a world partly
     known (norms, chat) and partly predicted (ties' habits).
 
+#### One agent's day as built in Stage 2 — Default (Claude, 2026-11-02; numbers in `params.js`)
+Stage 2 had to fill gaps the design left open. Each is a Default awaiting Chris's review.
+- **Need levels.** Food and water are levels that run down daily (food also by hours worked)
+  and can fall below 0 to −1, a hunger or thirst debt, so a starving agent still values a
+  small meal. Warmth (shelter base + fire, scaled by the season's cold) and rest (free hours
+  against a set point of 6) are worked out each evening in [0, 1]. Cost = Σ deficit², with
+  belonging held at its set point until there is anyone to tie to.
+- **Death.** More than 20 days at or below 0 food, 3 for water, 5 for warmth; old age by a
+  Gompertz hazard, with working hours declining after 50.
+- **The evening.** Drink (at the source, or from the gourd), light a fire whenever there is
+  the wood, eat cooked food (×1.5) to the set point, rest. Wild plant food rots 1% a day
+  (nuts and roots keep), so autumn stores carry into winter.
+- **Keep, as built.** The value of what is held at dark is the discounted need cost of the
+  next 20 days living on it with no gathering (daily discount 0.97, swept).
+- **Perception and habits (§4.4).** An agent sees the hex it stands in and its neighbours:
+  which resources are there and how full they look. It remembers each sighting and grows
+  less sure of it with age (the curiosity term makes that uncertainty optimistic, so stale
+  hexes get looked at again). Its habit is, per activity, how much it gathers in an hour
+  from a full hex, learned by one error-driven update. Expected yield = that rate × the
+  fullness it last saw. (A first version learned yields per hex blind; agents kept going
+  back to hexes they had stripped while full ones nearby went unused.)
+- **Planner search.** Candidate stops are hexes within half a day's capacity; they are ranked
+  by a one-stop day and the best 4 of each activity kept (ranking all together let the most
+  pressing need crowd out the rest), then the route is built greedily up to 3 stops.
+- **Drinking.** From a river or spring hex, or from the shore of a lake.
+- **Scouting.** Walking to the nearest unseen hexes, valued at a small bonus per hex revealed.
+- **Starting.** 15 units of food in hand (a burn-in scaffold, §5); homes chosen at random on
+  land within a hex of water (a Stage 2 test setup; the band layout is Stage 7).
+- **Open (asked of Chris):** an agent's home is fixed. Agents whose homes are hemmed in
+  (forest, few hexes within reach) starve in late winter even when plants are tripled.
+
 Specialization is expected mainly from time and space: needs are spread across the
 landscape and the day is limited, so splitting the work saves hours ("you get food, I'll get
 water, meet at the shelter at dark").

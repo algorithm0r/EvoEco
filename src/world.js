@@ -42,6 +42,38 @@ var World = class World {
       this.active[k] = Int32Array.from(a);
     }
     this.day = 0;
+    this.travelCache = new Map();
+    // where an agent standing in each hex can drink: the hex itself, or a river or lake
+    // beside it (lakes can't be entered, but their shores can be drunk from); -1 if neither
+    this.waterAt = new Int32Array(this.grid.n).fill(-1);
+    for (let i = 0; i < this.grid.n; i++) {
+      if (this.hours[i] < 0) continue;
+      if (this.caps.water[i] > 0) { this.waterAt[i] = i; continue; }
+      for (let d = 0; d < 6; d++) {
+        const m = this.grid.nbr[i * 6 + d];
+        if (m >= 0 && this.caps.water[m] > 0) { this.waterAt[i] = m; break; }
+      }
+    }
+
+    // agents (Stage 2: solitary, placed near water as a test setup; band layout is Stage 7)
+    this.agents = [];
+    this.dead = [];
+    const nAgents = opts.agents != null ? opts.agents : PARAMETERS.agents.n;
+    this.placeAgents(nAgents);
+  }
+
+  placeAgents(n) {
+    const g = this.grid, cand = [];
+    for (let i = 0; i < g.n; i++) {
+      const t = this.terrain[i];
+      if (t !== T_PLAINS && t !== T_FOREST) continue;
+      if (g.within(i, 1).some((m) => this.terrain[m] === T_RIVER || this.terrain[m] === T_LAKE)) cand.push(i);
+    }
+    for (let k = 0; k < n && cand.length; k++) {
+      const j = this.rng.int(cand.length);
+      this.agents.push(new Agent(this.agents.length, cand[j], this));
+      cand.splice(j, 1);
+    }
   }
 
   // ── seasons ────────────────────────────────────────────────────────────────────────────
@@ -86,6 +118,34 @@ var World = class World {
       }
       // deposits never regrow
     }
+    if (this.agents.length) this.agentDay();
+  }
+
+  // The agents' day in synchronized phases (ODD §3): every agent finishes a phase before
+  // any starts the next. Travel and work run in a random order reshuffled daily, which is
+  // the order contested hexes are drawn from.
+  agentDay() {
+    const live = this.agents;
+    for (const a of live) a.plan = planDay(a, this);                 // 1. Plan
+    const order = live.slice();
+    for (let i = order.length - 1; i > 0; i--) {                       // 2. Travel and work
+      const j = this.rng.int(i + 1);
+      const t = order[i]; order[i] = order[j]; order[j] = t;
+    }
+    for (const a of order) a.act(this);
+    // 3. Exchange: none before Stage 5
+    for (const a of live) a.consume(this);                            // 4. Consume
+    for (const a of live) a.learn();                                  // 5. Learn
+    for (const a of live) a.age(this);                                // 6. Aging and deaths
+    for (const a of live) if (!a.alive) { a.deathDay = this.day; this.dead.push(a); }
+    this.agents = live.filter((a) => a.alive);
+  }
+
+  // Hours from `hex` to every hex within a day's waking hours, cached (terrain never changes).
+  travel(hex) {
+    let t = this.travelCache.get(hex);
+    if (!t) { t = this.travelFrom(hex, PARAMETERS.agents.wakingHours); this.travelCache.set(hex, t); }
+    return t;
   }
 
   // Remove up to `amount` of resource `res` from hex `i`; returns what was taken.
