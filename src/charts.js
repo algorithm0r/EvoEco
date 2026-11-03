@@ -17,6 +17,7 @@ var LineGraph = class LineGraph {
 
   draw(ctx) {
     ctx.save();
+    ctx.fillStyle = 'rgba(11,14,19,0.8)'; ctx.fillRect(this.x, this.y, this.w, this.h);
     ctx.strokeStyle = '#333'; ctx.strokeRect(this.x, this.y, this.w, this.h);
     ctx.fillStyle = '#8a8f98'; ctx.font = '11px sans-serif';
     ctx.fillText(this.label, this.x + 4, this.y + 12);

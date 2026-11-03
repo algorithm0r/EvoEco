@@ -206,6 +206,21 @@ Deliberately small; it grows later.
     proposal),** about 4–5 km: roughly a place a forager would name (a spring, a stretch of
     forest). A day's reach is about four or five hexes out and back. (Chris first proposed 30
     minutes for more resource locations near shelters, then chose the hour.)
+  - **Map as built in Stage 1 — Default (Claude, 2026-11-02; numbers in `params.js`):**
+    - Five terrains: plains, forest, hills, river, lake. Crossing hours: 1, 1.5, 2, 2
+      (fording), lake impassable.
+    - Terrain from seeded elevation and moisture noise by quantile: lowest 4% lake, highest
+      22% hills, wettest 35% of the rest forest. Rivers run downhill from 6 springs in the
+      hills to a lake, another river or the map edge.
+    - Default size 64 × 48 hexes; a year of 360 days.
+    - Placement: wild plants on plains (most), forest and hills; wood in forest; soil on
+      land, doubled within a hex of water (floodplain); water in rivers, lakes and springs;
+      clay on banks; flint, copper and tin in hills; iron in hills and forest; tin placed
+      ~25 hexes from the nearest copper.
+    - The one resource mechanism: renewables regrow logistically toward cap with a seed floor
+      (a stripped hex comes back slowly), only in spring and summer for plants and wood;
+      water refills daily to a level that swings ±50% with the rains (wettest in spring);
+      deposits never regrow. Seasons also give a cold factor (autumn and winter) for warmth.
   - **What "place" means on the grid — Default:** a place is one hex. Meeting is being in the
     same hex on the same day (§3); norms are per activity per hex (§4.4); travel time is the
     hex path's length weighted by terrain.

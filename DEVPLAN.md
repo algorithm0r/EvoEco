@@ -14,30 +14,34 @@ stage is testable on its own before the next adds interaction.
 
 ## Built
 - ODD v0.2+ (design, 2026-11-01/02).
-- Scaffolded from engine v2 (vanilla-JS canvas + standard DB client), 2026-11-02. The demo
-  "drifters" model still runs in-browser and headless (smoke PASS).
+- Scaffolded from engine v2 (vanilla-JS canvas + standard DB client), 2026-11-02.
+- Stage 1 world: seeded hex map (terrain, rivers, springs, deposits), one resource mechanism,
+  seasons, terrain-weighted travel times, map drawn with resource layers (2026-11-02).
 
 ## Not yet built
 - The EvoEco model itself.
 
 ## Stages
 
-### Stage 1 — The world: hex map, resources, seasons  [ ACTIVE ]
+### Stage 1 — The world: hex map, resources, seasons  [ DONE ] (closed 2026-11-02)
 ODD §2 (Landscape and resources, Scales), §3 (random orders).
-- [ ] Hex grid in axial coordinates; one hex ≈ an hour's walk; terrain weights travel
-- [ ] Map generator from parameters + seed: clustering per resource, distance between key
+- [x] Hex grid (odd-r offset, cube distances); one hex ≈ an hour's walk; terrain weights travel
+- [x] Map generator from parameters + seed: clustering per resource, distance between key
       pairs (copper–tin); option to load a fixed saved map
-- [ ] One resource mechanism (stock, regrowth, inflow) covering renewables, non-renewables
+- [x] One resource mechanism (stock, regrowth, inflow) covering renewables, non-renewables
       and water; the v0 resources (wild plants, forest, fertile land, water, flint, clay,
       copper, tin, iron)
-- [ ] Day tick with a year of days; seasonal regrowth and water flow
-- [ ] Hex path travel time (terrain-weighted shortest path)
-- [ ] Observer draws the hex map and resource layers; replace the demo drifters
-- [ ] Smoketest: same seed → same map; stocks stay within bounds; renewables regrow after
+- [x] Day tick with a year of days; seasonal regrowth and water flow
+- [x] Hex path travel time (terrain-weighted shortest path)
+- [x] Observer draws the hex map and resource layers; replace the demo drifters
+- [x] Smoketest: same seed → same map; stocks stay within bounds; renewables regrow after
       depletion, non-renewables don't
 **Done when:** a seeded map is generated and drawn in-browser, resources deplete and regrow
 by class and season, and `smoketest.mjs` asserts determinism and resource bounds (the demo
-drift check is gone).
+drift check is gone). ✓ Met: smoke PASS on all 13 checks (determinism, map round trip,
+seasonal regrowth, deposits, bounds over 900 days, travel); map seen in the browser.
+Ledger check: Stage 1 adds landscape rules only; resource placement may make location matter,
+which ODD §2 intends (inequality from the world), and nothing about exchange, ties or prices.
 
 ### Stage 2 — One agent alive: needs, hours, route planning  [ PLANNED ]
 ODD §2 (Needs, Scales), §4.3, §4.4 (habits), §7.6 (route planning).
@@ -137,5 +141,9 @@ How runs are compared is a research question to settle then (ODD §4.10).
 - [ ] docs: check the ODD's citations (written from memory, unchecked)
 - [ ] idea: further output measures (ODD §4.10); a research question for later
 - [ ] idea: the trickle-down note (ODD open questions 2), revisit when capital is built
+- [ ] idea: water is sparse (rivers, lakes, springs only; ~6% of hexes); check against
+      band placement in Stage 7, maybe more springs or seasonal ponds
+- [ ] idea: plants regrow to ~95% of cap in one season from bare; balance with harvesting in
+      Stage 2
 - [ ] idea: log slack and tinkering hours; scarcity that removes slack should slow discovery
       (ODD §7.3), and it bears on the results

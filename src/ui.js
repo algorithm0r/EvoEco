@@ -23,6 +23,26 @@ function buildControls() {
     wrap.appendChild(val);
     panel.appendChild(wrap);
   }
+
+  // map layer picker (view state, not a model parameter)
+  const wrap = document.createElement('label');
+  wrap.className = 'ctl';
+  wrap.appendChild(document.createTextNode('Layer '));
+  const sel = document.createElement('select');
+  for (const name of ['terrain', 'plants', 'wood', 'soil', 'water']) {
+    const o = document.createElement('option');
+    o.value = o.textContent = name;
+    sel.appendChild(o);
+  }
+  sel.onchange = function () { if (typeof observer !== 'undefined' && observer) observer.layer = sel.value; };
+  wrap.appendChild(sel);
+  panel.appendChild(wrap);
+
+  const legend = document.createElement('div');
+  legend.className = 'ctl';
+  legend.innerHTML = 'Terrain: plains, forest, hills, river, lake.<br>Dots: flint (white), clay (brown), ' +
+    'copper (orange), tin (pale blue), iron (red). Ring: spring.';
+  panel.appendChild(legend);
 }
 
 function setStatus(msg) {

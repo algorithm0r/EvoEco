@@ -1,13 +1,72 @@
 'use strict';
 // The view. Reads world state and draws it; never mutates the model. Keeping all rendering
-// here (instead of agents drawing themselves) is what makes the world headless-safe.
+// here is what makes the world headless-safe.
+//
+// Layers: 'terrain' shows terrain with deposits and springs marked; a resource name
+// ('plants', 'wood', 'soil', 'water') shades each hex by stock / cap.
 var Observer = class Observer {
-  constructor(world) { this.world = world; }
+  constructor(world) {
+    this.world = world;
+    this.layer = 'terrain';
+  }
 
   update() {}
 
   draw(ctx) {
-    ctx.fillStyle = '#7fd1ff';
-    for (const a of this.world.agents) ctx.fillRect(a.x - 1, a.y - 1, 2, 2);
+    const w = this.world, g = w.grid;
+    const s = Math.min(ctx.canvas.width / (Math.sqrt(3) * (g.W + 0.5)), ctx.canvas.height / (1.5 * (g.H - 1) + 2));
+    const shade = this.layer !== 'terrain' ? this.layer : null;
+    for (let i = 0; i < g.n; i++) {
+      const c = g.centre(i, s);
+      let fill = Observer.COLORS[this.world.terrain[i]];
+      if (shade) {
+        const cap = w.caps[shade][i];
+        fill = cap > 0 ? Observer.ramp(shade, w.stock[shade][i] / cap) : '#1a1e25';
+      }
+      Observer.hex(ctx, c.x, c.y, s, fill);
+    }
+    if (shade) return;
+    // deposits (one dot per kind present, side by side) and springs
+    const kinds = ['flint', 'clay', 'copper', 'tin', 'iron'];
+    for (let i = 0; i < g.n; i++) {
+      const c = g.centre(i, s);
+      let k = 0;
+      for (const name of kinds) {
+        if (w.caps[name] && w.caps[name][i] > 0) {
+          ctx.fillStyle = Observer.DEPOSIT[name];
+          ctx.globalAlpha = 0.35 + 0.65 * (w.stock[name][i] / w.caps[name][i]);
+          ctx.beginPath();
+          ctx.arc(c.x - s * 0.3 + k * s * 0.3, c.y, s * 0.22, 0, TAU);
+          ctx.fill();
+          k++;
+        }
+      }
+      ctx.globalAlpha = 1;
+      if (w.spring[i]) {
+        ctx.strokeStyle = '#bfe6ff';
+        ctx.beginPath(); ctx.arc(c.x, c.y, s * 0.5, 0, TAU); ctx.stroke();
+      }
+    }
+  }
+
+  static hex(ctx, x, y, s, fill) {
+    ctx.beginPath();
+    for (let k = 0; k < 6; k++) {
+      const a = Math.PI / 180 * (60 * k - 30);
+      const px = x + s * Math.cos(a), py = y + s * Math.sin(a);
+      if (k) ctx.lineTo(px, py); else ctx.moveTo(px, py);
+    }
+    ctx.closePath();
+    ctx.fillStyle = fill;
+    ctx.fill();
+  }
+
+  // dark → full colour as the fraction goes 0 → 1
+  static ramp(layer, f) {
+    const hue = { plants: 95, wood: 130, soil: 35, water: 205 }[layer];
+    return hsl(hue, 55, 10 + 45 * clamp(f, 0, 1));
   }
 };
+// indexed by terrain code (mapgen.js TERRAIN)
+Observer.COLORS = ['#6f8f52', '#2f5a36', '#8a7656', '#3a7cc2', '#2a5d9a'];
+Observer.DEPOSIT = { flint: '#d8d8d0', clay: '#c4703a', copper: '#e08a2c', tin: '#a9c9e8', iron: '#b0302a' };

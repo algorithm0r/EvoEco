@@ -4,6 +4,32 @@
 
 <!-- append new entries above this line -->
 
+## 2026-11-02 — Stage 1: the world (hex map, resources, seasons, travel)
+
+**Done:** Built DEVPLAN Stage 1 on Opus (Chris: Opus for the build, Fable optional for the
+hard stages and ledger reviews). Seeded PRNG (no Math.random in the model); `hex.js` (odd-r
+hex grid, cube distance, neighbours); `mapgen.js` (elevation/moisture noise → terrain by
+quantile; rivers from springs; resource caps by terrain, floodplain, banks and clustered
+deposits; tin placed by distance to the nearest copper); `world.js` (one resource mechanism:
+logistic regrowth with a seed floor, daily water flow with the rains, deposits fixed;
+seasons with growth/rain/cold factors; `take()`; Dijkstra travel hours; `exportMap()` and
+`new World({ map })` for fixed maps); observer with terrain and resource layers; demo
+drifters removed.
+**Changed:** `src/util.js`, `src/params.js`, `src/world.js`, `src/observer.js`,
+`src/datamanager.js`, `src/main.js`, `src/ui.js`, `src/charts.js`, `index.html`,
+`smoketest.mjs`, `runner.mjs`; new `src/hex.js`, `src/mapgen.js`; `src/agent.js` removed
+(Stage 2 brings agents). ODD §2 gains a Default block recording the Stage 1 map choices.
+**State:** smoke PASS, 13 checks (seed 1): same seed → same map (d515a9c1 before the spring
+fix), different seed differs; terrain plains 46.9%, forest 25.5%, hills 21.6%, river 2.0%,
+lake 4.0%; 6 springs; tin–copper 25 hexes (target 25; seeds 2–5 also 25); stripped plants
+0 after winter, 0.947 of cap after one growing season, 1.000 after two; deposits never
+regrow; all stocks in bounds over 900 days; water spring 1.32 vs autumn 0.68; travel symmetric,
+≥ hex steps, lakes blocked; 40 hexes within 4 h of a central plains hex; 0.08 ms/day. The tin
+check failed first on a real bug (tin 25 hexes from one copper cluster, 5 from the other)
+and passed after the fix. Map seen in the browser pane, no console errors. Runner updated but
+not run (needs the DB).
+**Next:** Stage 2: one agent alive (needs, hours, route planning, habits, aging and death).
+
 ## 2026-11-02 — ODD v0.3 (audit responses, tree v0, map); scaffold and build plan
 
 **Done:** Chris answered the cold ledger audit; all 12 items now resolved or deferred.

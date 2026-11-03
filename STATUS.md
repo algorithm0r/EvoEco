@@ -1,26 +1,29 @@
 # EvoEco sim — STATUS
 
-**Updated:** 2026-11-02 (scaffold + build plan)
+**Updated:** 2026-11-02 (Stage 1 closed)
 **Verified:** never (the 2026-11-01 cold ledger audit checked ODD v0.2, not the code or v0.3)
 
-**Stage:** DEVPLAN Stage 1 — the world: hex map, resources, seasons `[ ACTIVE ]`, not started.
+**Stage:** Stage 1 `[ DONE ]`; Stage 2 (one agent alive) next, `[ PLANNED ]`, not started.
 
 **State:**
-- `ODD.md` draft v0.3. All 12 audit items resolved or deferred. Defaults added this session
-  by Claude are not cold-checked.
-- Engine v2 scaffold in place; the demo drifters model still runs. Smoke PASS (demo drift
-  check) @ 2026-11-02, scaffold commit. No EvoEco model code.
+- The world runs: seeded hex map (64 × 48; plains, forest, hills, rivers, lakes), springs,
+  deposits, one resource mechanism, seasons, terrain-weighted travel hours, fixed-map export.
+  Smoke PASS (13 checks) @ Stage 1 commit, 2026-11-02. Drawn in the browser with terrain and
+  resource layers; no console errors.
+- No agents yet. `runner.mjs` updated for the world but not run (needs the DB).
+- `ODD.md` v0.3 plus a Stage 1 Default block (map choices). Defaults from this session are
+  not cold-checked.
 
-**Metrics:** none yet.
+**Metrics:** terrain plains 46.9 / forest 25.5 / hills 21.6 / river 2.0 / lake 4.0 %;
+tin–copper 25 hexes; world.update 0.08 ms/day; 40 hexes within 4 h of a central plains hex.
 
 **Branches:** `main` only, local; no remote.
 
 **Open:**
-- Numbers (hours, yields, decay, wear, rates) to be balanced while building.
-- Citation check (Backlog). Further output measures and run comparison: later research.
-- Forgetting mechanism (random vs per-agent) taken as both at once: a Default.
+- Numbers are first guesses (plants regrow ~95% in a season; water in ~6% of hexes).
+- Citation check (Backlog). Output measures and run comparison: later research.
 
-**Next action:** Stage 1 — hex grid, map generator, resource mechanism, seasons; replace the
-demo model and its smoke check.
+**Next action:** Stage 2: needs, hour budget, route planner, habits, aging and death; measure
+planner cost per agent-day.
 
 **Blockers:** none.
