@@ -347,6 +347,37 @@ const keptIfPractised = lapse(true), keptIfLapsed = lapse(false);
 check('know-how survives where practised and is lost when the craft lapses', keptIfPractised && !keptIfLapsed,
   'after the only potter dies: practised → ' + (keptIfPractised ? 'kept by the one who watched' : 'lost') + '; never practised → ' + (keptIfLapsed ? 'kept' : 'lost'));
 
+// ── 11. farming (Stage 5d) ────────────────────────────────────────────────────────────
+// A plants in spring; the field ripens on its day; B (not the planter) reaps from it, as
+// anyone may (ODD §2); B gives part back; at the close A learns a return that counts the gift
+const fw = new World({ agents: 0 });
+const fh = [...Array(fw.grid.n).keys()].find((i) => fw.canFarm(i) && fw.fertility(i) > 0.4);
+const planter = new Agent(0, fh, fw), friend = new Agent(1, fh, fw);
+planter.knows.add('farm');
+while (fw.day < 10) fw.update();
+planter.hold.grain = 10;
+planter.plan = [{ hex: fh, act: A_SOW, hours: 2 }];
+planter.act(fw);
+const field = fw.fields[0];
+while (fw.day < P.goods.grain.ripeDay) fw.update();
+const ripeAt = field.ripe ? fw.day : -1, yielded = field.grain;
+friend.plan = [{ hex: fh, act: A_REAP, hours: 2 }]; friend.act(fw);
+planter.plan = [{ hex: fh, act: A_REAP, hours: 2 }]; planter.act(fw);
+const gift = Math.min(10, friend.hold.grain);
+friend.hold.grain -= gift; planter.hold.grain += gift;
+fw.creditReturn(friend, planter, gift);
+const ownReaped = field.reaped.get(planter.id) || 0, seeds = field.seeds, fert = field.fert;
+while (fw.day < P.goods.grain.closeDay) fw.update();
+const expected = P.goods.grain.prior + P.agents.learnRate * ((ownReaped + gift) / (seeds * fert) - P.goods.grain.prior);
+check('a field sown in spring ripens on its day and anyone may reap it', ripeAt === P.goods.grain.ripeDay && friend.hold.grain + gift > 0 && Math.abs(yielded - seeds * P.goods.grain.yieldPerSeed * fert) < 1e-6,
+  seeds.toFixed(0) + ' seeds at fertility ' + fert.toFixed(2) + ' → ' + yielded.toFixed(1) + ' grain on day ' + ripeAt + '; the friend reaped ' + (friend.hold.grain + gift).toFixed(1) + ', the planter ' + ownReaped.toFixed(1));
+check("grain given back by the reaper counts in the planter's learned return", field.returned === gift && Math.abs(planter.farmReturn - expected) < 1e-9 && fw.fields.length === 0,
+  'returned ' + field.returned.toFixed(1) + '; learned return per seed ' + planter.farmReturn.toFixed(2) + ' (own reaping alone would give ' +
+  (P.goods.grain.prior + P.agents.learnRate * (ownReaped / (seeds * fert) - P.goods.grain.prior)).toFixed(2) + ')');
+const farmFound = xw.discoveries.filter((d) => d.what === 'farm');
+check('farming is discovered by tinkering in the bands year (wild grain in hand)', farmFound.length > 0,
+  farmFound.length + ' discoveries of farming, first on day ' + (farmFound[0] ? farmFound[0].day : '-'));
+
 const proj = msAgentDay * 300 * 9000 / 1000;
 console.log('planner cost: ' + msAgentDay.toFixed(3) + ' ms per agent-day → ~' + proj.toFixed(0) + ' s per generation for 300 agents × 9,000 days');
 console.log('smoke: ' + (failed ? failed + ' FAILED' : 'PASS'));

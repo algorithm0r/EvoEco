@@ -45,7 +45,7 @@ function buildControls() {
   legend.className = 'ctl';
   legend.innerHTML = 'Terrain: plains, forest, hills, river, lake.<br>Dots: flint (white), clay (brown), ' +
     'copper (orange), tin (pale blue), iron (red). Ring: spring.<br>Homes: coloured by the worst need; ' +
-    'square: a hut (dashed while being built).';
+    'square: a hut (dashed while being built).<br>Small squares: fields (green growing, gold ripe).';
   panel.appendChild(legend);
 }
 

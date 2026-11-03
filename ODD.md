@@ -839,6 +839,48 @@ Chris asked for calibration before farming. What was found and changed:
   about the agent's own death, not an economic outcome. No rule names who stores, trades or
   survives.
 
+#### Farming as built in Stage 5d — Default (Claude, 2026-11-03; `tree.js`, `agent.js`, `world.js`)
+Decided by Chris: anyone may harvest a planted field, and what comes back to the planter
+through others counts (§2). The rest are Claude's proposals:
+- **Wild grain first.** Foraging on plains in summer brings in some wild cereal along with the
+  plants (15% of what is gathered there). That is where the first seed comes from.
+- **Farming is a level found by tinkering**, with grain in hand at a hex with fertile land.
+  The stone hoe and sickle are known from the start (§5).
+- **Fields.** Sown in spring only, at 4 seeds an hour by hand (the hoe doubles it), on plains or
+  hills (forest needs clearing first, not built yet). A field ripens on day 150 of the year
+  (late summer) with 10 grain per seed × the soil's fertility (its stock ÷ 12). Sowing draws
+  0.02 soil per seed, and soil recovers slowly (the existing soil resource). Ripe grain decays
+  1% a day in the field, and what is left on day 240 is lost.
+- **Reaping** takes ripe grain from any field in the hex, the reaper's own first, at 8 grain
+  an hour by hand (the sickle doubles it). Agents see ripe grain like any other resource
+  (§4.6). Whose field each reaper took from is recorded.
+- **The planter's return (Chris's rule, as built).** When a field closes, its planter learns
+  how much grain came back per seed sown: what it reaped itself, plus grain gifted to it by
+  anyone who reaped that field (up to what each reaped there). Trades do not count, since the
+  planter paid for that grain. The planter learns this by one error-driven update, per seed
+  at full fertility, from a hopeful prior of 8 (about 4 on ordinary land). Planning values sowing at that learned return; a field it
+  sowed earlier counts as grain arriving at harvest, less the hours of reaping.
+- **Grain as food (food level 2).** It restores 0.10 a unit (plants 0.08), and 1.5× when
+  cooked with fire in a pot. It keeps (0.2% a day against the plants' 1%). Plants are eaten
+  first, since they rot faster. Grain is a good like any other in barter and is given as food in gifts.
+- **The projection now reaches a year.** It runs 120 days in weekly steps, then to 360 days in
+  monthly steps, because farming's cycle is a year. From autumn, the 120-day projection could
+  see neither next spring's sowing nor the harvest after it, so grain's only use was food:
+  all the wild grain was eaten by spring, and no one ever sowed. As with the axe and the pot,
+  grain still held at the spring sowing (day 30) is assumed sown, on the best farmable land
+  within 2 hexes of home, and comes back at the agent's learned return at the ripening. A
+  discount of 0.997 a day instead of 0.99 made little difference to this, so the discount is
+  unchanged.
+- **Candidates are ranked without the trade arm** (five times cheaper). The route is still
+  built and chosen with it.
+- **Result, bands, seed 1, three years.** Nothing given: farming discovered 44 times by
+  tinkering (first on day 100) and 6 times learned by seeing. The first sowing came in the third
+  spring (4 seeds); in year 3, 31 seeds were sown and 274 grain reaped; the next spring, 54
+  seeds. With farming known from the start: 115 seeds in year 3 gave 1,032 grain. Food stayed
+  at 0.98–0.99 through that autumn and winter, against about 0.8 before farming. Grain changed
+  hands about 3,000 times. The return through others is small so far (a few grain).
+- **Not yet:** bread (quern, clay oven), wells, clearing forest for fields, tending.
+
 Specialization is expected mainly from time and space: needs are spread across the
 landscape and the day is limited, so splitting the work saves hours ("you get food, I'll get
 water, meet at the shelter at dark").

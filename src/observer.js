@@ -66,6 +66,12 @@ var Observer = class Observer {
       ctx.lineTo(h.x, h.y);
       ctx.stroke();
     }
+    // fields (Stage 5d): green while growing, gold once ripe
+    for (const f of w.fields) {
+      const c = g.centre(f.hex, s);
+      ctx.fillStyle = f.ripe ? '#e8c547' : '#a7c957';
+      ctx.fillRect(c.x - s * 0.35, c.y - s * 0.35, s * 0.7, s * 0.7);
+    }
     for (const a of w.agents) {
       const h = g.centre(a.home, s);
       const worst = Math.min(a.need.food, a.need.water, a.need.warmth, a.need.rest);

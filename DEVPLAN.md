@@ -174,14 +174,17 @@ alive over two years, all deaths hunger in year 1, none of thirst; ~0.7 ms per a
 **Done when:** metal tools are made where the chain allows, and long-distance trade in tin or
 bronze appears or its absence is explained by the map.
 
-#### 5d — Farming, bread and wells  [ PLANNED ]
+#### 5d — Farming, bread and wells  [ ACTIVE ]
 Harvest settled (Chris, 2026-11-03; ODD §2): anyone may harvest a planted field, and what
 returns to the planter through others (a friend harvests and gifts a share) counts in the
 planter's learned return on planting.
-- [ ] Fertile land cleared with an axe, sown and tended with a hoe, reaped with a sickle,
-      across seasons (a project that spans months) (From 5b.)
-- [ ] Grain cooked in a pot (food level 2); bread from a quern and a clay oven (food level 3);
-      food quality restores more (From 5b.)
+- [x] Fields sown with a hoe in spring and reaped with a sickle after they ripen, by anyone; wild grain as
+      the first seed; farming found by tinkering; the planter's learned return counts grain
+      gifted back by those who reaped its field (Chris's rule). The projection reaches a
+      year. (From 5b.)
+- [ ] Clearing forest for fields with an axe; tending
+- [x] Grain cooked in a pot (food level 2): restores more, keeps (From 5b.)
+- [ ] Bread from a quern and a clay oven (food level 3)
 - [ ] Well near home, dug with a pick and lined (water level 3): a structure under open access
 **Done when:** fields are cleared, sown and harvested across a year, grain and bread are made
 and eaten, and the planter's learned return counts what comes back through others, with a
@@ -280,3 +283,10 @@ How runs are compared is a research question to settle then (ODD §4.10).
       (early valuations under lived inflows) before Stage 7 measures trade
 - [ ] idea: fires are lit on ~20% of winter evenings; a wood store is cheap insurance. Watch
       whether storing wood rises once lived winters are learned (year 2+)
+- [ ] perf: the year-long projection raised the cost again (~1.6 ms per agent-day in bands
+      runs, ~0.9 in the smoke measure; ~70 min per generation at 300 agents). Candidates:
+      fewer trade-arm variants in the route build, coarser far steps
+- [ ] idea: the return through others is tiny so far (a few grain a year); watch it as
+      farming spreads and ties carry grain gifts
+- [ ] idea: farming takes about three years to start from nothing; the binding limit is
+      seed held through winter. Note it when burn-in length is set (Stage 7)

@@ -26,21 +26,24 @@ function planDay(agent, world) {
   agent.costs = null;                     // hour costs as of this morning
   agent.hutV = hutValue(agent, world);   // worked out once a day (also used in the exchange)
   const cands = planCandidates(agent, world);
-  const base = planCost(agent, world, []);
+  // candidates are ranked without the trade arm (five times cheaper; the route itself is
+  // built and chosen with it)
+  const base0 = planCost(agent, world, [], false);
   for (const c of cands) {
-    c.solo = planCost(agent, world, [c]);
-    c.rate = (base - c.solo) / planHours(agent, world, [c]);
+    c.solo = planCost(agent, world, [c], false);
+    c.rate = (base0 - c.solo) / planHours(agent, world, [c]);
   }
   const top = [], half = Math.ceil(A.topPerActivity / 2);
   for (const key of ['solo', 'rate']) {
     const kept = ACT_NAMES.map(() => 0);
     const sorted = cands.slice().sort(key === 'solo' ? (a, b) => a.solo - b.solo : (a, b) => b.rate - a.rate);
     for (const c of sorted) {
-      if (!(c.solo < base) || kept[c.act] >= half) continue;
+      if (!(c.solo < base0) || kept[c.act] >= half) continue;
       if (top.indexOf(c) < 0) top.push(c);
       kept[c.act]++;
     }
   }
+  const base = planCost(agent, world, []);
   const byGain = greedyRoute(agent, world, top, base, false);
   const byRate = greedyRoute(agent, world, top, base, true);
   return byRate.cost < byGain.cost ? byRate.plan : byGain.plan;
@@ -96,7 +99,8 @@ function planCandidates(agent, world) {
   const A = PARAMETERS.agents;
   const reach = agent.capacity() / 2;
   const fromHome = world.travel(agent.home);
-  const out = [], unseen = [], tinkerAt = [];
+  const out = [], unseen = [], tinkerAt = [], fields = [];
+  const sowing = agent.knows.has('farm') && agent.hold.grain > 0 && world.season().phase < 0.25;
   for (let h = 0; h < world.grid.n; h++) {
     if (!(fromHome[h] <= reach)) continue;
     if (!agent.known[h]) { unseen.push(h); continue; }
@@ -105,6 +109,9 @@ function planCandidates(agent, world) {
     if (world.waterAt[h] >= 0) out.push({ hex: h, act: A_DRINK, hours: A.drinkHours, unknown: 0 });
     if (world.caps.flint[h] > 0) out.push({ hex: h, act: A_QUARRY, hours: A.chunk, unknown: 0 });
     if (world.caps.clay[h] > 0) out.push({ hex: h, act: A_DIG, hours: A.chunk, unknown: 0 });
+    // farming (Stage 5d): ripe grain seen standing in a field; land to sow in spring
+    if (agent.seenGrain[h] > 0.5) out.push({ hex: h, act: A_REAP, hours: A.chunk, unknown: 0 });
+    if (sowing && world.canFarm(h)) fields.push(h);
     // places with stone or clay to work with (ODD §7.3: tinkering works with what is at hand)
     if (h !== agent.home && (agent.seenFrac[A_DIG][h] > 0.02 || agent.seenFrac[A_QUARRY][h] > 0.02)) tinkerAt.push(h);
   }
@@ -116,6 +123,9 @@ function planCandidates(agent, world) {
   for (const r in RECIPES) {
     if (agent.knows.has(r)) out.push({ hex: agent.home, act: A_CRAFT, recipe: r, hours: RECIPES[r].hours, unknown: 0 });
   }
+  // sow on the most fertile land within reach, nearer first among equals
+  fields.sort((a, b) => world.fertility(b) / (1 + fromHome[b]) - world.fertility(a) / (1 + fromHome[a]));
+  for (const h of fields.slice(0, A.sowCandidates)) out.push({ hex: h, act: A_SOW, hours: A.chunk, unknown: 0 });
   // tinker at home, or at the nearest places with stone or clay
   tinkerAt.sort((a, b) => fromHome[a] - fromHome[b]);
   for (const h of [agent.home].concat(tinkerAt.slice(0, A.tinkerCandidates))) {
@@ -143,7 +153,7 @@ function planEstimate(agent, hex, act, day) {
   return agent.rate(act) * mult * Math.min(1, frac + A.curiosity * sd);
 }
 
-function planCost(agent, world, plan) {
+function planCost(agent, world, plan, withTrade) {
   const A = PARAMETERS.agents, G = PARAMETERS.goods;
   const cap = agent.capacity();
   let at = agent.home, hours = 0, bonus = 0;
@@ -166,13 +176,21 @@ function planCost(agent, world, plan) {
       if (!Object.keys(R.inputs).every((g) => hold[g] >= R.inputs[g])) return Infinity;
       for (const g in R.inputs) hold[g] -= R.inputs[g];
       hold[s.recipe] += 1;
+    } else if (s.act === A_SOW) {
+      // what it sows comes back at harvest at its learned return (projected in keepCost)
+      const seeds = Math.min(hold.grain, s.hours * G.grain.sowPerHour * (hold.hoe > 0 ? TOOLS.hoe.mult : 1));
+      if (!(seeds > 1e-6)) return Infinity;
+      hold.grain -= seeds;
+      hold.sown = (hold.sown || 0) + seeds * world.fertility(s.hex) * agent.farmReturn;
+    } else if (s.act === A_REAP) {
+      hold.grain += Math.min(agent.seenGrain[s.hex], s.hours * G.grain.reapPerHour * (hold.sickle > 0 ? TOOLS.sickle.mult : 1));
     } else if (s.act === A_SCOUT) bonus += A.scoutValue * s.unknown;
     else if (s.act === A_TINKER) bonus += tinkerBonus(agent, world, hold, s.hex, s.hours);
     hours += s.hours;
   }
   if (plan.length) hours += world.travel(at)[agent.home];
   if (!(hours <= cap)) return Infinity;
-  return holdingsCost(agent, world, hold, shelter, hours, drank, agent.need.belonging, true) - bonus;
+  return holdingsCost(agent, world, hold, shelter, hours, drank, agent.need.belonging, withTrade !== false) - bonus;
 }
 
 // The cost of ending the day with `hold`: tonight's evening plus the Keep projection. With
@@ -227,15 +245,19 @@ function keepCost(agent, world, hold, shelter, busy, drank, belonging) {
       (e.warmth <= 0 && agent.zeroDays.warmth + 1 > D.warmth)) cost += A.fatalCost;
   // the weeks ahead, as plain numbers (this loop is most of the model's run time): the evening
   // of Agent.evening for a lumped week with water drunk, inlined
-  const sq = (x) => (1 - x) * (1 - x);
+  const sq = (x) => (1 - x) * (1 - x), cold = (T) => T.cold;
   const h = e.hold;   // a fresh object from Agent.evening, changed in place
   let nf = e.food;
   let lean = shelter.leanTo, hut = shelter.hut, hutDone = shelter.hutDone;
-  const S = A.keepStep, rateWood = Math.max(0.1, agent.rate(A_WOOD));
+  // grain it expects back at harvest: fields sown earlier and any sown today (Stage 5d)
+  const arriving = agent.pendingGrain() + (hold.sown || 0);
+  const farming = agent.knows.has('farm') && agent.farmFert > 0;
+  let projSown = 0, ripened = false, carryWork = 0;
+  const rateWood = Math.max(0.1, agent.rate(A_WOOD));
   const keeps = KEEP_RECIPES.filter(([r]) => agent.knows.has(r));
   const belongCost = sq(belonging);
   for (let k = 0; k < tab.length; k++) {
-    const { beta, si, cold } = tab[k];
+    const T = tab[k], S = T.len, si = T.si;
     for (const [r, ins] of keeps) {
       if (h[r] > 0) continue;
       if (ins.every(([g, q]) => h[g] >= q)) {
@@ -245,14 +267,23 @@ function keepCost(agent, world, hold, shelter, busy, drank, belonging) {
     }
     // the axe speeds the projected wood-cutting while it lasts
     const wMult = h.axe > 0 ? TOOLS.axe.mult : 1;
-    // a week as the agent has lived this season: what it brings in by gathering and nets in
+    // a step as the agent has lived this season: what it brings in by gathering and nets in
     // exchange (ODD §7.6: expected future need from seasonal norms)
     const F = agent.flow[si];
     if (h.axe > 0) h.axe = Math.max(0, h.axe - S * F.wood / rateWood / TOOLS.axe.life);
-    h.food = Math.max(0, h.food * tab.rot + S * (F.food + F.xfood));
+    h.food = Math.max(0, h.food * T.rot + S * (F.food + F.xfood));
     h.wood = Math.max(0, h.wood + S * (F.wood * wMult + F.xwood));
     if (h.pot > 0) h.pot = Math.max(0, h.pot - G.pot.wear * S);
-    const work = agent.busyHabit[si] + agent.drinkTrip * Math.min(1, N.waterDecay / waterCarried(h));
+    h.grain = (h.grain || 0) * T.grot;
+    let work = agent.busyHabit[si] + agent.drinkTrip * Math.min(1, N.waterDecay / waterCarried(h)) + carryWork / S;
+    carryWork = 0;
+    // harvest (Stage 5d): fields sown before (this year's, at the first ripening) and any the
+    // projection sowed come back at the agent's learned return, less the hours of reaping
+    if (T.ripe) {
+      const add = projSown + (ripened ? 0 : arriving);
+      ripened = true; projSown = 0;
+      if (add > 0) { h.grain += add; work += add / G.grain.reapPerHour / S; }
+    }
     // weather (as wearShelter)
     lean = Math.max(0, lean - G.leanTo.wear * S);
     if (hut > 0) {
@@ -260,21 +291,30 @@ function keepCost(agent, world, hold, shelter, busy, drank, belonging) {
       if (hut <= 0) hutDone = false;
     }
     const ins = Math.max(G.leanTo.insulation * lean, hutDone ? G.hut.insulation * hut : 0);
-    // the week starts nearer the agent's usual food level for the season: a gap from it fades
-    // week by week, as a hungry agent forages more and a full one less. (Without this, lived
+    // the step starts nearer the agent's usual food level for the season: a gap from it fades
+    // (half a week), as a hungry agent forages more and a full one less. (Without this, lived
     // inflows that just cover the day's need carried tonight's hunger unchanged for months,
     // and food outweighed even a lethal thirst.)
-    const L = agent.livedFood[si];
-    let food = L + A.keepPersist * (nf - L) - S * (N.foodDecay + N.workBurn * work);
+    const Lf = agent.livedFood[si];
+    let food = Lf + T.persist * (nf - Lf) - S * (N.foodDecay + N.workBurn * work);
     const fire = Math.min(1, h.wood / (G.fireWood * S));
     h.wood -= fire * G.fireWood * S;
     const per = G.food.restores * (1 + fire * (G.food.cookedBonus - 1));
     if (food < 1 && h.food > 0) { const eat = Math.min(h.food, (1 - food) / per); food += eat * per; h.food -= eat; }
+    const perG = G.grain.restores * (h.pot > 0 ? 1 + fire * (G.grain.cookedBonus - 1) : 1);
+    if (food < 1 && h.grain > 0) { const eat = Math.min(h.grain, (1 - food) / perG); food += eat * perG; h.grain -= eat; }
     food = Math.min(food, 1);
-    const warmth = clamp(1 - cold * (1 - ins) + fire * G.fireHeat, 0, 1);
+    const warmth = clamp(1 - cold(T) * (1 - ins) + fire * G.fireHeat, 0, 1);
     const rest = clamp((cap - work) / N.restSet, 0, 1);
-    cost += beta * S * (sq(food) + sq(warmth) + sq(rest) + belongCost);   // water drunk: no deficit
+    cost += T.beta * S * (sq(food) + sq(warmth) + sq(rest) + belongCost);   // water drunk: no deficit
     nf = food;
+    // spring sowing (Stage 5d): grain still held is sown, as with the axe and the pot (made
+    // when the inputs are in hand), on the best land near home; its hours fall in the next step
+    if (T.sow && farming && h.grain > 0) {
+      projSown += h.grain * agent.farmFert * agent.farmReturn;
+      carryWork = h.grain / G.grain.sowPerHour;
+      h.grain = 0;
+    }
   }
   return cost;
 }
@@ -319,12 +359,26 @@ function projectValue(agent, world, hold, sh) {
 // The projection's weeks for today: discount, season and cold of each, worked out once a day.
 function projectionTable(world) {
   if (world._projDay === world.day && world._projTab) return world._projTab;
-  const A = PARAMETERS.agents, Y = PARAMETERS.year.days, S = A.keepStep;
+  const A = PARAMETERS.agents, Y = PARAMETERS.year.days, Gr = PARAMETERS.goods.grain;
   const tab = [];
-  for (let d = S; d <= A.horizon; d += S) {
-    tab.push({ beta: Math.pow(A.discount, d), si: Math.floor(((world.day + d) % Y) / Y * 4), cold: world.season(world.day + d).cold });
+  // weekly steps to `horizon`, then monthly to `horizonFar` (a year: farming's cycle)
+  const ends = [];
+  for (let d = A.keepStep; d <= A.horizon; d += A.keepStep) ends.push(d);
+  for (let d = A.horizon + A.keepLongStep; d <= A.horizonFar; d += A.keepLongStep) ends.push(d);
+  // does an absolute day of the year `doy` (any year) fall in (a, b]?
+  const crosses = (a, b, doy) => { for (let n = Math.floor(a / Y); n * Y + doy <= b; n++) if (n * Y + doy > a) return true; return false; };
+  let prev = 0;
+  for (const d of ends) {
+    const len = d - prev, a = world.day + prev, b = world.day + d;
+    tab.push({
+      len, beta: Math.pow(A.discount, d), si: Math.floor(((world.day + d) % Y) / Y * 4), cold: world.season(world.day + d).cold,
+      rot: Math.pow(1 - PARAMETERS.goods.food.rot, len), grot: Math.pow(1 - Gr.rot, len),
+      persist: Math.pow(A.keepPersist, len / 7),
+      ripe: crosses(a, b, Gr.ripeDay),          // this step holds a harvest (Stage 5d)
+      sow: crosses(a, b, Gr.sowDay),            // this step holds the spring sowing
+    });
+    prev = d;
   }
-  tab.rot = Math.pow(1 - PARAMETERS.goods.food.rot, S);
   tab.coldNow = world.season(world.day).cold;
   world._projDay = world.day; world._projTab = tab;
   return tab;

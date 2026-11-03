@@ -60,6 +60,9 @@ var World = class World {
     this.dead = [];
     // know-how events (ODD §7.3) and goods made, for measures and tests
     this.discoveries = [];
+    // fields (Stage 5d): this year's, and the ripe grain standing in each hex
+    this.fields = [];
+    this.grainHex = new Float32Array(this.grid.n);
     this.learnedBySeeing = [];
     this.made = {};
     if (opts.agents != null) this.placeAgents(opts.agents);
@@ -149,7 +152,78 @@ var World = class World {
       }
       // deposits never regrow
     }
+    this.fieldsDay();
     if (this.agents.length) this.agentDay();
+  }
+
+  // ── farming (Stage 5d; ODD §2: anyone may harvest a planted field) ──────────────────────
+  // Fields ripen on one day of the year, decay in the field after, and close later; at the
+  // close each planter learns what came back to it per seed (its own reaping and grain gifted
+  // by those who reaped the field, up to what each reaped there).
+  fieldsDay() {
+    const G = PARAMETERS.goods.grain, doy = this.day % PARAMETERS.year.days;
+    if (!this.fields.length) return;
+    if (doy === G.ripeDay) for (const f of this.fields) { f.grain = f.yield; f.ripe = true; }
+    else if (doy > G.ripeDay) for (const f of this.fields) f.grain *= 1 - G.fieldDecay;
+    if (doy >= G.closeDay) {
+      for (const f of this.fields) {
+        const back = (f.reaped.get(f.planter.id) || 0) + f.returned;
+        if (f.planter.alive) f.planter.learnFarm(back / (f.seeds * f.fert));
+        const k = f.planter.fields.indexOf(f);
+        if (k >= 0) f.planter.fields.splice(k, 1);
+      }
+      this.fields = [];
+    }
+    this.grainHex.fill(0);
+    for (const f of this.fields) if (f.ripe) this.grainHex[f.hex] += f.grain;
+  }
+  // land that can be farmed: plains or hills with soil (forest needs clearing, not built yet)
+  canFarm(hex) {
+    const t = this.terrain[hex];
+    return (t === T_PLAINS || t === T_HILLS) && this.caps.soil[hex] > 0;
+  }
+  // sowing is in spring
+  canSow(hex) { return this.season().phase < 0.25 && this.canFarm(hex); }
+  fertility(hex) { return this.stock.soil[hex] / PARAMETERS.goods.grain.soilFull; }
+  sow(agent, hex, seeds) {
+    const G = PARAMETERS.goods.grain, fert = this.fertility(hex);
+    this.take('soil', hex, seeds * G.soilPerSeed);
+    let f = agent.fields.find((x) => x.hex === hex);
+    if (!f) {
+      f = { hex, planter: agent, seeds: 0, fert: 0, yield: 0, grain: 0, ripe: false, reaped: new Map(), credited: new Map(), returned: 0 };
+      agent.fields.push(f); this.fields.push(f);
+    }
+    f.fert = (f.fert * f.seeds + fert * seeds) / (f.seeds + seeds);
+    f.seeds += seeds;
+    f.yield += seeds * G.yieldPerSeed * fert;
+    this.sown = (this.sown || 0) + seeds;
+  }
+  reap(agent, hex, want) {
+    const here = this.fields.filter((f) => f.hex === hex && f.grain > 0);
+    here.sort((a, b) => (b.planter === agent) - (a.planter === agent));   // its own first
+    let got = 0;
+    for (const f of here) {
+      const t = Math.min(f.grain, want - got);
+      if (!(t > 0)) break;
+      f.grain -= t; got += t;
+      f.reaped.set(agent.id, (f.reaped.get(agent.id) || 0) + t);
+      this.grainHex[hex] -= t;
+    }
+    this.reaped = (this.reaped || 0) + got;
+    return got;
+  }
+  // grain given by `giver` to `receiver` counts toward the receiver's fields that the giver
+  // reaped, up to what it reaped there (ODD §2, Chris: a friend reaps and gives a share back)
+  creditReturn(giver, receiver, qty) {
+    for (const f of receiver.fields) {
+      if (!(qty > 0)) break;
+      const r = (f.reaped.get(giver.id) || 0) - (f.credited.get(giver.id) || 0);
+      if (!(r > 0)) continue;
+      const c = Math.min(qty, r);
+      f.credited.set(giver.id, (f.credited.get(giver.id) || 0) + c);
+      f.returned += c; qty -= c;
+      this.returnedGrain = (this.returnedGrain || 0) + c;
+    }
   }
 
   // The agents' day in synchronized phases (ODD §3): every agent finishes a phase before

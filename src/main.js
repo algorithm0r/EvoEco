@@ -28,7 +28,8 @@ function showStatus() {
     ' | food ' + mean((a) => a.need.food) + ', warmth ' + mean((a) => a.need.warmth) +
     ', rest ' + mean((a) => a.need.rest) + ', hours ' + mean((a) => a.busy) +
     ' | know pot ' + L.filter((a) => a.knows.has('pot')).length + ', hut ' + L.filter((a) => a.knows.has('hut')).length +
-    '; huts ' + L.filter((a) => a.shelter.hutDone).length);
+    '; huts ' + L.filter((a) => a.shelter.hutDone).length +
+    ' | farming ' + L.filter((a) => a.knows.has('farm')).length + ', fields ' + world.fields.length);
 }
 
 window.onload = function () {

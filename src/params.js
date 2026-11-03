@@ -72,7 +72,13 @@ var PARAMETERS = {
     // weathers at partWear a day
     leanTo: { insulation: 0.45, wear: 0.01 },
     hut:    { insulation: 0.8, wear: 0.002, partWear: 0.003 },
-    pot:    { cap: 2, wear: 1 / 300 },   // water stored (need units, beside the gourd); breakage a day
+    pot:    { cap: 2, wear: 1 / 300 },
+    // grain and fields (Stage 5d): food per unit; cooked with fire in a pot; daily rot; grain
+    // per seed at full fertility (soil stock ÷ soilFull); soil drawn per seed; work rates by
+    // hand; ripening and closing day of the year; decay in the field once ripe; wild share of
+    // plains foraging in summer; the hopeful prior of grain back per seed at full fertility
+    grain:  { restores: 0.1, cookedBonus: 1.5, rot: 0.002, yieldPerSeed: 10, soilFull: 12, soilPerSeed: 0.02,
+              sowPerHour: 4, reapPerHour: 8, sowDay: 30, ripeDay: 150, closeDay: 240, fieldDecay: 0.01, wildShare: 0.15, prior: 8 },   // water stored (need units, beside the gourd); breakage a day
   },
 
   // --- agents (Stage 2: solitary; ODD §2 Agents, §4.4, §7.6) ---
@@ -94,6 +100,8 @@ var PARAMETERS = {
     topPerActivity: 4, maxGreedySteps: 8, scoutCandidates: 8,
     horizon: 120,         // days of Keep projection (a good is valued over its storage life)
     keepStep: 7,          // days per projection step
+    horizonFar: 360,      // the projection then runs on to a year (farming's cycle, Stage 5d)
+    keepLongStep: 30,     // in steps of this many days
     // the prior for what a day brings in (hours of foraging and wood-cutting at the prior
     // rates)
     projHours: { forage: 3, wood: 1 },
@@ -115,6 +123,7 @@ var PARAMETERS = {
     scoutValue: 0.005,    // bonus per unseen hex a scouting stop would reveal
     // tinkering and know-how (ODD §7.3)
     tinkerHours: 2, tinkerCandidates: 3,
+    sowCandidates: 3,     // most fertile places within reach considered for sowing (Stage 5d)
     discoverPerHour: 0.003,  // chance an hour of tinkering finds a level whose inputs are all at hand
     tinkerPrior: { found: 1, mh: 20 },   // hopeful prior: discoveries per material-hour
     tinkerValue: 0.02,    // value of an expected discovery (the curiosity term)

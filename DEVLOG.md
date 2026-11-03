@@ -4,6 +4,35 @@
 
 <!-- append new entries above this line -->
 
+## 2026-11-03 — Stage 5d (part 1): farming
+
+**Done:** Grain, fields, sowing (hoe), reaping (sickle) by anyone, and wild grain from plains
+foraging in summer. Farming is discovered by tinkering with grain on fertile land. Fields
+ripen on day 150 and close on day 240, when each planter learns its return per seed: its own
+reaping plus grain gifted to it by those who reaped its field (Chris's rule). Grain is eaten
+(cooked in a pot) and given as food in gifts. The first run sowed nothing: from autumn the
+120-day projection could not see next spring or the harvest after, so all wild grain was
+eaten. The projection now reaches a year (weekly to 120 days, then monthly), and grain held
+at spring sowing is assumed sown. Testing discount 0.997 against 0.99 made little difference,
+so the discount is unchanged. Candidates are ranked without the trade arm (2.9 → 1.6 ms per
+agent-day).
+**Changed:** `src/tree.js` (hoe, sickle, farm, grain), `src/agent.js` (sow, reap, wild grain,
+eating grain, fields, farmReturn, learnFarm, pendingGrain, farmFert, seenGrain), `src/world.js`
+(fields, fieldsDay, canFarm, canSow, fertility, sow, reap, creditReturn), `src/planner.js`
+(sow and reap candidates and costs, year-long projection with harvest and sowing, ranking
+without trade), `src/exchange.js` (grain hour cost, food shortfall counting grain, grain gifts
+credited), `src/params.js` (goods.grain, horizonFar, keepLongStep, sowCandidates),
+observer, ui, datamanager, main, `smoketest.mjs` (section 11). ODD §7.6 5d block; DEVPLAN 5d
+active, farming items done, bread, wells and clearing left.
+**State:** smoke PASS, all 39 checks. In the controlled field, 8 seeds at fertility 0.50 gave
+40 grain on day 150; the friend and the planter each reaped 16; 10 were given back, and the
+planter learned 7.55 per seed (6.80 from its own reaping alone). Bands year: 17 farming
+discoveries, first on day 100. Headless seed 1, three years, nothing given: first sowing in
+year 3, 31 seeds → 274 grain, 54 sown the next spring; 83/100 alive. With farming known: 115
+seeds → 1,032 grain in year 3, food 0.98–0.99 through that winter. Planner ~1.6 ms per
+agent-day in bands runs (0.92 smoke measure).
+**Next:** 5d part 2: bread (quern, clay oven), wells, clearing forest. Or 5c metals.
+
 ## 2026-11-03 — Calibration: Keep projection, route search, speed
 
 **Done:** Chris settled the harvest question: anyone may harvest, and what returns to the

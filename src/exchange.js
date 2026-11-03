@@ -73,6 +73,7 @@ function hourCosts(agent, world) {
     }
     out[GOOD_OF[act]] = best;
   }
+  out.grain = out.food * PARAMETERS.goods.food.restores / PARAMETERS.goods.grain.restores;   // as food
   for (const r in RECIPES) {
     let c = RECIPES[r].hours;
     for (const g in RECIPES[r].inputs) c += RECIPES[r].inputs[g] * out[g];
@@ -119,6 +120,7 @@ function normCosts(agent) {
     const r = agent.norm.n[act] ? agent.norm.eff[act] : agent.rate(act);
     out[GOOD_OF[act]] = 1 / r;
   }
+  out.grain = out.food * PARAMETERS.goods.food.restores / PARAMETERS.goods.grain.restores;
   for (const r in RECIPES) {
     let c = RECIPES[r].hours;
     for (const g in RECIPES[r].inputs) c += RECIPES[r].inputs[g] * out[g];
@@ -134,12 +136,14 @@ function costWith(agent, world, hold, belonging) {
 }
 
 // ── gifts ──────────────────────────────────────────────────────────────────────────────
-// Units of a good the agent lacks for tonight (food to its set point; wood for one fire).
+// Units of a good the agent lacks for tonight (food to its set point, counting the grain it
+// holds; grain as the same lack in grain units; wood for one fire).
 function shortfall(agent, g) {
   const N = PARAMETERS.needs, G = PARAMETERS.goods;
-  if (g === 'food') {
+  if (g === 'food' || g === 'grain') {
     const tonight = agent.need.food - N.foodDecay - N.workBurn * agent.busy;
-    return Math.max(0, (1 - tonight) / G.food.restores - agent.hold.food);
+    const lack = Math.max(0, (1 - tonight) - agent.hold.food * G.food.restores - (agent.hold.grain || 0) * G.grain.restores);
+    return lack / G[g].restores;
   }
   if (g === 'wood') return Math.max(0, G.fireWood - agent.hold.wood);
   return 0;
@@ -147,7 +151,7 @@ function shortfall(agent, g) {
 
 function giftsAt(world, here) {
   const E = PARAMETERS.exchange;
-  for (const g of ['food', 'wood']) {
+  for (const g of ['food', 'grain', 'wood']) {
     for (const j of here) {
       let need = shortfall(j, g);
       if (need <= 0) continue;
@@ -166,6 +170,7 @@ function giftsAt(world, here) {
         i.hold[g] -= amount; i.mu = null;
         j.hold[g] += amount; j.mu = null;
         need -= amount;
+        if (g === 'grain') world.creditReturn(i, j, amount);
         i.gave(j.id, world.day);
         j.received(i.id, world.day);
         world.giftsToday = (world.giftsToday || 0) + 1;

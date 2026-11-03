@@ -11,6 +11,8 @@
 var TOOLS = {
   axe:  { act: A_WOOD,   mult: 2, life: 80 },   // cutting wood
   pick: { act: A_QUARRY, mult: 2, life: 80 },   // quarrying flint (and later ore, wells)
+  hoe:    { act: A_SOW,  mult: 2, life: 80 },   // sowing (Stage 5d)
+  sickle: { act: A_REAP, mult: 2, life: 80 },   // reaping
 };
 // the tool that speeds each activity, if any
 var TOOL_FOR = [];
@@ -23,6 +25,8 @@ for (const t in TOOLS) TOOL_FOR[TOOLS[t].act] = t;
 var RECIPES = {
   axe:  { inputs: { flint: 2, wood: 1 }, hours: 3, level: 0, keep: true },
   pick: { inputs: { flint: 2, wood: 1 }, hours: 3, level: 0 },
+  hoe:    { inputs: { flint: 2, wood: 1 }, hours: 3, level: 0 },
+  sickle: { inputs: { flint: 2, wood: 1 }, hours: 3, level: 0 },
   // water level 2: a clay pot, fired in an open fire (ODD §2 v0: carried and stored in a pot)
   pot:  { inputs: { clay: 2, wood: 3 }, hours: 3, level: 2, keep: true },
 };
@@ -38,15 +42,17 @@ var BUILDS = {
 };
 
 // what every agent knows at the start (ODD §5)
-var START_KNOWHOW = ['axe', 'pick', 'leanTo'];
+var START_KNOWHOW = ['axe', 'pick', 'hoe', 'sickle', 'leanTo'];
 // what tinkering can find, and what each needs at hand: goods held or resources in the hex,
 // plus the tool (ODD §7.3: the chance of finding a level depends on holding its inputs)
 var DISCOVERABLE = {
   pot: { needs: ['clay', 'wood'] },
   hut: { needs: ['clay', 'wood'], tool: 'axe' },
+  // food level 2: sowing grain (Stage 5d); 'soil' is fertile land in the hex
+  farm: { needs: ['grain', 'soil'] },
 };
 
 // goods that change hands (water stays in the gourd or pot); the index orders each pair for prices
-var GOODS = ['food', 'wood', 'flint', 'axe', 'pick', 'clay', 'pot'];
+var GOODS = ['food', 'wood', 'flint', 'axe', 'pick', 'clay', 'pot', 'grain', 'hoe', 'sickle'];
 // goods traded whole, one at a time
-var WHOLE = { axe: true, pick: true, pot: true };
+var WHOLE = { axe: true, pick: true, pot: true, hoe: true, sickle: true };

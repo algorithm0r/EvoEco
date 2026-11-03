@@ -37,6 +37,10 @@ var DataManager = class DataManager {
       huts: L.filter((a) => a.shelter.hutDone).length, pots: L.filter((a) => a.hold.pot > 0).length,
       knowPot: L.filter((a) => a.knows.has('pot')).length, knowHut: L.filter((a) => a.knows.has('hut')).length,
       discoveries: w.discoveries.length, learnedBySeeing: w.learnedBySeeing.length,
+      // Stage 5d: farming
+      knowFarm: L.filter((a) => a.knows.has('farm')).length, fields: w.fields.length,
+      sown: w.sown || 0, reaped: w.reaped || 0, returnedGrain: w.returnedGrain || 0,
+      heldGrain: mean((a) => a.hold.grain), farmReturn: mean((a) => a.farmReturn),
     };
   }
 
