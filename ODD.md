@@ -3,9 +3,9 @@
 *A design bible: amended in place, current truth. History of how decisions were reached goes in
 DEVLOG.md. Structure follows the ODD protocol (Grimm et al. 2006; updated 2020).*
 
-**Status:** draft v0.2, 2026-11-01 (v0.1 from the PA session; v0.2 from the EvoEco session the
-same day). Built from a question-by-question design conversation between
-Chris and Claude. Every entry marked **Decided** was Chris's call (some on Claude's proposal);
+**Status:** draft v0.3, 2026-11-02 (v0.1 from the PA session; v0.2 from the EvoEco session the
+same day; v0.3 from the audit responses and the first recipe tree). Built from a
+question-by-question design conversation between Chris and Claude. Every entry marked **Decided** was Chris's call (some on Claude's proposal);
 **Default** means Claude proposed it and Chris did not object; **Open** means not yet discussed.
 No code exists yet.
 
@@ -42,8 +42,11 @@ Chris's reading (median stagnates only once hoarding arrives).
 
 ### Technology sequence (Decided, unordered beyond the first)
 0. **Foundation:** reciprocity among tied agents, barter between strangers.
-1. **Currency.** Key property: storable without loss. Grain-money rots and costs storage;
-   currency allows hoarding that was not previously possible. Variant to test: currency with
+1. **Currency.** Key property: stores **general purchasing power** without loss. Durable goods
+   already store (axes, ore), but only their own use: 100 axes in a village already stocked
+   with axes are as good as rocks in the ground, while 100 coins spend on anything (Chris,
+   2026-11-01 audit). Grain-money rots and costs storage. Currency allows hoarding of
+   purchasing power that was not previously possible. Variant to test: currency with
    decay (Gesell's demurrage).
 2. Later, order to be set (candidate source: Sven Beckert, *Capitalism: A Global History*,
    2025 — unverified that this is the book Chris meant): mercantilism, insurance, banking,
@@ -76,7 +79,35 @@ Chris's reading (median stagnates only once hoarding arrives).
 - Primate-level reciprocity: each agent keeps a running, fading tally of what each other agent
   has given it. Willingness to give rises with that tally. Ties that give both ways reinforce
   themselves; ties that stop giving fade.
+- **What the tally records (Decided — Chris, 2026-11-01 audit):** the times an agent judges
+  that the other made it a **kind offer**. Kindness can come from mutual gain, or from the other
+  stepping past their bound (offering better than the agent thinks they needed to), or only
+  appearing to: it is judged against the agent's own estimate of the other's costs (§7.2), so
+  misestimates can build trust too.
+- **Ties form through barter (Decided — Chris).** Trust is one spectrum, weighted by number of
+  interactions and by the tally: regular trade → **barter credit** (first deferred gifts, "you
+  can get me next time") → trusted tie. First contact is any completed exchange. Barter credit
+  stays rough trust, not exact debt (exact accounting is a later technology).
+  - **Weight — Default:** how much a trade counts toward the tally, relative to a gift, is a
+    swept parameter including 0, so no result rests on our guess.
 - **Trust is rough reliability, not an exact ledger.** Exact accounting is a later technology.
+- **Owing: the balance of gifts (Decided — Chris, 2026-11-02).** A gift puts the receiver in
+  the giver's debt, and an unreturned gift is not erased. Each further unreturned gift worsens
+  the balance in the giver's favor, and the giver grows less willing to give. This is where
+  the negative side of a tie (grudges) comes from: not a separate count of unkind acts, but
+  the zero-sum "owing" of reciprocity.
+  - The tally above counts only what was received, so on its own it cannot register being
+    owed; the balance is a second quantity per other, beside the kind-offer tally.
+  - **The balance counts occasions, not cost (Decided — Chris, 2026-11-02).** It is the number
+    of gifts given against gifts returned, not their value in hours. (Replaces a Claude Default
+    that valued it in each side's own hours.) Exact, valued debt stays a later technology.
+  - **Balances fade, at rates that differ between people (Decided — Chris).** Old unreturned
+    gifts are forgotten over time. How: either a per-agent fading rate (some forgive quickly,
+    some hold grudges) or random forgiveness events.
+    - **Default — both at once:** each unreturned occasion has a small daily chance of being
+      forgotten, and that chance is the agent's own. Forgetting is random day to day; how
+      forgiving a person is differs between people. The per-agent chance is a heterogeneity
+      setting (§2 Agents): uniform in some runs, varied in others.
 - **Power is not a primitive.** It emerges as asymmetric dependence (Emerson 1962): the agent
   many need and who needs few. Intimacy likewise emerges, as tie strength from frequent mutual giving.
 
@@ -118,6 +149,31 @@ Three parts, **reported separately, never combined into one score** (Default):
   tree brings its own fragility (bronze needs copper and tin from far apart, so long-distance
   trade and its breakdown come from the tree itself; Cline 2014).
 
+#### First tree, v0 (Decided — Chris, 2026-11-02, on Claude's draft: "a good way to start")
+Deliberately small; it grows later.
+- **Resources placed:** wild plants, forest, fertile land, water (rivers, springs), flint, clay
+  (riverbanks), copper ore, tin ore (far from the copper), iron ore.
+- **Intermediates:** wood; charcoal (wood burned in a clay kiln); fired clay; metals (copper;
+  bronze = copper + tin; iron bloom = iron ore + much charcoal).
+- **Tools are task-specific (Decided — Chris).** Axe (cutting wood, clearing land), hoe/sickle
+  (farming), pick (mining, quarrying, digging wells). Each is a head on a wooden haft, in
+  stone → copper → bronze → iron. Different trades want different tools, so tool trade can
+  emerge from the tree; the cost is three times the tool recipes and norms.
+
+| Level | Food | Water | Shelter |
+|---|---|---|---|
+| 0 | raw wild plants, by hand | drink at the source | none |
+| 1 | cooked wild food (needs wood) | carried in a gourd | lean-to (branches) |
+| 2 | farmed grain cooked in a pot (land cleared with axe; hoe, sickle) | carried and stored in a clay pot | hut (poles cut with axe, thatch, hearth) |
+| 3 | bread (grain ground on a quern stone, baked in a clay oven) | well near home (dug with a pick, lined) | house (timber cut with a metal axe, clay daub, hearth) |
+
+- **Warmth has levels from two sources (Decided — Chris, 2026-11-02).** Shelter level sets a
+  base, and a fire (firewood used up daily) adds to it. A hut without fuel is better than no
+  hut; a hut with a fire is better still. So wood is a daily consumable for anyone who wants
+  more warmth than the shelter alone gives. Seasons raise the need (cold days).
+- Deepest chain (depth check): iron ore + charcoal → bloom → axe head → timber → house, about four.
+- **Left out for now:** hunting and hides, herding, cloth, boats.
+
 ### Tools (Decided)
 - A tool is a **multiplier on production for its task**. Tool quality sets the multiplier.
 - Tools wear out and must be repaired or replaced.
@@ -125,8 +181,13 @@ Three parts, **reported separately, never combined into one score** (Default):
   Tool-making is central to the economy.
 
 ### Landscape and resources (Decided)
-- **Physical space.** Location, distance and placed resources are part of the model. Strangers
-  are, roughly, the far away.
+- **Physical space.** Location, distance and placed resources are part of the model.
+- **A stranger is anyone without a tie, near or far (Chris, 2026-11-02; replaces "strangers
+  are, roughly, the far away").** Meeting does not make a tie; exchanges do. So barter happens
+  inside a band too, between bandmates who are not trusted ties. Distance only makes
+  strangers more likely, since there are fewer exchanges with the far away.
+- **Open access in the foundation (Decided — Chris, 2026-11-01 audit).** Property in land and
+  resources is a separate technology-ladder entry, so it is never confounded with capital.
 - Three resource classes, modeled on reality:
   - **Non-renewables:** finite deposits that must be found and mined (ore, stone).
   - **Renewables:** stocks with their own regrowth rate that can be overused (fields, game, fish, forest).
@@ -134,6 +195,22 @@ Three parts, **reported separately, never combined into one score** (Default):
 - **Implementation — Default:** one resource mechanism with parameters (starting stock,
   regrowth rate, inflow), so all three classes are the same code with different numbers.
   Start with one instance of each.
+- **Maps are generated (Decided — Chris, 2026-11-02).** Parameters set how clustered each
+  resource is and how far apart key pairs sit (copper and tin); each seed gives a different
+  map, so no result rests on one map, and the parameters are dials (tin near vs far). **Some
+  experiments fix one map** (Chris), held constant across runs.
+- **The map is a hex grid (Decided — Chris, 2026-11-02),** over Claude's proposal of a network
+  of places. Each hex has terrain and resources.
+  - **Hex size: about an hour's walk across (Decided — Chris, 2026-11-02, on Claude's
+    proposal),** about 4–5 km: roughly a place a forager would name (a spring, a stretch of
+    forest). A day's reach is about four or five hexes out and back. (Chris first proposed 30
+    minutes for more resource locations near shelters, then chose the hour.)
+  - **What "place" means on the grid — Default:** a place is one hex. Meeting is being in the
+    same hex on the same day (§3); norms are per activity per hex (§4.4); travel time is the
+    hex path's length weighted by terrain.
+  - **Route search — Default:** the planner (§7.6) considers as stops only hexes with something
+    useful in them (resources, shelters, places where trades have happened), and charges travel
+    between them by hex path. That keeps search near the cost of a network of places.
 
 ### Scales (Decided)
 - **One tick = one day.** Each agent has an **hour budget** for the day, spent on travel, work,
@@ -182,7 +259,9 @@ Known cost: "same place, same day" is coarse; it ignores whether two agents were
 
 ### 4.2 Emergence — the emergent-vs-imposed ledger
 These must **emerge** and never be written into a rule:
-- households and tribes (clusters of ties); power (asymmetric dependence); intimacy
+- households and tribes (clusters of ties); power (asymmetric dependence); intimacy.
+  Exception, stated: the household is a **formal unit by rule** (§2); only its membership
+  emerges (audit, Chris agreed)
 - specialization and the supply chain
 - prices and their response to supply and demand
 - inequality of goods, rest and belonging; concentration of ownership (later technologies)
@@ -217,7 +296,11 @@ To be extended as rules are written: every new rule gets checked against this li
   agents. Norms are the "generalized other" (Mead 1934).
 
 ### 4.5 Prediction
-- Agents adopt a new quality level when they expect it to save more hours than switching costs (Default).
+- **Quality is valued (Decided — Chris, 2026-11-01 audit).** Agents want higher quality for
+  intrinsic and instrumental reasons: better food restores more of the need per unit; better
+  tools produce more and last longer. Agents adopt a new quality level when they expect its
+  benefit in need terms (not hours alone) to exceed the cost of switching. (Replaces a Claude
+  Default that counted only hours saved.)
 - Child-bearing is an ROI decision (§7.4).
 
 ### 4.6 Sensing
@@ -282,9 +365,12 @@ To be extended as rules are written: every new rule gets checked against this li
     works in barter, where every trader is both buyer and seller, and reduces to buyers and
     sellers once currency exists. The rule says scarcity confers the choice; who is scarce
     still emerges (location, specialization, luck).
+    - **Rounds per good (Decided — Chris, correcting a Claude Default):** the scarcest good's
+      round goes first and clears all trades for that good; then the next good's round, and so
+      on. An agent with many goods takes part in each good's round. More goods is more
+      opportunity, which is a fact about the agent, not a bias of the rule.
     - **Scarcity — Default:** for each good at the site, quantity wanted by agents present
-      ÷ quantity held there, computed once at the start of the exchange phase. An agent
-      holding several goods takes its turn with its scarcest one.
+      ÷ quantity held there, computed once at the start of the exchange phase.
     - **Ties — Default:** holders of equally scarce goods go in random order, reshuffled daily.
       Option if order among equals matters: let them all offer at once and each target accept
       its best offer (deferred acceptance within the tier).
@@ -301,7 +387,13 @@ To be extended as rules are written: every new rule gets checked against this li
 ### 4.10 Observation (what we measure)
 - Per category, the 10th, 50th, 90th and 99th percentiles of quality consumed, over time.
 - Rest (hours free per day), belonging (tie measures), both as distributions.
-- Comparison is always against the matched run without the technology, at the same total output.
+- Comparison is against the matched run without the technology. **How runs are compared is
+  deferred (Chris, 2026-11-02):** a research question for later, not a design decision now.
+  The earlier "at the same total output" is withdrawn (audit item 2).
+  - Chris's stance: the free-market case for capital is hogwash. His claim is that extraction
+    hurts the economy; the counter is "we don't extract it all, and that is good." If the
+    free-market case were correct, extraction would be zero, which it demonstrably is not.
+    The dogma is answered in the paper with the model's evidence, not in the model's design.
 - Productivity scaling runs (1×, 10×, 100×) for the "no matter the scale" claim.
 - Further output measures: Open.
 
@@ -312,6 +404,20 @@ To be extended as rules are written: every new rule gets checked against this li
 **Blank start at zero (Decided — Chris).** Agents are placed on the landscape with the lowest
 quality level of know-how, no ties, no households, and near-empty norms. Households, tribes,
 trade places and price norms must all form.
+- **Starting know-how: stone and fire (Decided — Chris, 2026-11-02).** Agents start knowing
+  fire and the stone tools (axe, hoe/sickle, pick), as Homo sapiens had both long before any
+  economy.
+- **Starting layout: bands (Decided — Chris, 2026-11-02, on Claude's proposal).** Several
+  bands (say 5–8 of 20–40 agents) start a day or two's walk apart. No ties or households are
+  pre-built; only nearness is given.
+  - **Expected, not written in (Chris):** a few households form in each band, each with its
+    own shared shelter. Bonds run closest in the household, then the band, then strangers.
+    Bandmates may or may not be trusted ties. One can be a tie without being trusted (the
+    early end of the trust spectrum, §2 Ties). Where gifts are given and not all can be
+    returned, grudges arise; some agents end up in no trusted pair but still barter.
+- **Starting know-how, continued — Default:** level 1 of each ladder is known too (cooked wild food, gourds, lean-tos), as
+    stone-and-fire foragers had them. Level 2 on (farming, pottery, huts, metals) must be
+    discovered by tinkering.
 
 **Scaffolding (Decided — Chris; rules Default).** Some scaffolding may be needed to get the
 first economy going (candidates: starter stores so nobody starves before learning anything;
@@ -403,8 +509,25 @@ directions when gifts come back and fades when they don't.
       can then be split into knowledge gap, need and lack of alternatives rather than read as power outright.
 
 ### 7.3 Discovery, adoption and loss of know-how (Decided)
-- New quality levels are discovered **by chance as a byproduct of tool work**. More hours of
-  tool-making → more discoveries (Henrich's collective brain).
+- ~~New quality levels are discovered by chance as a byproduct of tool work.~~ Replaced
+  2026-11-02: **discovery comes through tinkering** (below). Chris: chance discovery would need
+  working with the right ingredients, the same preconditions as tinkering. Henrich's collective
+  brain survives in that whoever holds the inputs most (smiths hold ore and charcoal) tinkers
+  with them most.
+  - Consequence (Claude): the two differ in hours. A byproduct costs no time; tinkering takes
+    hours from work and rest, so discovery needs either necessity (nothing better to do) or
+    slack (needs met). Scarcity that removes slack would slow discovery; this emerges from the
+    planner, not from a rule, but it bears on the results and should be logged.
+- **Exploration and discovery are activities an agent can choose (Decided — Chris,
+  2026-11-02).** Two kinds: scouting (finding places and resources; non-renewables must be
+  found) and tinkering (trying for a new level). Chris: chosen mostly when no option is
+  favorable (barren surroundings), or when all needs, rest included, are met.
+  - **How the planner picks them — Default:** no rule names those two situations. The route
+    planner (§7.6) scores exploring with the curiosity term (§4.4) like any other activity.
+    Because need costs are convex, a met need is worth little more, so in either situation
+    the curiosity term is what's left to win. Chris's two cases then come out of the planner.
+  - Tinkering works with what the agent has on hand, so the chance of finding a level depends
+    on holding its inputs.
 - **Discovery is not adoption.** A level spreads only if its supply chain can be built and there
   is demand for it given resources and competing needs.
 - **Know-how lives in agents** and is learned **by seeing and doing**: students learn only what
@@ -419,12 +542,19 @@ directions when gifts come back and fades when they don't.
 - Children are insurance for the household. Chris's hypothesis: this breaks down when labor
   becomes a commodity the individual sells rather than a resource the community spends
   (cf. Caldwell's wealth-flows theory, 1976). Should emerge, not be written in.
-- **Population grows** (Decided). The Malthus-vs-hoarding comparison in §1 depends on births
+- **Population size is endogenous** (Decided; reworded from "population grows" after the
+  audit, which read it as an imposed outcome). The Malthus-vs-hoarding comparison in §1 depends on births
   responding to the ROI rule, not to a fixed rate.
 
 ### 7.5 Death and inheritance (Decided)
-- **Inheritance is a rule we vary.** Default: holdings return to the **commons**. Variants:
-  to trusted peers in proportion to trust; kin-only property (a later technology).
+- **Foundation: everything stays where it lies (Decided — Chris, 2026-11-02).** A dead
+  agent's holdings stay at the place they are, under open access: whoever finds them may use
+  them. Anything beyond that is a **tradition**. So goods stored at a household's shelter
+  pass to the people who live there by location, not by a rule naming heirs.
+- **Inheritance traditions belong on the technology ladder (Chris, 2026-11-01 audit).**
+  Candidates: return to the commons; to trusted peers in proportion to trust; kin-only
+  property. (The audit flagged that commons-by-default equalizes by rule and that a
+  free-market reader rejects losing bequest; where-it-lies does neither.)
 
 ### 7.6 Daily planning, production, consumption
 **Route planning (Decided — Chris's mechanism).** Each day an agent chooses the route (a sequence
@@ -442,6 +572,19 @@ least cost: a shortest path for energy minimizing.
   generation if searched exhaustively every day, so caching or pruning is needed.
 - **Horizon: one day (Decided).** Long-term thinking is approximated inside the daily plan's
   valuation, not by planning across days.
+  - **Long-term planning is needed after all (Chris, 2026-11-01 audit):** child ROI (§7.4) and
+    investment in tools need a horizon longer than a day. Mechanism: settled below (Keep plus
+    partial-project value).
+  - Chris (2026-11-02): the means may already exist. Claude's read: the Keep value below is
+    that means for goods held at dark (an axe is worth the hours it saves over its life), so a
+    one-day plan already chooses to invest. Child ROI has its own rule (§7.4). Gaps: work
+    unfinished at dark (a multi-day build), and how steeply the future is discounted.
+  - **Partial projects carry partial value (Decided — Chris, 2026-11-02).** Work unfinished
+    at dark is worth the finished good's value, less the work still left, discounted by the
+    risk of not finishing. All three come from learned norms. So a one-day plan can start a
+    multi-day build.
+  - **Discount on the future — Default:** a swept parameter, not one fixed value. It sets how
+    strongly agents invest and hold, so it carries audit item 4 (motive to accumulate).
 - **Trade enters the plan (Decided).** A good the agent does not need itself still has value if a
   reliable trade for some other need is expected. Chris: a second basket of berries makes sense
   if a trade is waiting at the end of the day.
@@ -475,8 +618,28 @@ water, meet at the shelter at dark").
 ---
 
 ## Open questions (next in the design conversation)
-1. Ledger audit: check every rule added on 2026-11-01 against §4.2.
+1. Further output measures (§4.10).
 2. Chris disagreed with Claude on "where it could fail" (trickle-down); partly settled — see §4.2.
+
+### Cold ledger audit, 2026-11-01 (fresh agent, ODD only; findings checked against the text by Claude)
+Status after Chris's responses the same day:
+1. Ties cannot form; trade never builds belonging → **resolved** (§2 Ties: kind-offer tally, trust spectrum through barter).
+2. "At the same total output" (§4.10) removes the reinvestment channel → **deferred**: wording
+   withdrawn; how runs are compared is a later research question (Chris, 2026-11-02).
+3. Quality measured but not valued → **resolved** (§4.5: quality valued intrinsically and instrumentally).
+4. Satiable needs give no motive to accumulate → **resolved with 8**. Chris: insatiable needs
+   would write in extraction. Accumulation comes from investment (store or build now, rest
+   later) through Keep and partial-project value; its strength is the swept discount (§7.6).
+5. Tree ceiling at iron (§2 Reach) → **deferred** (future problem).
+6. Scarcest-first gives multi-good agents first pick → **resolved** (§4.7: rounds per good, Chris's intended mechanism).
+7. Inheritance to the commons by default → **resolved** (§7.5): the foundation leaves holdings
+   where they lie; every other regime is a tradition on the ladder (Chris, 2026-11-02).
+8. One-day horizon vs long-horizon decisions → **resolved** (§7.6): Keep values goods over
+   their life; partial projects carry partial value (Chris, 2026-11-02); discount swept.
+9. "Population grows" → **resolved** (reworded: endogenous).
+10. Open-access land → **resolved** (§2: open access in the foundation; land rights a ladder entry).
+11. Household as formal unit → **resolved** (stated in §4.2).
+12. Currency's difference from durable goods → **resolved** (§1: general purchasing power).
 
 ---
 
