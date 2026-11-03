@@ -4,6 +4,42 @@
 
 <!-- append new entries above this line -->
 
+## 2026-11-03 — Stage 5b: pots, huts, tinkering, know-how
+
+**Done:** Clay digging; the pot (water level 2: stores water, saves trips); the hut (shelter
+level 2: a 40-hour build over days, inputs used as the work goes, no warmth until finished,
+the axe a multiplier on the work). Tinkering as an activity: discovery only with all inputs at
+hand, scored by the curiosity term from the agent's own record. Know-how as a set per agent:
+starts with stone and fire, grows by tinkering and by seeing a craft practised in the same hex
+the same day (30%), kept for life. Partial projects valued by the ODD rule read literally. Two
+earlier versions failed and are recorded in the ODD block. In the first, huts needed an axe, and
+nobody held one in summer. In the second, the projection kept building next week, so
+agents put the work off until autumn. Found and fixed an all-or-nothing fire in the Keep
+projection's 7-day lumps: it made values jump by whole weeks of warmth. Making tonight's fire
+partial too broke two Stage 4 checks (price and grudges), so tonight's fire stays
+all-or-nothing. The Keep projection now counts rest, with the agent's learned working day by
+season and its trips to water. Farming deferred to a new 5d: it needs Chris's call on who may
+harvest a planted field under open access.
+**Changed:** `src/tree.js` (pot, BUILDS, start know-how, DISCOVERABLE, goods clay and pot),
+`src/agent.js` (dig and tinker activities, shelter as structures, buildWork, tinkerAt,
+seePractice, busy habit, drink trip, pot wear), `src/planner.js` (candidates for builds,
+recipes known and tinkering; tool wear in the plan; Keep with rest and assumed keep-recipes;
+hutValue and projectValue), `src/world.js` (know-how records, seeing in the meeting),
+`src/params.js`, `src/observer.js` (huts drawn), `src/datamanager.js`, `src/main.js`,
+`src/ui.js`, `smoketest.mjs` (section 10). ODD §7.6 Stage 5b block; DEVPLAN 5b closed, 5d
+added, charcoal and houses moved to 5c, five Backlog lines. Preview config at the container
+level (`EvoEco/.claude/launch.json`, not in the repo).
+**State:** smoke PASS, all checks. Stage 4 numbers unchanged (price 1.420 / 0.618 / 0.551;
+984 trades, 1,787 gifts, 106 trusted ties, largest unreturned 3.81). Bands year: 8 pot
+discoveries by tinkering (first day 10), 7,414 h tinkering, 2 learned by seeing. Tinkering
+finds the pot at a clay bank with wood, nothing in 100 h on bare ground. Pot carries 2.50
+against the gourd's 0.50. A hut finished in 5 days of 4 h with an axe, warming only then. With
+the hut known, 200 started and 41 finished by day 240. Know-how kept by the watcher, lost when
+never practised. Headless seed 1, two years, nothing given: 12 pot discoveries by tinkering and 5 learned by seeing (one chain 32 → 28 → 21 → 20); 19 pots made, 16 agents know the pot at the end; the hut was never found (it needs an axe in hand at a clay bank, with wood); 57 axes made and 128 trades of food for axes (5a: 14 and 6; the smoothed projection fire makes every unit of wood count); 11,032 hours tinkering; 87/100 alive (5a: 89). Planner 0.896 ms
+per agent-day in the smoke measure, ~2 ms in bands runs.
+**Next:** Chris's answer on harvesting under open access, then 5d (farming, bread, wells), or
+5c (metals) meanwhile.
+
 ## 2026-11-02 — Stage 5a: recipe engine, stone tools, many-goods exchange
 
 **Done:** Stage 5 split into 5a (stone tools), 5b (crafted levels, tinkering, know-how), 5c

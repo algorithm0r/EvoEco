@@ -26,7 +26,9 @@ function showStatus() {
   setStatus('year ' + (Math.floor(world.day / Y) + 1) + ', day ' + (world.day % Y + 1) + ' — ' + sea.name +
     ' | alive ' + L.length + ', dead ' + world.dead.length +
     ' | food ' + mean((a) => a.need.food) + ', warmth ' + mean((a) => a.need.warmth) +
-    ', rest ' + mean((a) => a.need.rest) + ', hours ' + mean((a) => a.busy));
+    ', rest ' + mean((a) => a.need.rest) + ', hours ' + mean((a) => a.busy) +
+    ' | know pot ' + L.filter((a) => a.knows.has('pot')).length + ', hut ' + L.filter((a) => a.knows.has('hut')).length +
+    '; huts ' + L.filter((a) => a.shelter.hutDone).length);
 }
 
 window.onload = function () {

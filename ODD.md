@@ -741,6 +741,57 @@ gaps filled:
   (up from ~75 before local flint). Tools stay rare at levels 0–1, where they only speed
   wood-cutting; they are expected to matter with huts and farming (5b).
 
+#### Pots, huts, tinkering and know-how as built in Stage 5b — Default (Claude, 2026-11-03; `tree.js`, `planner.js`)
+Farming waits on a design question (who may harvest a planted field under open access).
+- **Clay** is dug from riverbank hexes (a deposit, as placed in Stage 1), 3 units an hour by hand.
+- **Pot (water level 2):** 2 clay + 3 wood + 3 hours at home. It holds 2 need-units of water
+  beside the gourd's 0.5, so one trip lasts about five days, and it breaks at 1/300 a day.
+  Its worth is the trips to water it saves.
+- **Hut (shelter level 2):** 20 wood + 6 clay and 40 hours of work by hand, inputs used in
+  proportion to the work. An axe, if held, doubles the work and wears, as a tool is a multiplier
+  (§2 Tools), not a gate. (First built as needing the axe: nobody held one in summer, when
+  there is time to build.) Insulation 0.8 against the lean-to's 0.45, and **no warmth until
+  finished**. A finished hut wears 0.2% a day and is repaired by the same work; an unfinished
+  one weathers 0.3% a day, and one that weathers to nothing counts as abandoned.
+- **Partial projects (§7.6, Decided), as built:** a part-built hut is worth the finished hut's
+  value × the share of its total hours already in hand × the agent's learned chance of
+  finishing. The finished value is what the Keep projection gives a hut today. The total hours
+  are building plus getting the inputs at the agent's own hour costs. "In hand" is the
+  progress so far plus clay held toward the rest. The chance of finishing is finished ÷
+  (finished + abandoned), with a prior of 2 finished. Every hour put in is worth the same share in any season, so
+  agents put hours in when hours are cheapest to them. (Two earlier versions failed. One had
+  the projection keep building at a steady pace, so tomorrow always looked as good as today
+  and agents put it off until autumn. One spread the remaining work over the horizon, which
+  didn't fix it, because today's work burns stores the projection's idealised future doesn't.)
+  Wood is not counted toward the share, because it is fuel too and the Keep arm already values it.
+- **Keep, changed:** the projection now counts rest. Its working day is the agent's own learned
+  hours by season, apart from drinking and making, plus its trips to water. It assumes the
+  agent makes a known `keep` good (axe, pot) once the inputs are in hand. In the projection's
+  7-day lumps, the fire burns on the share of days the wood covers. (All-or-nothing, 13.6 units
+  meant no fire for a week and 14 a fire every night, which made values jump.) Tonight's fire
+  stays all-or-nothing: making it partial changed the Stage 4 market results.
+- **Tinkering (§7.3), as built:** an activity of 2 hours at home or at one of the 3 nearest
+  places with clay or stone. A level can be found only if all its inputs are at hand (goods
+  held, or resources in the hex) and its tool is held: the pot needs clay and wood, the hut
+  clay, wood and an axe. Each hour gives each such level a 0.3% chance. The planner scores
+  tinkering by the curiosity term: the discoveries the agent expects × 0.02. Its expectation
+  comes from its own record of discoveries per hour per material at hand, with a hopeful prior
+  (1 per 20 material-hours) that fruitless hours wear down. It cannot know what is left to find.
+- **Know-how (§7.3), as built:** a set of recipes per agent, starting with stone and fire (axe,
+  pick, lean-to; §5). It grows by tinkering and by seeing. Anyone in the same hex the same day
+  as someone who practised a craft there (made or built it) has a 30% chance of learning it.
+  It is kept for life, with no separate forgetting rule. So a craft is lost exactly when everyone
+  who knows it dies without anyone having watched them practise. With births (Stage 6) that
+  is "nobody practises it for a generation".
+- **Result, bands, seed 1, two years, nothing given:** 12 pot discoveries by tinkering and 5 learned by seeing (one chain 32 → 28 → 21 → 20); 19 pots made, 16 agents know the pot at the end; the hut was never found (it needs an axe in hand at a clay bank, with wood); 57 axes made and 128 trades of food for axes (5a: 14 and 6; the smoothed projection fire makes every unit of wood count); 11,032 hours tinkering; 87/100 alive (5a: 89). **With the hut and
+  pot known from the start** (as if discovered), to day 240: 200 huts started and 41 finished, most of
+  them in late summer and autumn, ahead of the cold; 43 pots made; 98/100 alive. Crafts are practised at home,
+  and few agents share a home hex, so know-how spreads slowly by seeing. Households (Stage 6)
+  should change that.
+- **Ledger check:** recipes, inputs and the chance per hour are the tree (data). Who tinkers,
+  what they find, who learns by watching, and who builds when all come from each agent's own
+  plan and meetings. No rule names who knows what.
+
 Specialization is expected mainly from time and space: needs are spread across the
 landscape and the day is limited, so splitting the work saves hours ("you get food, I'll get
 water, meet at the shelter at dark").

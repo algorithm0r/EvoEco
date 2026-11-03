@@ -271,6 +271,82 @@ check('an axe wears out after its life in hours', wearAgent.hold.axe === 0, 'axe
 check('stone tools are made and flint or tools change hands', (xw.crafted || 0) > 0 && toolTrades > 0,
   (xw.crafted || 0) + ' tools made in the bands year, ' + toolTrades + ' trades in flint or tools');
 
+// ── 10. crafted levels, tinkering, know-how (Stage 5b) ───────────────────────────────
+// tinkering finds a level only with its inputs at hand: at a clay bank with wood in hand vs
+// on bare ground with nothing (discovery chance raised for the test, then restored)
+const kw = new World({ agents: 0 });
+const clayHex = kw.active.clay[0];
+const bareHex = [...Array(kw.grid.n).keys()].find((i) => kw.hours[i] >= 0 && kw.grid.within(i, 0).every((m) =>
+  ['plants', 'wood', 'clay', 'flint'].every((r) => !(kw.caps[r][m] > 0))));
+const dp = P.agents.discoverPerHour;
+P.agents.discoverPerHour = 0.1;
+const tinkerer = (hex, wood) => {
+  const a = new Agent(0, hex, kw);
+  a.hold.food = 0; a.hold.wood = wood;
+  for (let k = 0; k < 50 && !a.knows.has('pot'); k++) a.tinkerAt(kw, hex, 2);
+  return a;
+};
+const withInputs = tinkerer(clayHex, 5), without = tinkerer(bareHex, 0);
+P.agents.discoverPerHour = dp;
+check('tinkering finds a level only with its inputs at hand', withInputs.knows.has('pot') && !without.knows.has('pot'),
+  'clay bank with wood: ' + (withInputs.knows.has('pot') ? 'found the pot' : 'nothing') + '; bare ground, empty-handed: ' + (without.knows.has('pot') ? 'found it' : 'nothing in 100 h'));
+check('agents discover level 2 by tinkering in the bands year', xw.discoveries.length > 0,
+  xw.discoveries.length + ' discoveries (' + [...new Set(xw.discoveries.map((d) => d.what))].join(', ') + '), first on day ' +
+  (xw.discoveries[0] ? xw.discoveries[0].day : '-') + '; ' + Math.round(xw.tinkerHours || 0) + ' hours tinkering; ' + xw.learnedBySeeing.length + ' learned by seeing');
+
+// a pot stores water: one trip carries the gourd and the pot
+const potA = new Agent(0, clayHex, kw);
+const potB = new Agent(1, clayHex, kw);
+potB.hold.pot = 1;
+for (const a of [potA, potB]) { a.plan = [{ hex: kw.waterAt.findIndex((x) => x >= 0), act: A_DRINK, hours: 0.25 }]; a.act(kw); }
+check('a pot carries and stores more water', potB.hold.water > potA.hold.water,
+  'water carried home: gourd ' + potA.hold.water.toFixed(2) + ', gourd and pot ' + potB.hold.water.toFixed(2));
+
+// a hut is a multi-day build: 4 hours a day with the inputs and an axe; no warmth until done
+const hutA = new Agent(0, clayHex, kw);
+hutA.knows.add('hut');
+Object.assign(hutA.hold, { wood: 40, clay: 10, axe: 1 });
+let hutDays = 0, insBefore = 0;
+while (!hutA.shelter.hutDone && hutDays < 30) {
+  if (hutDays === 2) insBefore = shelterIns(hutA.shelter);
+  hutA.plan = [{ hex: hutA.home, act: A_BUILD, build: 'hut', hours: 4 }];
+  hutA.act(kw);
+  hutDays++;
+}
+check('a hut takes several days and warms only once finished', hutA.shelter.hutDone && hutDays > 1 && insBefore === 0 && shelterIns(hutA.shelter) > 0,
+  'finished in ' + hutDays + ' days of 4 h (axe ×' + TOOLS.axe.mult + '); insulation part-built ' + insBefore + ', finished ' + shelterIns(hutA.shelter).toFixed(2));
+
+// bands with the hut and pot known from the start (as if discovered), to autumn: do huts get
+// started and finished across days?
+const hw = new World();
+for (const a of hw.agents) { a.knows.add('hut'); a.knows.add('pot'); }
+for (let d = 1; d <= 240; d++) hw.update();
+check('multi-day builds get started and finished (bands, hut known)', (hw.hutsFinished || 0) > 0,
+  (hw.hutsStarted || 0) + ' huts started, ' + (hw.hutsFinished || 0) + ' finished by day 240; ' + (hw.made.pot || 0) + ' pots made; ' +
+  hw.agents.length + '/' + (B.n * B.size) + ' alive');
+
+// know-how is kept by those who know it and learned only by seeing it practised: A knows the
+// pot and B shares A's home. If A makes pots, B sees and learns; if A has no clay and never
+// practises, B never learns, and when A dies the pot is lost (ODD §7.3)
+const lapse = (practise) => {
+  const lw = new World({ agents: 0 });
+  const A = new Agent(0, clayHex, lw), Bg = new Agent(1, clayHex, lw);
+  A.knows.add('pot');
+  lw.agents = [A, Bg];
+  for (let d = 0; d < 20; d++) {
+    if (practise) Object.assign(A.hold, { clay: 2, wood: 3 });
+    A.plan = [{ hex: A.home, act: A_CRAFT, recipe: 'pot', hours: 3 }];
+    Bg.plan = [];
+    A.act(lw); Bg.act(lw);
+    lw.meet(lw.agents);
+  }
+  lw.agents = [Bg];   // A dies
+  return lw.agents.some((a) => a.knows.has('pot'));
+};
+const keptIfPractised = lapse(true), keptIfLapsed = lapse(false);
+check('know-how survives where practised and is lost when the craft lapses', keptIfPractised && !keptIfLapsed,
+  'after the only potter dies: practised → ' + (keptIfPractised ? 'kept by the one who watched' : 'lost') + '; never practised → ' + (keptIfLapsed ? 'kept' : 'lost'));
+
 const proj = msAgentDay * 300 * 9000 / 1000;
 console.log('planner cost: ' + msAgentDay.toFixed(3) + ' ms per agent-day → ~' + proj.toFixed(0) + ' s per generation for 300 agents × 9,000 days');
 console.log('smoke: ' + (failed ? failed + ' FAILED' : 'PASS'));

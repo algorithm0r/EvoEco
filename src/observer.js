@@ -72,6 +72,14 @@ var Observer = class Observer {
       ctx.fillStyle = hsl(120 * clamp(worst, 0, 1), 80, 55);
       ctx.strokeStyle = '#000';
       ctx.beginPath(); ctx.arc(h.x, h.y, s * 0.55, 0, TAU); ctx.fill(); ctx.stroke();
+      // a finished hut: a square around the home; one being built: a dashed square
+      if (a.shelter.hut > 0) {
+        ctx.save();
+        ctx.strokeStyle = '#f2e6c8';
+        if (!a.shelter.hutDone) ctx.setLineDash([2, 2]);
+        ctx.strokeRect(h.x - s * 0.8, h.y - s * 0.8, s * 1.6, s * 1.6);
+        ctx.restore();
+      }
     }
     ctx.restore();
   }

@@ -33,6 +33,10 @@ var DataManager = class DataManager {
       busy: mean((a) => a.busy), heldFood: mean((a) => a.hold.food),
       belonging: mean((a) => a.need.belonging),
       trades: (w.tradesToday || []).length, gifts: w.giftsToday || 0,
+      // Stage 5b: crafted levels and know-how (ODD §7.3)
+      huts: L.filter((a) => a.shelter.hutDone).length, pots: L.filter((a) => a.hold.pot > 0).length,
+      knowPot: L.filter((a) => a.knows.has('pot')).length, knowHut: L.filter((a) => a.knows.has('hut')).length,
+      discoveries: w.discoveries.length, learnedBySeeing: w.learnedBySeeing.length,
     };
   }
 

@@ -62,12 +62,17 @@ var PARAMETERS = {
     plants: { perHour: 6 },   // units gathered per hour from a full hex (falls with stock)
     wood:   { perHour: 4 },
     flint:  { perHour: 1 },   // by hand; a pick doubles it
+    clay:   { perHour: 3 },   // dug by hand from a bank
     food:   { restores: 0.08, cookedBonus: 1.5, rot: 0.01 },  // per unit of wild plants (nuts and roots keep, berries don't); rots daily
     gourd: 0.5,               // water carried home (in need units)
     drinkDraw: 1,             // water units taken from the source per drink
     fireWood: 2,              // wood burned per evening fire
     fireHeat: 0.35,           // warmth a fire adds
-    leanTo: { wood: 10, hours: 4, insulation: 0.45, wear: 0.01 },  // build cost; warmth; daily wear
+    // structures (inputs and hours in tree.js BUILDS): warmth, daily wear; an unfinished hut
+    // weathers at partWear a day
+    leanTo: { insulation: 0.45, wear: 0.01 },
+    hut:    { insulation: 0.8, wear: 0.002, partWear: 0.003 },
+    pot:    { cap: 2, wear: 1 / 300 },   // water stored (need units, beside the gourd); breakage a day
   },
 
   // --- agents (Stage 2: solitary; ODD §2 Agents, §4.4, §7.6) ---
@@ -91,7 +96,7 @@ var PARAMETERS = {
     keepStep: 7,          // days per projection step
     // the projection assumes this many hours a day of foraging and wood-cutting at the yield
     // the agent has learned for that season (ODD §7.6: expected future need from seasonal norms)
-    projHours: { forage: 3, wood: 1 },
+    projHours: { forage: 3, wood: 1, build: 3 },
     discount: 0.99,       // per day; swept (ODD §7.6)
     // learning and curiosity (ODD §4.4)
     learnRate: 0.3,
@@ -100,11 +105,18 @@ var PARAMETERS = {
     normRate: 0.2,        // error-driven update of norms from others' reported experience
     normPrior: 3,         // weight of the norm against the agent's own habit (precision weighting)
     habitCap: 20,         // most experiences a habit counts, so recent reliability rules
-    priorPerHour: { forage: 3, wood: 3, quarry: 1 },  // starting guess of the yield per hour from a full hex
+    priorPerHour: { forage: 3, wood: 3, quarry: 1, dig: 3 },  // starting guess of the yield per hour from a full hex
     sightSd: 0.5,         // uncertainty (in fullness) of a sighting once it is old
     sightMemory: 30,      // days for a sighting to grow most of that uncertainty
     curiosity: 1.0,       // optimism per sd of uncertainty
     scoutValue: 0.005,    // bonus per unseen hex a scouting stop would reveal
+    // tinkering and know-how (ODD §7.3)
+    tinkerHours: 2, tinkerCandidates: 3,
+    discoverPerHour: 0.003,  // chance an hour of tinkering finds a level whose inputs are all at hand
+    tinkerPrior: { found: 1, mh: 20 },   // hopeful prior: discoveries per material-hour
+    tinkerValue: 0.02,    // value of an expected discovery (the curiosity term)
+    seeLearn: 0.3,        // chance of learning a craft from seeing it practised once
+    projectPrior: 2,      // pseudo-count of finished projects behind the chance of finishing
   },
 
   // --- exchange (ODD §2 Ties, §7.1, §7.2) ---

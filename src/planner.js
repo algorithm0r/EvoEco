@@ -16,6 +16,8 @@
 
 function planDay(agent, world) {
   const A = PARAMETERS.agents;
+  agent.costs = null;                     // hour costs as of this morning
+  agent.hutV = hutValue(agent, world);   // worked out once a day (also used in the exchange)
   const cands = planCandidates(agent, world);
   for (const c of cands) c.solo = planCost(agent, world, [c]);
   cands.sort((a, b) => a.solo - b.solo);
@@ -26,9 +28,9 @@ function planDay(agent, world) {
     let bestPlan = null, bestCost = cost;
     for (let k = 0; k < plan.length; k++) {
       const s = plan[k];
-      if (s.act === A_DRINK || s.act === A_SCOUT || s.act === A_CRAFT) continue;   // fixed-length stops
+      if (s.act === A_DRINK || s.act === A_SCOUT || s.act === A_CRAFT || s.act === A_TINKER) continue;   // fixed-length stops
       const p2 = plan.slice();
-      p2[k] = { hex: s.hex, act: s.act, hours: s.hours + A.chunk, unknown: 0 };
+      p2[k] = Object.assign({}, s, { hours: s.hours + A.chunk });
       const c = planCost(agent, world, p2);
       if (c < bestCost) { bestCost = c; bestPlan = p2; }
     }
@@ -49,13 +51,13 @@ function planDay(agent, world) {
   return plan;
 }
 
-// Everything the agent could do today: gather or drink at known hexes within reach, work
-// on its lean-to at home, or walk to an unseen hex to look.
+// Everything the agent could do today: gather or drink at known hexes within reach, build
+// or make what it knows at home, tinker, or walk to an unseen hex to look.
 function planCandidates(agent, world) {
   const A = PARAMETERS.agents;
   const reach = agent.capacity() / 2;
   const fromHome = world.travel(agent.home);
-  const out = [], unseen = [];
+  const out = [], unseen = [], tinkerAt = [];
   for (let h = 0; h < world.grid.n; h++) {
     if (!(fromHome[h] <= reach)) continue;
     if (!agent.known[h]) { unseen.push(h); continue; }
@@ -63,10 +65,23 @@ function planCandidates(agent, world) {
     if (world.caps.wood[h] > 0) out.push({ hex: h, act: A_WOOD, hours: A.chunk, unknown: 0 });
     if (world.waterAt[h] >= 0) out.push({ hex: h, act: A_DRINK, hours: A.drinkHours, unknown: 0 });
     if (world.caps.flint[h] > 0) out.push({ hex: h, act: A_QUARRY, hours: A.chunk, unknown: 0 });
+    if (world.caps.clay[h] > 0) out.push({ hex: h, act: A_DIG, hours: A.chunk, unknown: 0 });
+    // places with stone or clay to work with (ODD §7.3: tinkering works with what is at hand)
+    if (h !== agent.home && (agent.seenFrac[A_DIG][h] > 0.02 || agent.seenFrac[A_QUARRY][h] > 0.02)) tinkerAt.push(h);
   }
-  if (agent.shelter < 1) out.push({ hex: agent.home, act: A_BUILD, hours: A.chunk, unknown: 0 });
-  // make a tool at home (all agents know the stone recipes, ODD §5)
-  for (const r in RECIPES) out.push({ hex: agent.home, act: A_CRAFT, recipe: r, hours: RECIPES[r].hours, unknown: 0 });
+  // build or repair at home what it knows how to build (ODD §7.6: a hut over several days)
+  for (const b in BUILDS) {
+    if (agent.knows.has(b) && agent.shelter[b] < 1) out.push({ hex: agent.home, act: A_BUILD, build: b, hours: A.chunk, unknown: 0 });
+  }
+  // make a good at home, for each recipe it knows (ODD §5, §7.3)
+  for (const r in RECIPES) {
+    if (agent.knows.has(r)) out.push({ hex: agent.home, act: A_CRAFT, recipe: r, hours: RECIPES[r].hours, unknown: 0 });
+  }
+  // tinker at home, or at the nearest places with stone or clay
+  tinkerAt.sort((a, b) => fromHome[a] - fromHome[b]);
+  for (const h of [agent.home].concat(tinkerAt.slice(0, A.tinkerCandidates))) {
+    out.push({ hex: h, act: A_TINKER, hours: A.tinkerHours, unknown: 0 });
+  }
   // scouting: the nearest unseen hexes, each valued by how much it would reveal
   unseen.sort((a, b) => fromHome[a] - fromHome[b]);
   for (const h of unseen.slice(0, A.scoutCandidates)) {
@@ -94,24 +109,26 @@ function planCost(agent, world, plan) {
   const cap = agent.capacity();
   let at = agent.home, hours = 0, bonus = 0;
   const hold = Object.assign({}, agent.hold);
-  let shelter = agent.shelter;
+  const shelter = Object.assign({}, agent.shelter);
   let drank = false;
   for (const s of plan) {
     hours += world.travel(at)[s.hex];
     at = s.hex;
-    if (s.act === A_FORAGE || s.act === A_WOOD || s.act === A_QUARRY) {
-      hold[GOOD_OF[s.act]] += planEstimate(agent, s.hex, s.act, world.day) * s.hours;
-    } else if (s.act === A_DRINK) { drank = true; hold.water = Math.max(hold.water, G.gourd); }
+    if (IS_GATHER[s.act]) {
+      const est = planEstimate(agent, s.hex, s.act, world.day);
+      const tool = TOOL_FOR[s.act];
+      if (tool && hold[tool] > 0) hold[tool] = Math.max(0, hold[tool] - s.hours / TOOLS[tool].life);
+      hold[GOOD_OF[s.act]] += est * s.hours;
+    } else if (s.act === A_DRINK) { drank = true; hold.water = Math.max(hold.water, waterCarried(hold)); }
     else if (s.act === A_BUILD) {
-      const can = Math.min(s.hours / G.leanTo.hours, hold.wood / G.leanTo.wood, 1 - shelter);
-      hold.wood -= can * G.leanTo.wood;
-      shelter += can;
+      if (!(buildWork(shelter, hold, s.build, s.hours) > 0)) return Infinity;   // nothing to work with
     } else if (s.act === A_CRAFT) {
       const R = RECIPES[s.recipe];
       if (!Object.keys(R.inputs).every((g) => hold[g] >= R.inputs[g])) return Infinity;
       for (const g in R.inputs) hold[g] -= R.inputs[g];
       hold[s.recipe] += 1;
     } else if (s.act === A_SCOUT) bonus += A.scoutValue * s.unknown;
+    else if (s.act === A_TINKER) bonus += tinkerBonus(agent, world, hold, s.hex, s.hours);
     hours += s.hours;
   }
   if (plan.length) hours += world.travel(at)[agent.home];
@@ -125,19 +142,20 @@ function planCost(agent, world, plan) {
 // reliably the agent's trades have come off, and the cheaper outcome counts. (Give is decided
 // in the exchange phase, where the recipient's need is known; exchange.js.)
 function holdingsCost(agent, world, hold, shelter, busy, drank, belonging, withTrade) {
-  let best = keepCost(agent, world, hold, shelter, busy, drank, belonging);
+  const keep = (h) => keepCost(agent, world, h, shelter, busy, drank, belonging) - projectValue(agent, world, h, shelter);
+  let best = keep(hold);
   const P = agent.price['food|wood'];
   if (!withTrade || !P || !(agent.tradeRel > 0.01)) return best;
   const p = Math.exp(P.logp), rel = agent.tradeRel;   // p: food per unit of wood
   for (const f of [0.25, 0.5]) {
     if (hold.food > 0) {
       const give = f * hold.food;
-      const c = keepCost(agent, world, Object.assign({}, hold, { food: hold.food - rel * give, wood: hold.wood + rel * give / p }), shelter, busy, drank, belonging);
+      const c = keep(Object.assign({}, hold, { food: hold.food - rel * give, wood: hold.wood + rel * give / p }));
       if (c < best) best = c;
     }
     if (hold.wood > 0) {
       const give = f * hold.wood;
-      const c = keepCost(agent, world, Object.assign({}, hold, { food: hold.food + rel * give * p, wood: hold.wood - rel * give }), shelter, busy, drank, belonging);
+      const c = keep(Object.assign({}, hold, { food: hold.food + rel * give * p, wood: hold.wood - rel * give }));
       if (c < best) best = c;
     }
   }
@@ -149,35 +167,86 @@ function holdingsCost(agent, world, hold, shelter, busy, drank, belonging, withT
 // season, so a store is worth what it covers beyond that (winter). Projected in steps of
 // `keepStep` days, each step's cost counted for every day in it. Belonging is held at
 // tonight's level through the projection.
+//
+// The projected day is the agent's usual working day for the season (learned), plus its trips
+// to water (fewer with a pot to store water in), so goods that save hours are worth the rest
+// they free. With the inputs in hand, the agent is assumed to make the goods it knows whose
+// use the projection models (`keep` recipes: the axe, the pot). An unfinished hut gives no
+// warmth here; its worth is projectValue's.
 function keepCost(agent, world, hold, shelter, busy, drank, belonging) {
-  const A = PARAMETERS.agents, G = PARAMETERS.goods;
+  const A = PARAMETERS.agents, G = PARAMETERS.goods, N = PARAMETERS.needs;
   const cap = agent.capacity();
-  const e = Agent.evening(agent.need, hold, shelter, busy, drank, world.season().cold, cap);
+  const e = Agent.evening(agent.need, hold, shelterIns(shelter), busy, drank, world.season().cold, cap);
   let cost = needCost(e, true, belonging);
   let need = e, h = e.hold;
+  const sh = Object.assign({}, shelter);
   const S = A.keepStep, Y = PARAMETERS.year.days;
   for (let d = S; d <= A.horizon; d += S) {
     const beta = Math.pow(A.discount, d);
     const si = Math.floor(((world.day + d) % Y) / Y * 4);
-    // the axe speeds the projected wood-cutting while it lasts; with no axe and the inputs in
-    // hand, the agent is assumed to make one (so flint is worth what an axe is worth)
-    let axe = h.axe, flint = h.flint, wood = h.wood;
-    const R = RECIPES.axe;
-    if (axe <= 0 && flint >= R.inputs.flint && wood >= R.inputs.wood) { axe = 1; flint -= R.inputs.flint; wood -= R.inputs.wood; }
-    const wMult = axe > 0 ? TOOLS.axe.mult : 1;
-    if (axe > 0) axe = Math.max(0, axe - S * A.projHours.wood / TOOLS.axe.life);
-    h = {
-      food: h.food * Math.pow(1 - G.food.rot, S) + S * A.projHours.forage * agent.seasonYield[A_FORAGE][si],
-      wood: wood + S * A.projHours.wood * agent.seasonYield[A_WOOD][si] * wMult,
-      water: 0, flint, axe, pick: h.pick,
-    };
-    shelter = Math.max(0, shelter - G.leanTo.wear * S);
-    const f = Agent.evening(need, h, shelter, A.projHours.forage + A.projHours.wood, true, world.season(world.day + d).cold, cap, S);
-    cost += beta * S * needCost(f, false, belonging);
+    // (h is always a fresh object from Agent.evening, so it is changed in place)
+    for (const [r, ins] of KEEP_RECIPES) {
+      if (h[r] > 0 || !agent.knows.has(r)) continue;
+      if (ins.every(([g, q]) => h[g] >= q)) {
+        for (const [g, q] of ins) h[g] -= q;
+        h[r] = 1;
+      }
+    }
+    // the axe speeds the projected wood-cutting while it lasts
+    const wMult = h.axe > 0 ? TOOLS.axe.mult : 1;
+    if (h.axe > 0) h.axe = Math.max(0, h.axe - S * A.projHours.wood / TOOLS.axe.life);
+    h.food = h.food * Math.pow(1 - G.food.rot, S) + S * A.projHours.forage * agent.seasonYield[A_FORAGE][si];
+    h.wood += S * A.projHours.wood * agent.seasonYield[A_WOOD][si] * wMult;
+    h.water = 0;
+    if (h.pot > 0) h.pot = Math.max(0, h.pot - G.pot.wear * S);
+    const work = agent.busyHabit[si] + agent.drinkTrip * Math.min(1, N.waterDecay / waterCarried(h));
+    wearShelter(sh, S);
+    const f = Agent.evening(need, h, shelterIns(sh), work, true, world.season(world.day + d).cold, cap, S);
+    cost += beta * S * needCost(f, true, belonging);
     need = f; h = f.hold;
   }
   return cost;
 }
+
+// The curiosity term for tinkering (ODD §7.3, §4.4): the discoveries the agent expects, from
+// how often its own tinkering has paid per hour per material at hand (a hopeful prior that
+// fruitless hours wear down), times the value it puts on a discovery. It cannot know what is
+// left to find, only what it has at hand.
+function tinkerBonus(agent, world, hold, hex, hours) {
+  const A = PARAMETERS.agents, T = agent.tinker;
+  const m = materialsAt(agent, world, hex, hold, false).size;
+  const rate = (T.found + A.tinkerPrior.found) / (T.mh + A.tinkerPrior.mh);
+  return A.tinkerValue * rate * hours * m;
+}
+
+// Partial projects (ODD §7.6, Decided): work unfinished at dark is worth the finished good's
+// value, less the work still left, discounted by the risk of not finishing. As built: the
+// finished hut's value is what the Keep projection gives it today (hutValue); the work is the
+// hours the whole hut takes — building (fewer with an axe) and getting its inputs, at the
+// agent's own hour costs — and the share of those hours already in hand (progress, and clay
+// held toward the rest) is the share of the value counted, times the learned chance of
+// finishing. So every hour put in is worth the same share whatever the season, and the agent
+// puts hours in when they are cheapest to it. Wood is not counted toward it: it is fuel too,
+// and the projection already values it.
+function hutValue(agent, world) {
+  if (!agent.knows.has('hut') || agent.shelter.hutDone) return 0;
+  const bare = Object.assign({}, agent.shelter, { hut: 0, hutDone: false });
+  const no = keepCost(agent, world, agent.hold, bare, 0, true, agent.need.belonging);
+  const yes = keepCost(agent, world, agent.hold, Object.assign({}, bare, { hut: 1, hutDone: true }), 0, true, agent.need.belonging);
+  return Math.max(0, no - yes);
+}
+function projectValue(agent, world, hold, sh) {
+  if (!agent.hutV || sh.hutDone || !agent.knows.has('hut')) return 0;
+  const B = BUILDS.hut, c = hourCosts(agent, world);
+  let T = B.hours / (hold.axe > 0 ? TOOLS.axe.mult : 1);
+  for (const g in B.inputs) T += B.inputs[g] * c[g];
+  if (!(T < Infinity)) return 0;   // an input it knows nowhere to get
+  const inHand = sh.hut * T + Math.min(hold.clay || 0, (1 - sh.hut) * B.inputs.clay) * c.clay;
+  return agent.pFinish() * agent.hutV * Math.min(1, inHand / T);
+}
+
+// the recipes the Keep projection assumes made, with their inputs as [good, quantity] lists
+var KEEP_RECIPES = Object.keys(RECIPES).filter((r) => RECIPES[r].keep).map((r) => [r, Object.entries(RECIPES[r].inputs)]);
 
 function needCost(e, withRest, belonging) {
   const sq = (x) => (1 - x) * (1 - x);

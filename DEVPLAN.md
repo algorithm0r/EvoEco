@@ -133,21 +133,45 @@ flint or tools; Stage 4 checks pass). Headless seed 1, two years: 14 made, worn 
 Ledger check: recipes and tools are the tree (data); who makes, holds and trades tools is
 each agent's own plan and bargain.
 
-#### 5b — Crafted levels, tinkering, know-how  [ ACTIVE ]
-- [ ] Level 2–3 recipes: fired clay and pots, huts and houses, farming (hoe/sickle), bread
-- [ ] Intermediates: charcoal, fired clay
-- [ ] Partial projects carry partial value across days (multi-day builds)
-- [ ] Tinkering as an activity, scored by the curiosity term; discovery only with the inputs
-- [ ] Know-how lives in agents; learned by seeing it practised; lost when no one practises
-      for a generation (Learning know-how by seeing it practised, from Stage 3.)
-- [ ] Quality valued intrinsically and instrumentally (food restores more, tools last longer)
+#### 5b — Crafted levels, tinkering, know-how  [ DONE ] (closed 2026-11-03)
+- [x] Level 2 recipes: clay dug from banks; fired-clay pots (water level 2); huts (shelter
+      level 2). ~~houses~~ → **5c** (timber needs a metal axe); ~~farming (hoe/sickle),
+      bread~~ → **5d**
+- [x] Intermediates: fired clay (in the pot recipe). ~~charcoal~~ → **5c** (its only use is smelting)
+- [x] Partial projects carry partial value across days (multi-day builds): the ODD rule read
+      literally, value × share of the total hours in hand × learned chance of finishing
+- [x] Tinkering as an activity, scored by the curiosity term; discovery only with the inputs
+- [x] Know-how lives in agents; learned by seeing it practised; kept for life, so lost when
+      no one who knows it has been watched practising (Learning know-how by seeing it
+      practised, from Stage 3.)
+- [x] Quality valued: the hut warms more, the pot saves trips. Food quality → **5d** (farming);
+      longer-lasting tools → **5c** (metal tiers)
 **Done when:** agents holding the right inputs discover level 2+ by tinkering, multi-day builds
-get started and finished, and a test case shows know-how lost when a craft lapses.
+get started and finished, and a test case shows know-how lost when a craft lapses. ✓ Met:
+smoke PASS (bands year: 8 discoveries of the pot by tinkering; tinkering finds nothing without
+its inputs; with the hut known, 200 huts started and 41 finished by day 240; know-how kept by
+the one who watched, lost when never practised). Headless seed 1, two years, nothing given:
+12 pot discoveries by tinkering and 5 learned by seeing (one chain 32 → 28 → 21 → 20); 19 pots made, 16 agents know the pot at the end; the hut was never found (it needs an axe in hand at a clay bank, with wood); 57 axes made and 128 trades of food for axes (5a: 14 and 6; the smoothed projection fire makes every unit of wood count); 11,032 hours tinkering; 87/100 alive (5a: 89). Ledger check: the tree is data; who tinkers, finds, learns and builds is
+each agent's own plan and meetings.
 
 #### 5c — Metals  [ PLANNED ]
 - [ ] Copper, tin, bronze, iron: smelting with charcoal, metal tool tiers
+- [ ] Charcoal (wood burned in a clay kiln) (From 5b.)
+- [ ] House: timber cut with a metal axe, clay daub, hearth (shelter level 3) (From 5b.)
+- [ ] Metal tools last longer (quality valued instrumentally) (From 5b.)
 **Done when:** metal tools are made where the chain allows, and long-distance trade in tin or
 bronze appears or its absence is explained by the map.
+
+#### 5d — Farming, bread and wells  [ PLANNED ]
+Waits on a design question for Chris: under open access (ODD §2), who may harvest a field
+someone planted?
+- [ ] Fertile land cleared with an axe, sown and tended with a hoe, reaped with a sickle,
+      across seasons (a project that spans months) (From 5b.)
+- [ ] Grain cooked in a pot (food level 2); bread from a quern and a clay oven (food level 3);
+      food quality restores more (From 5b.)
+- [ ] Well near home, dug with a pick and lined (water level 3): a structure under open access
+**Done when:** fields are cleared, sown and harvested across a year, grain and bread are made
+and eaten, and the harvest rule Chris chooses is in the ODD with its ledger check.
 
 *Original Stage 5 list and Done-when, kept for the record:*
 > ODD §2 (Goods and quality, First tree v0, Tools), §4.5, §7.3, §7.6 (partial projects).
@@ -220,4 +244,16 @@ How runs are compared is a research question to settle then (ODD §4.10).
 - [ ] feat: measure survivorship bias in norms once rates differ between agents (Stage 3
       Done-when, second half)
 - [ ] idea: log slack and tinkering hours; scarcity that removes slack should slow discovery
-      (ODD §7.3), and it bears on the results
+      (ODD §7.3), and it bears on the results (tinkering hours are now counted per world;
+      not yet sampled against slack)
+- [ ] fix: the Keep projection is rosier than the winters agents live (projected fire every
+      night; lived winter warmth 0.4–0.6). ODD §7.6 says expected future need comes from
+      seasonal norms; consider projecting from experienced seasonal outcomes
+- [ ] feat: tinkering's success rate is the agent's own record only; ODD §4.4 says norms pool
+      others' experience (chat could carry it)
+- [ ] idea: crafts are practised only at home and few agents share a home hex, so know-how
+      spreads slowly by seeing; revisit when households share shelters (Stage 6)
+- [ ] idea: "huts started" counts a restart after a lapse as a new start; split new projects
+      from restarts if the measure matters
+- [ ] perf: 5b raised the cost again (~0.9 ms per agent-day in the smoke measure, ~2 ms in the
+      bands runs with tinkering and builds); same remedy as the perf item above

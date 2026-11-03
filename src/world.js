@@ -58,6 +58,10 @@ var World = class World {
     // agents (Stage 2: solitary, placed near water as a test setup; band layout is Stage 7)
     this.agents = [];
     this.dead = [];
+    // know-how events (ODD §7.3) and goods made, for measures and tests
+    this.discoveries = [];
+    this.learnedBySeeing = [];
+    this.made = {};
     if (opts.agents != null) this.placeAgents(opts.agents);
     else if (PARAMETERS.agents.layout === 'bands') this.placeBands(PARAMETERS.agents.bands);
     else this.placeAgents(PARAMETERS.agents.n);
@@ -172,7 +176,8 @@ var World = class World {
 
   // Meeting is co-location (ODD §3): agents who were in the same hex today, including
   // home in the evening, meet. Each sees what the others worked at there (passive, no cap),
-  // then chats with up to k of the people it met (ODD §4.6).
+  // sees any craft they practised there (and may learn it, ODD §7.3), then chats with up to k
+  // of the people it met (ODD §4.6).
   meet(live) {
     const at = new Map();
     for (const a of live) {
@@ -190,6 +195,7 @@ var World = class World {
           if (b === a) continue;
           if (a.met.indexOf(b) < 0) a.met.push(b);
           for (const o of b.obs) if (o.hex === h) a.observe(o);
+          if (b.practised.length) a.seePractice(this, b, h);   // know-how by seeing (ODD §7.3)
         }
       }
     }
