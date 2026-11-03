@@ -9,30 +9,63 @@
 // curiosity bonus for looking at unseen hexes. Yields are the agent's own habit estimates,
 // made optimistic by the curiosity term where it has little experience (ODD §4.4).
 //
-// Search (Default): rank every candidate stop by the score of a one-stop day and keep the
-// best few OF EACH ACTIVITY (ranking them all together let the most pressing need crowd every
-// other activity off the shortlist), then build the route greedily — add a stop at its best position, or give an existing
-// stop another chunk of hours — while the score improves.
+// Search (Default): rank every candidate stop by the score of a one-stop day and keep, for
+// EACH ACTIVITY, the best few by gain and the best few by gain per hour of the day it takes
+// (ranking all activities together let the most pressing need crowd every other activity off
+// the shortlist; ranking by gain alone kept only far, full hexes). Then build the route
+// greedily twice — add a stop at its best position, or give an existing stop another chunk of
+// hours, while the score improves — once taking the move with the most gain, once the move
+// with the most gain per hour it adds, and keep the better route. Each order alone fails:
+// by gain, one far stop can fill the day first and nothing else fits (in 80 of 99 checked
+// mornings an agent at zero water skipped a drink a better plan had, and agents died of
+// thirst beside the water at home); by gain per hour, cheap poor work near home can fill the
+// day so the good trip no longer fits. (2026-11-03.)
 
 function planDay(agent, world) {
   const A = PARAMETERS.agents;
   agent.costs = null;                     // hour costs as of this morning
   agent.hutV = hutValue(agent, world);   // worked out once a day (also used in the exchange)
   const cands = planCandidates(agent, world);
-  for (const c of cands) c.solo = planCost(agent, world, [c]);
-  cands.sort((a, b) => a.solo - b.solo);
-  const top = [], kept = ACT_NAMES.map(() => 0);
-  for (const c of cands) if (kept[c.act] < A.topPerActivity) { top.push(c); kept[c.act]++; }
-  let plan = [], cost = planCost(agent, world, plan);
+  const base = planCost(agent, world, []);
+  for (const c of cands) {
+    c.solo = planCost(agent, world, [c]);
+    c.rate = (base - c.solo) / planHours(agent, world, [c]);
+  }
+  const top = [], half = Math.ceil(A.topPerActivity / 2);
+  for (const key of ['solo', 'rate']) {
+    const kept = ACT_NAMES.map(() => 0);
+    const sorted = cands.slice().sort(key === 'solo' ? (a, b) => a.solo - b.solo : (a, b) => b.rate - a.rate);
+    for (const c of sorted) {
+      if (!(c.solo < base) || kept[c.act] >= half) continue;
+      if (top.indexOf(c) < 0) top.push(c);
+      kept[c.act]++;
+    }
+  }
+  const byGain = greedyRoute(agent, world, top, base, false);
+  const byRate = greedyRoute(agent, world, top, base, true);
+  return byRate.cost < byGain.cost ? byRate.plan : byGain.plan;
+}
+
+// One greedy build of the route from the shortlist: each step takes the improving move with
+// the most gain (perHour false) or the most gain per hour of the day it adds (perHour true).
+function greedyRoute(agent, world, top, base, perHour) {
+  const A = PARAMETERS.agents;
+  let plan = [], cost = base, hours = 0;
   for (let step = 0; step < A.maxGreedySteps; step++) {
-    let bestPlan = null, bestCost = cost;
+    let bestPlan = null, bestCost = cost, bestScore = 0, bestHours = hours;
+    const consider = (p2) => {
+      const c = planCost(agent, world, p2);
+      if (!(c < cost)) return;
+      const h2 = perHour ? planHours(agent, world, p2) : 0;
+      const score = perHour ? (cost - c) / Math.max(0.25, h2 - hours) : cost - c;
+      if (score > bestScore) { bestScore = score; bestPlan = p2; bestCost = c; bestHours = h2; }
+    };
     for (let k = 0; k < plan.length; k++) {
       const s = plan[k];
       if (s.act === A_DRINK || s.act === A_SCOUT || s.act === A_CRAFT || s.act === A_TINKER) continue;   // fixed-length stops
       const p2 = plan.slice();
       p2[k] = Object.assign({}, s, { hours: s.hours + A.chunk });
-      const c = planCost(agent, world, p2);
-      if (c < bestCost) { bestCost = c; bestPlan = p2; }
+      consider(p2);
     }
     if (plan.length < A.maxStops) {
       for (const cd of top) {
@@ -40,15 +73,21 @@ function planDay(agent, world) {
         for (let pos = 0; pos <= plan.length; pos++) {
           const p2 = plan.slice();
           p2.splice(pos, 0, cd);
-          const c = planCost(agent, world, p2);
-          if (c < bestCost) { bestCost = c; bestPlan = p2; }
+          consider(p2);
         }
       }
     }
     if (!bestPlan) break;
-    plan = bestPlan; cost = bestCost;
+    plan = bestPlan; cost = bestCost; hours = bestHours;
   }
-  return plan;
+  return { plan, cost };
+}
+
+// Hours a route takes: travel between its stops and back home, and the work at each.
+function planHours(agent, world, plan) {
+  let at = agent.home, h = 0;
+  for (const s of plan) { h += world.travel(at)[s.hex] + s.hours; at = s.hex; }
+  return plan.length ? h + world.travel(at)[agent.home] : 0;
 }
 
 // Everything the agent could do today: gather or drink at known hexes within reach, build
@@ -163,8 +202,10 @@ function holdingsCost(agent, world, hold, shelter, busy, drank, belonging, withT
 }
 
 // Tonight's evening, then the Keep arm: the coming months on what is left (a good is valued
-// over its storage life), with ordinary gathering at the yields the agent has known in each
-// season, so a store is worth what it covers beyond that (winter). Projected in steps of
+// over its storage life), with each week brought in as the agent has lived that season
+// (what it gathered and what it netted in exchange), so a store is worth what it covers beyond
+// that (winter). (Until 2026-11-03 the projection assumed 3 hours of foraging a day at the
+// learned yield: about twice the food agents actually brought in, so stores looked cheap.) Projected in steps of
 // `keepStep` days, each step's cost counted for every day in it. Belonging is held at
 // tonight's level through the projection.
 //
@@ -176,17 +217,27 @@ function holdingsCost(agent, world, hold, shelter, busy, drank, belonging, withT
 function keepCost(agent, world, hold, shelter, busy, drank, belonging) {
   const A = PARAMETERS.agents, G = PARAMETERS.goods, N = PARAMETERS.needs;
   const cap = agent.capacity();
-  const e = Agent.evening(agent.need, hold, shelterIns(shelter), busy, drank, world.season().cold, cap);
+  const tab = projectionTable(world);
+  const e = Agent.evening(agent.need, hold, shelterIns(shelter), busy, drank, tab.coldNow, cap);
   let cost = needCost(e, true, belonging);
-  let need = e, h = e.hold;
-  const sh = Object.assign({}, shelter);
-  const S = A.keepStep, Y = PARAMETERS.year.days;
-  for (let d = S; d <= A.horizon; d += S) {
-    const beta = Math.pow(A.discount, d);
-    const si = Math.floor(((world.day + d) % Y) / Y * 4);
-    // (h is always a fresh object from Agent.evening, so it is changed in place)
-    for (const [r, ins] of KEEP_RECIPES) {
-      if (h[r] > 0 || !agent.knows.has(r)) continue;
+  // a night that would kill it (one more day at or below zero than the need allows) is the
+  // worst outcome there is: agents know thirst, hunger and cold kill (Default, 2026-11-03)
+  const D = A.deathDays;
+  if ((e.food <= 0 && agent.zeroDays.food + 1 > D.food) || (e.water <= 0 && agent.zeroDays.water + 1 > D.water) ||
+      (e.warmth <= 0 && agent.zeroDays.warmth + 1 > D.warmth)) cost += A.fatalCost;
+  // the weeks ahead, as plain numbers (this loop is most of the model's run time): the evening
+  // of Agent.evening for a lumped week with water drunk, inlined
+  const sq = (x) => (1 - x) * (1 - x);
+  const h = e.hold;   // a fresh object from Agent.evening, changed in place
+  let nf = e.food;
+  let lean = shelter.leanTo, hut = shelter.hut, hutDone = shelter.hutDone;
+  const S = A.keepStep, rateWood = Math.max(0.1, agent.rate(A_WOOD));
+  const keeps = KEEP_RECIPES.filter(([r]) => agent.knows.has(r));
+  const belongCost = sq(belonging);
+  for (let k = 0; k < tab.length; k++) {
+    const { beta, si, cold } = tab[k];
+    for (const [r, ins] of keeps) {
+      if (h[r] > 0) continue;
       if (ins.every(([g, q]) => h[g] >= q)) {
         for (const [g, q] of ins) h[g] -= q;
         h[r] = 1;
@@ -194,16 +245,36 @@ function keepCost(agent, world, hold, shelter, busy, drank, belonging) {
     }
     // the axe speeds the projected wood-cutting while it lasts
     const wMult = h.axe > 0 ? TOOLS.axe.mult : 1;
-    if (h.axe > 0) h.axe = Math.max(0, h.axe - S * A.projHours.wood / TOOLS.axe.life);
-    h.food = h.food * Math.pow(1 - G.food.rot, S) + S * A.projHours.forage * agent.seasonYield[A_FORAGE][si];
-    h.wood += S * A.projHours.wood * agent.seasonYield[A_WOOD][si] * wMult;
-    h.water = 0;
+    // a week as the agent has lived this season: what it brings in by gathering and nets in
+    // exchange (ODD §7.6: expected future need from seasonal norms)
+    const F = agent.flow[si];
+    if (h.axe > 0) h.axe = Math.max(0, h.axe - S * F.wood / rateWood / TOOLS.axe.life);
+    h.food = Math.max(0, h.food * tab.rot + S * (F.food + F.xfood));
+    h.wood = Math.max(0, h.wood + S * (F.wood * wMult + F.xwood));
     if (h.pot > 0) h.pot = Math.max(0, h.pot - G.pot.wear * S);
     const work = agent.busyHabit[si] + agent.drinkTrip * Math.min(1, N.waterDecay / waterCarried(h));
-    wearShelter(sh, S);
-    const f = Agent.evening(need, h, shelterIns(sh), work, true, world.season(world.day + d).cold, cap, S);
-    cost += beta * S * needCost(f, true, belonging);
-    need = f; h = f.hold;
+    // weather (as wearShelter)
+    lean = Math.max(0, lean - G.leanTo.wear * S);
+    if (hut > 0) {
+      hut = Math.max(0, hut - (hutDone ? G.hut.wear : G.hut.partWear) * S);
+      if (hut <= 0) hutDone = false;
+    }
+    const ins = Math.max(G.leanTo.insulation * lean, hutDone ? G.hut.insulation * hut : 0);
+    // the week starts nearer the agent's usual food level for the season: a gap from it fades
+    // week by week, as a hungry agent forages more and a full one less. (Without this, lived
+    // inflows that just cover the day's need carried tonight's hunger unchanged for months,
+    // and food outweighed even a lethal thirst.)
+    const L = agent.livedFood[si];
+    let food = L + A.keepPersist * (nf - L) - S * (N.foodDecay + N.workBurn * work);
+    const fire = Math.min(1, h.wood / (G.fireWood * S));
+    h.wood -= fire * G.fireWood * S;
+    const per = G.food.restores * (1 + fire * (G.food.cookedBonus - 1));
+    if (food < 1 && h.food > 0) { const eat = Math.min(h.food, (1 - food) / per); food += eat * per; h.food -= eat; }
+    food = Math.min(food, 1);
+    const warmth = clamp(1 - cold * (1 - ins) + fire * G.fireHeat, 0, 1);
+    const rest = clamp((cap - work) / N.restSet, 0, 1);
+    cost += beta * S * (sq(food) + sq(warmth) + sq(rest) + belongCost);   // water drunk: no deficit
+    nf = food;
   }
   return cost;
 }
@@ -243,6 +314,20 @@ function projectValue(agent, world, hold, sh) {
   if (!(T < Infinity)) return 0;   // an input it knows nowhere to get
   const inHand = sh.hut * T + Math.min(hold.clay || 0, (1 - sh.hut) * B.inputs.clay) * c.clay;
   return agent.pFinish() * agent.hutV * Math.min(1, inHand / T);
+}
+
+// The projection's weeks for today: discount, season and cold of each, worked out once a day.
+function projectionTable(world) {
+  if (world._projDay === world.day && world._projTab) return world._projTab;
+  const A = PARAMETERS.agents, Y = PARAMETERS.year.days, S = A.keepStep;
+  const tab = [];
+  for (let d = S; d <= A.horizon; d += S) {
+    tab.push({ beta: Math.pow(A.discount, d), si: Math.floor(((world.day + d) % Y) / Y * 4), cold: world.season(world.day + d).cold });
+  }
+  tab.rot = Math.pow(1 - PARAMETERS.goods.food.rot, S);
+  tab.coldNow = world.season(world.day).cold;
+  world._projDay = world.day; world._projTab = tab;
+  return tab;
 }
 
 // the recipes the Keep projection assumes made, with their inputs as [good, quantity] lists

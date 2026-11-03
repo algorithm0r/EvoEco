@@ -154,6 +154,18 @@ the one who watched, lost when never practised). Headless seed 1, two years, not
 12 pot discoveries by tinkering and 5 learned by seeing (one chain 32 → 28 → 21 → 20); 19 pots made, 16 agents know the pot at the end; the hut was never found (it needs an axe in hand at a clay bank, with wood); 57 axes made and 128 trades of food for axes (5a: 14 and 6; the smoothed projection fire makes every unit of wood count); 11,032 hours tinkering; 87/100 alive (5a: 89). Ledger check: the tree is data; who tinkers, finds, learns and builds is
 each agent's own plan and meetings.
 
+#### 5b-cal — Calibration: Keep projection, route search, speed  [ DONE ] (closed 2026-11-03)
+(Chris, 2026-11-03: calibrate before farming.)
+- [x] Trace why huts didn't seem to warm: they do (0.79 vs 0.55); fires are rare; deaths were hunger
+- [x] Keep projects from lived seasonal inflows (gathered + net exchange), with a food gap that fades
+- [x] Agents know a night that would kill them (new rule, flagged for Chris)
+- [x] Route search: shortlist by gain and gain per hour; build both ways, keep the better
+- [x] Speed: projection on plain numbers, 2.58 → 0.69 ms per agent-day in bands runs
+**Done when:** the projection matches lived days, deaths are explained, and the planner is fast
+enough for generation runs. ✓ Met: projected vs lived food within ~0.3 a day each season; 87/100
+alive over two years, all deaths hunger in year 1, none of thirst; ~0.7 ms per agent-day
+(~30 min per generation at 300 agents).
+
 #### 5c — Metals  [ PLANNED ]
 - [ ] Copper, tin, bronze, iron: smelting with charcoal, metal tool tiers
 - [ ] Charcoal (wood burned in a clay kiln) (From 5b.)
@@ -163,15 +175,17 @@ each agent's own plan and meetings.
 bronze appears or its absence is explained by the map.
 
 #### 5d — Farming, bread and wells  [ PLANNED ]
-Waits on a design question for Chris: under open access (ODD §2), who may harvest a field
-someone planted?
+Harvest settled (Chris, 2026-11-03; ODD §2): anyone may harvest a planted field, and what
+returns to the planter through others (a friend harvests and gifts a share) counts in the
+planter's learned return on planting.
 - [ ] Fertile land cleared with an axe, sown and tended with a hoe, reaped with a sickle,
       across seasons (a project that spans months) (From 5b.)
 - [ ] Grain cooked in a pot (food level 2); bread from a quern and a clay oven (food level 3);
       food quality restores more (From 5b.)
 - [ ] Well near home, dug with a pick and lined (water level 3): a structure under open access
 **Done when:** fields are cleared, sown and harvested across a year, grain and bread are made
-and eaten, and the harvest rule Chris chooses is in the ODD with its ledger check.
+and eaten, and the planter's learned return counts what comes back through others, with a
+ledger check.
 
 *Original Stage 5 list and Done-when, kept for the record:*
 > ODD §2 (Goods and quality, First tree v0, Tools), §4.5, §7.3, §7.6 (partial projects).
@@ -234,7 +248,7 @@ How runs are compared is a research question to settle then (ODD §4.10).
 - [ ] fix: re-balance the numbers raised for solitary survival in Stage 2 (plants r 0.1, cap
       40, 6 units/h; rot 1%/day; Keep 20 days at 0.97) once agents can share, against the
       foundation forming, not against a loner surviving (Chris, 2026-11-02)
-- [ ] perf: planner cost rose 0.23 → 0.8–1.3 ms per agent-day with craft/quarry candidates and
+- [x] perf: planner cost rose 0.23 → 0.8–1.3 ms per agent-day with craft/quarry candidates and
       object copies in the cost functions (~35–60 min per generation at 300 agents); profile
       and trim (habit as a cached plan, ODD §7.6; fewer allocations)
 - [ ] feat: trade reliability per place (ODD §7.6 says reliability at places on the route; one
@@ -246,7 +260,7 @@ How runs are compared is a research question to settle then (ODD §4.10).
 - [ ] idea: log slack and tinkering hours; scarcity that removes slack should slow discovery
       (ODD §7.3), and it bears on the results (tinkering hours are now counted per world;
       not yet sampled against slack)
-- [ ] fix: the Keep projection is rosier than the winters agents live (projected fire every
+- [x] fix: the Keep projection is rosier than the winters agents live (projected fire every
       night; lived winter warmth 0.4–0.6). ODD §7.6 says expected future need comes from
       seasonal norms; consider projecting from experienced seasonal outcomes
 - [ ] feat: tinkering's success rate is the agent's own record only; ODD §4.4 says norms pool
@@ -255,5 +269,14 @@ How runs are compared is a research question to settle then (ODD §4.10).
       spreads slowly by seeing; revisit when households share shelters (Stage 6)
 - [ ] idea: "huts started" counts a restart after a lapse as a new start; split new projects
       from restarts if the measure matters
-- [ ] perf: 5b raised the cost again (~0.9 ms per agent-day in the smoke measure, ~2 ms in the
+- [x] perf: 5b raised the cost again (~0.9 ms per agent-day in the smoke measure, ~2 ms in the
       bands runs with tinkering and builds); same remedy as the perf item above
+- [ ] idea: the half-per-week fade of a food gap in the projection (`keepPersist`) is a set
+      number; learn it from the agent's own week-to-week food levels
+- [ ] fix: the route search still misses a better plan with a drink on some thirsty mornings
+      (46 in 400 days; the lethal-night cost keeps it from killing). A swap move, or seeding the
+      greedy with a drink when water is low, would close it
+- [ ] idea: since the calibration the first barter comes on day 49, not day 3; check why
+      (early valuations under lived inflows) before Stage 7 measures trade
+- [ ] idea: fires are lit on ~20% of winter evenings; a wood store is cheap insurance. Watch
+      whether storing wood rises once lived winters are learned (year 2+)

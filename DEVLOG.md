@@ -4,6 +4,40 @@
 
 <!-- append new entries above this line -->
 
+## 2026-11-03 — Calibration: Keep projection, route search, speed
+
+**Done:** Chris settled the harvest question: anyone may harvest, and what returns to the
+planter through others counts in its feedback (ODD §2, mechanism Open). Then calibrated.
+- *Huts:* traced the "huts don't help" result. They do (winter warmth 0.79 in a hut, 0.55
+  under a lean-to); fires are rare (16% of winter evenings); deaths were hunger.
+- *Food projection:* it assumed 10–12 food a day against 5.4–5.9 lived. It now projects lived
+  seasonal inflows: food and wood gathered, plus net exchange.
+- *Thirst:* that exposed a projection where tonight's hunger never faded, so agents traded
+  water for food until 30 died of thirst. Fixed with a food gap that halves each projected
+  week toward the usual seasonal level.
+- *Search:* 80 of 99 thirsty mornings were search misses, because a far stop filled the day
+  first. Search by gain per hour fixed that but broke the stripped-hex check: cheap poor work
+  at home filled the day. The route is now built both ways and the better kept.
+- *Lethal night:* added a cost of 1000 for a night that would kill. Thirst deaths went to 0.
+- *Speed:* rewrote the projection loop on plain numbers, with season lookups once a day. Same
+  results, 4.5× faster.
+**Changed:** `src/agent.js` (flow and livedFood habits, got/xnet, seasonYield removed),
+`src/world.js` (net exchange per agent), `src/planner.js` (Keep from lived flows, food-gap
+fade, lethal night, inlined loop, projectionTable, shortlist by gain and rate, greedyRoute
+twice, planHours), `src/params.js` (flowRate, keepPersist, fatalCost; projHours now only a
+prior). ODD §2 harvest (Decided), §7.6 calibration block (Default; keepPersist and the
+lethal-night cost flagged). DEVPLAN 5b-cal closed, 5d harvest note, three Backlog lines
+ticked, four added.
+**State:** smoke PASS, all 36 checks. Price 1.420 / 0.618 / 0.551; 1,025 trades (first day
+49), 1,551 gifts, 119 trusted ties; largest unreturned 3.90; stripped hex used once after.
+With the hut known: 169 huts started, 56 finished by day 240. Bands year: 12 pot discoveries,
+8 learned by seeing. Headless seed 1, two years: 87/100 alive, 13 hunger deaths all in year 1,
+0 thirst. Projected vs lived food within ~0.3 a day each season. Winter warmth 0.71 with hut
+know-how (0.81 in a hut), 0.56 without. Planner 0.69 ms per agent-day in bands runs (was
+2.58), 0.365 in the smoke measure.
+**Next:** 5d farming (harvest settled), or 5c metals. Chris to review the two flagged
+Defaults (lethal-night cost; half-per-week food fade).
+
 ## 2026-11-03 — Stage 5b: pots, huts, tinkering, know-how
 
 **Done:** Clay digging; the pot (water level 2: stores water, saves trips); the hut (shelter

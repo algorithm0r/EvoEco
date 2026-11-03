@@ -82,9 +82,18 @@ var Agent = class Agent {
     // indexed by activity; only the gathering activities are used
     this.eff = ACT_NAMES.map((nm) => A.priorPerHour[nm] || 0);
     this.effN = ACT_NAMES.map(() => 0);
-    // what an hour of foraging and of wood-cutting actually brought, by season (spring..winter):
-    // the seasonal habit the Keep projection uses
-    this.seasonYield = ACT_NAMES.map((nm) => [0, 0, 0, 0].map(() => A.priorPerHour[nm] || 0));
+    // what a day actually brings in, by season (spring..winter): the seasonal habit the Keep
+    // projection lives on (ODD §7.6: expected future need from seasonal norms). Food and wood
+    // gathered (wood bare-handed, so a tool's share is known from the recipe), and the net
+    // gained or lost in exchange. The prior is the old assumption: a few hours of gathering
+    // at the prior rates.
+    this.flow = [0, 1, 2, 3].map(() => ({
+      food: A.projHours.forage * A.priorPerHour.forage, wood: A.projHours.wood * A.priorPerHour.wood, xfood: 0, xwood: 0,
+    }));
+    this.got = { food: 0, wood: 0 };
+    this.xnet = { food: 0, wood: 0 };
+    this.livedFood = [1, 1, 1, 1];   // its usual evening food level, by season
+    this.si = 0;               // season of its day, for learning
     // norms (ODD §4.4): the same rates, pooled from what it has seen others get and been told
     this.norm = { eff: ACT_NAMES.map(() => 0), n: ACT_NAMES.map(() => 0) };
     this.met = [];             // agents met today
@@ -147,6 +156,8 @@ var Agent = class Agent {
     this.places = [this.home];   // where it was today (home in the evening too)
     this.log.forageHours = 0; this.log.forageTravel = 0;
     this.practised = [];
+    this.got = { food: 0, wood: 0 };
+    this.si = world.seasonIndex;
     let made = 0;              // hours at home making, building or tinkering
     for (const s of this.plan) {
       const leg = world.travel(at)[s.hex];
@@ -162,6 +173,8 @@ var Agent = class Agent {
         const got = world.take(res, s.hex, G[res].perHour * frac * mult * s.hours);
         if (mult > 1) this.hold[tool] = Math.max(0, this.hold[tool] - s.hours / TOOLS[tool].life);
         this.hold[GOOD_OF[s.act]] += got;
+        if (s.act === A_FORAGE) this.got.food += got;
+        else if (s.act === A_WOOD) this.got.wood += got / mult;
         // what it learns is the bare-handed rate (the tool's share is known from the recipe)
         this.obs.push({ act: s.act, hex: s.hex, perHour: got / s.hours / mult, frac, season: world.seasonIndex });
         this.look(world, s.hex);   // sees what it left behind
@@ -355,12 +368,16 @@ var Agent = class Agent {
 
   // ── Learn: habits from its own day (ODD §4.4, one error-driven update) ─────────────────
   // one error-driven update of the yield per hour from a full hex, from what it got and how
-  // full the hex was (a nearly bare hex says little about the rate, so it is skipped)
+  // full the hex was (a nearly bare hex says little about the rate, so it is skipped); and a
+  // slower one of what the day brought in, for the season
   learn() {
-    const A = PARAMETERS.agents;
+    const A = PARAMETERS.agents, F = this.flow[this.si], r = A.flowRate;
+    F.food += r * (this.got.food - F.food);
+    F.wood += r * (this.got.wood - F.wood);
+    F.xfood += r * (this.xnet.food - F.xfood);
+    F.xwood += r * (this.xnet.wood - F.xwood);
+    this.livedFood[this.si] += r * (this.need.food - this.livedFood[this.si]);
     for (const o of this.obs) {
-      const sy = this.seasonYield[o.act];
-      sy[o.season] += A.learnRate * (o.perHour - sy[o.season]);
       if (o.frac > 0.05) {
         this.eff[o.act] += A.learnRate * (o.perHour / o.frac - this.eff[o.act]);
         this.effN[o.act] = Math.min(A.habitCap, this.effN[o.act] + 1);

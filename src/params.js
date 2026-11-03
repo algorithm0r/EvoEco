@@ -94,12 +94,15 @@ var PARAMETERS = {
     topPerActivity: 4, maxGreedySteps: 8, scoutCandidates: 8,
     horizon: 120,         // days of Keep projection (a good is valued over its storage life)
     keepStep: 7,          // days per projection step
-    // the projection assumes this many hours a day of foraging and wood-cutting at the yield
-    // the agent has learned for that season (ODD §7.6: expected future need from seasonal norms)
-    projHours: { forage: 3, wood: 1, build: 3 },
+    // the prior for what a day brings in (hours of foraging and wood-cutting at the prior
+    // rates)
+    projHours: { forage: 3, wood: 1 },
     discount: 0.99,       // per day; swept (ODD §7.6)
     // learning and curiosity (ODD §4.4)
     learnRate: 0.3,
+    flowRate: 0.05,       // update of what a day brings in, by season (a memory of ~20 days)
+    fatalCost: 1000,      // cost of a night that would kill (far above any other plan's)
+    keepPersist: 0.5,     // share of a gap from its usual food level the projection keeps a week on
     // meeting and chat (ODD §4.4, §4.6)
     chatK: 5,             // people chatted with per day, of those met
     normRate: 0.2,        // error-driven update of norms from others' reported experience

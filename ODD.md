@@ -189,6 +189,12 @@ Deliberately small; it grows later.
   strangers more likely, since there are fewer exchanges with the far away.
 - **Open access in the foundation (Decided — Chris, 2026-11-01 audit).** Property in land and
   resources is a separate technology-ladder entry, so it is never confounded with capital.
+  - **A planted field can be harvested by anyone (Decided — Chris, 2026-11-03).** Planting gives
+    no claim to the crop. What comes back to the planter must still count in its feedback, even
+    indirectly. Chris: "if my friend harvests what i planted and they gift me a portion that
+    should register as efficient." So the planter's learned return on planting includes what
+    reaches it from its field through others (gifts, and perhaps trades), not only what it
+    harvests itself. Mechanism: Open (to settle when farming is built, Stage 5d).
 - Three resource classes, modeled on reality:
   - **Non-renewables:** finite deposits that must be found and mined (ore, stone).
   - **Renewables:** stocks with their own regrowth rate that can be overused (fields, game, fish, forest).
@@ -791,6 +797,47 @@ Farming waits on a design question (who may harvest a planted field under open a
 - **Ledger check:** recipes, inputs and the chance per hour are the tree (data). Who tinkers,
   what they find, who learns by watching, and who builds when all come from each agent's own
   plan and meetings. No rule names who knows what.
+
+#### Calibration of the Keep projection and the route search — Default (Claude, 2026-11-03; `planner.js`)
+Chris asked for calibration before farming. What was found and changed:
+- **Huts do warm; fires are rare.** In winter, agents in a hut averaged warmth 0.79 against
+  0.55 under a lean-to; fires were lit on 16% of winter evenings (agents came home with about 1.2
+  wood, a fire takes 2). The deaths were from hunger, not cold.
+- **The projection was rosy about food.** It assumed 3 hours of foraging a day at the learned
+  yield: 10–12 food a day against the 5.4–5.9 agents actually gathered, so stores looked cheap.
+  **Now (§7.6: expected future need from seasonal norms)** each projected week brings in what
+  the agent's days have brought in that season. That is food and wood gathered (wood
+  bare-handed, so an axe still adds its share) plus the net gained or lost in exchange,
+  learned slowly (5% a day). Projected and lived now agree within about 0.3 a day in every
+  season.
+- **A food gap fades in the projection.** With inflows that just cover the day's need, tonight's
+  hunger was carried unchanged for months (about 100 cost units). Food then outweighed even a
+  lethal thirst, and agents died of thirst beside water. Now each projected week starts with
+  half the gap between where the agent stands and its usual evening food level for the
+  season (learned the same way). That stands for "a hungry agent forages more, a full one
+  less". **Open for review: the half per week is a set number** (`keepPersist` 0.5). It could
+  be learned from the agent's own weeks.
+- **Agents know a need can kill.** A plan that would make tonight one more day at or below
+  zero than the need allows (§2 death rule) costs 1000, far above any other plan. So an agent
+  pushes thirst to the edge but drinks before it dies, and a gift to a dying tie is worth a
+  great deal to the giver. **New rule, for Chris's review.** Before it, 7–10 of 100 agents
+  died of thirst in two years by trading one more dry day for food, morning after morning.
+- **Route search.** The shortlist keeps, per activity, the best stops by gain and the best by
+  gain per hour of the day they take. The route is then built greedily twice, once by most
+  gain and once by most gain per hour, and the better route kept. Each order alone failed: by
+  gain, a far stop filled the day first and nothing else fit (80 of 99 checked thirsty
+  mornings missed a better plan with a drink); by gain per hour, cheap poor work near home
+  filled the day so a good trip no longer fit.
+- **Speed.** The projection loop now runs on plain numbers, with each week's season looked up
+  once a day. Same results, 4.5× faster (2.58 → 0.57 ms per agent-day). With both searches:
+  0.69 ms in bands runs, 0.37 in the smoke measure.
+- **Result, bands, seed 1, two years:** 87/100 alive, all 13 deaths hunger in the first autumn
+  and winter (agents still on the prior's plenty), none in year 2, none of thirst. With the hut
+  known, 56 huts finished by day 240. Winter warmth 0.71 (0.81 in a hut) against 0.56 without
+  hut know-how. Smoke: all 36 checks pass. The first barter now comes on day 49, not day 3.
+- **Ledger check:** what agents expect is their own lived seasons; the lethal-night cost is
+  about the agent's own death, not an economic outcome. No rule names who stores, trades or
+  survives.
 
 Specialization is expected mainly from time and space: needs are spread across the
 landscape and the day is limited, so splitting the work saves hours ("you get food, I'll get
