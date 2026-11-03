@@ -143,7 +143,9 @@ const da = agentWorld(1, 8), db = agentWorld(1, 8);
 for (let d = 0; d < 120; d++) { da.update(); db.update(); }
 check('same seed → same agent histories', snapshot(da) === snapshot(db));
 
-// rich map: plants ×3; 8 agents for a year
+// rich map: plants ×3; 8 agents for a year. Solitary survival is NOT a goal (humans are not
+// solitary; Chris, 2026-11-02): this checks the mechanics — needs held near set points by
+// those living, work rising in winter — and only reports how many lived.
 const rich = agentWorld(3, 8);
 const bySeason = { spring: [], summer: [], autumn: [], winter: [] };
 let foodSum = 0, waterSum = 0, k = 0;
@@ -153,8 +155,8 @@ for (let d = 0; d < Y; d++) {
   for (const a of rich.agents) { foodSum += Math.min(1, a.need.food); waterSum += a.need.water; k++; bySeason[rich.season().name].push(a.busy); }
 }
 const msAgentDay = (Date.now() - t1) / (Y * 8);
-check('rich map: all survive a year', rich.agents.length === 8, rich.agents.length + '/8 alive, deaths ' + JSON.stringify(rich.dead.map((a) => a.cause)));
-check('rich map: needs near set points', foodSum / k > 0.9 && waterSum / k > 0.95,
+console.log('rich map, solitary: ' + rich.agents.length + '/8 alive after a year (reported, not required)');
+check('rich map: needs near set points among the living', foodSum / k > 0.9 && waterSum / k > 0.95,
   'mean food ' + (foodSum / k).toFixed(3) + ', water ' + (waterSum / k).toFixed(3));
 check('more hours worked in winter than summer', mean(bySeason.winter) > mean(bySeason.summer),
   'mean hours: spring ' + mean(bySeason.spring).toFixed(1) + ', summer ' + mean(bySeason.summer).toFixed(1) +

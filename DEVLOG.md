@@ -4,6 +4,24 @@
 
 <!-- append new entries above this line -->
 
+## 2026-11-02 — Stage 2 closed on mechanics; never balance for a loner
+
+**Done:** Chris asked whether we were building self-sufficient foragers. Yes: the DEVPLAN put
+one agent before exchange, with solitary survival as Stage 2's pass mark, and numbers were
+raised to get loners through winter. Chris: that balances for something that does not lead
+to the goal state; humans are not solitary. Stage 2's Done-when is now mechanics only and
+the stage is closed. Moving camp is shelved (hemmed-in loners starving may be what
+reciprocity should rescue).
+**Changed:** `smoketest.mjs` reports solitary survival instead of requiring it; DEVPLAN Stage 2
+closed with the changed Done-when, fixed-home item shelved, Backlog line to re-balance the
+loner-tuned numbers; ODD §7.6 Stage 2 block records the balancing rule (Decided); `CLAUDE.md`
+gains "never balance for a solitary agent".
+**State:** smoke PASS (all checks): rich map, solitary 7/8 alive (reported); among the living
+mean food 0.974, water 1.000; winter 8.2 h vs summer 5.9 h; barren all starve by day 29;
+stripped hex 9× → 0×; planner 0.27 ms per agent-day.
+**Next:** decide the stage order with Chris: Stage 3 (tree, tested without exchange) or
+meeting and exchange (Stages 4–5) first.
+
 ## 2026-11-02 — Stage 2 (in progress): agents with needs, route planning, perception
 
 **Done:** `agent.js` (needs, holdings, lean-to, evening consumption, perception and habits,

@@ -43,7 +43,7 @@ seasonal regrowth, deposits, bounds over 900 days, travel); map seen in the brow
 Ledger check: Stage 1 adds landscape rules only; resource placement may make location matter,
 which ODD §2 intends (inequality from the world), and nothing about exchange, ties or prices.
 
-### Stage 2 — One agent alive: needs, hours, route planning  [ ACTIVE ]
+### Stage 2 — One agent alive: needs, hours, route planning  [ DONE ] (closed 2026-11-02)
 ODD §2 (Needs, Scales), §4.3, §4.4 (habits), §7.6 (route planning).
 - [x] Needs with set points and convex cost: food, water, warmth (shelter level + daily
       fire), rest; belonging present but inert until Stage 4
@@ -60,10 +60,18 @@ ODD §2 (Needs, Scales), §4.3, §4.4 (habits), §7.6 (route planning).
 - [x] Aging and death (no births yet)
 - [x] Measure planner cost per agent-day (ODD §7.6 estimated ~10¹⁰ evaluations per
       generation if exhaustive): 0.26 ms → ~700 s per generation at 300 agents
-- [ ] Settle the fixed-home question (asked of Chris): hemmed-in homes starve in late winter
-**Done when:** solitary agents keep needs near set points on a rich map and fail on a barren
-one; route choice responds to season and depletion; planner cost per agent-day is measured
-and projected to a few hundred agents × 9,000 days.
+- ~~Settle the fixed-home question~~ → shelved: hemmed-in loners starving may be what
+      reciprocity should rescue; revisit only if it persists once agents can share
+**Done when:** ~~solitary agents keep needs near set points on a rich map~~ (changed
+2026-11-02, Chris: humans are not solitary; balancing for lone survival does not lead to the
+goal state) the mechanics work: needs held near set points by those living on a rich map,
+failure on a barren one, route choice responding to season and depletion, planner cost per
+agent-day measured and projected. ✓ Met: smoke PASS (rich-map mean food 0.974, water 1.000;
+winter 8.2 h vs summer 5.9 h; barren all starve by day 29; stripped hex dropped 9× → 0×;
+0.26 ms per agent-day, ~700 s per generation at 300 agents). Solitary survival reported,
+not required (7/8 on the rich map). Ledger check: needs, perception, planning and storage
+are individual mechanics; nothing about exchange, ties, prices or inequality is written in.
+The numbers raised to get loners through winter are provisional (Backlog).
 
 ### Stage 3 — The recipe tree and tools  [ PLANNED ]
 ODD §2 (Goods and quality, First tree v0, Tools), §4.5, §7.3, §7.6 (partial projects).
@@ -147,7 +155,8 @@ How runs are compared is a research question to settle then (ODD §4.10).
 - [ ] idea: the trickle-down note (ODD open questions 2), revisit when capital is built
 - [ ] idea: water is sparse (rivers, lakes, springs only; ~6% of hexes); check against
       band placement in Stage 7, maybe more springs or seasonal ponds
-- [ ] idea: plants regrow to ~95% of cap in one season from bare; balance with harvesting in
-      Stage 2
+- [ ] fix: re-balance the numbers raised for solitary survival in Stage 2 (plants r 0.1, cap
+      40, 6 units/h; rot 1%/day; Keep 20 days at 0.97) once agents can share, against the
+      foundation forming, not against a loner surviving (Chris, 2026-11-02)
 - [ ] idea: log slack and tinkering hours; scarcity that removes slack should slow discovery
       (ODD §7.3), and it bears on the results

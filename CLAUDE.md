@@ -25,6 +25,9 @@ the scale of output. A minimal existence proof.
   ends with a ledger check of the rules it added.
 - **Numbers are balanced as we go** (Chris, 2026-11-02): hours, yields, decay, wear and rates
   are `PARAMETERS`, set while building against what the model does, and logged when changed.
+- **Never balance for a solitary agent** (Chris, 2026-11-02: "humans are not solitary").
+  Tuning a world until a loner thrives leaves the economy nothing to do. Balance against the
+  foundation forming (ODD §1); a stage without exchange tests mechanics, not survival.
 
 ## Stack (never violate)
 - Vanilla JS + Canvas. No build step, no framework, no modules. `<script>` tags load

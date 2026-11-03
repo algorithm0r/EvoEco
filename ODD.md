@@ -655,8 +655,14 @@ Stage 2 had to fill gaps the design left open. Each is a Default awaiting Chris'
 - **Scouting.** Walking to the nearest unseen hexes, valued at a small bonus per hex revealed.
 - **Starting.** 15 units of food in hand (a burn-in scaffold, §5); homes chosen at random on
   land within a hex of water (a Stage 2 test setup; the band layout is Stage 7).
-- **Open (asked of Chris):** an agent's home is fixed. Agents whose homes are hemmed in
-  (forest, few hexes within reach) starve in late winter even when plants are tripled.
+- **Homes are fixed (shelved).** Agents whose homes are hemmed in (forest, few hexes within
+  reach) starve alone in late winter. Moving camp was proposed and shelved: that may be what
+  reciprocity should rescue.
+- **Balancing (Decided — Chris, 2026-11-02): humans are not solitary.** Numbers are never
+  balanced so that a lone agent survives; that leads away from the goal state (§1: individuals
+  mostly meet their needs through the economy). Stage 2 tests mechanics only. The numbers
+  raised to get loners through winter (plant yields and regrowth, slow rot) are provisional,
+  to be set again against the foundation forming.
 
 Specialization is expected mainly from time and space: needs are spread across the
 landscape and the day is limited, so splitting the work saves hours ("you get food, I'll get
