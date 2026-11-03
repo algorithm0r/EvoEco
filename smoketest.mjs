@@ -16,7 +16,7 @@ import path from 'path';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const indirectEval = eval; // aliased → runs in the global (sloppy) realm, so `var` leaks to globalThis
-for (const f of ['util.js', 'params.js', 'engine.js', 'hex.js', 'mapgen.js', 'agent.js', 'planner.js', 'world.js']) {
+for (const f of ['util.js', 'params.js', 'engine.js', 'hex.js', 'mapgen.js', 'agent.js', 'planner.js', 'exchange.js', 'world.js']) {
   let src = readFileSync(path.join(__dirname, 'src', f), 'utf8');
   src = src.replace(/^\s*(['"])use strict\1;?/, ''); // strip directive so declarations leak to global
   indirectEval(src);
@@ -203,6 +203,51 @@ check('no norm without a meeting', bw.agents.concat(bw.dead).every((a) => a.norm
 const heard = bw.agents.filter((a) => a.heard > 0).length;
 check('sightings spread by chat', heard > 0, heard + '/' + bw.agents.length + ' know hexes only from others (mean ' + mean(bw.agents.map((a) => a.heard)).toFixed(1) + ')');
 console.log('bands after 60 days: ' + bw.agents.length + '/' + (B.n * B.size) + ' alive');
+
+// ── 8. exchange and ties (Stage 4) ────────────────────────────────────────────────────
+// Controlled market, one hex in winter: n wood sellers short of food, m food sellers short
+// of wood, holdings drawn at random; mean deal price over 20 draws.
+function market(nWood, nFood, seed) {
+  const mw = new World({ agents: 0 }); mw.day = 270; mw.rng = makeRng(seed);
+  const home = [...Array(mw.grid.n).keys()].find((i) => mw.terrain[i] === T_PLAINS);
+  const r = makeRng(seed + 99);
+  for (let k = 0; k < nWood + nFood; k++) {
+    const a = new Agent(k, home, mw);
+    a.need.food = 0.3 + 0.4 * r(); a.busy = 6; a.drank = true; a.places = [home];
+    a.hold = k < nWood ? { food: 5 * r(), wood: 20 + 60 * r(), water: 0 } : { food: 20 + 60 * r(), wood: 2 * r(), water: 0 };
+    mw.agents.push(a);
+  }
+  exchangeDay(mw, mw.agents);
+  return mw.tradesToday.map((t) => Math.log(t.p));
+}
+const sdPrice = [[2, 8], [5, 5], [8, 2]].map(([nw, nf]) => {
+  let all = [];
+  for (let s = 1; s <= 20; s++) all = all.concat(market(nw, nf, s));
+  return Math.exp(mean(all));
+});
+check('price of wood falls as wood sellers outnumber buyers', sdPrice[0] > sdPrice[1] && sdPrice[1] > sdPrice[2],
+  'food per wood: 2 sellers vs 8 buyers ' + sdPrice[0].toFixed(3) + ', 5 vs 5 ' + sdPrice[1].toFixed(3) + ', 8 vs 2 ' + sdPrice[2].toFixed(3));
+
+// bands for a year from no ties at all
+const xw = new World();
+let trades = 0, gifts = 0, maxOwed = 0, firstTrade = -1, firstGift = -1;
+for (let d = 1; d <= Y; d++) {
+  xw.update();
+  trades += xw.tradesToday.length; gifts += xw.giftsToday;
+  if (firstTrade < 0 && xw.tradesToday.length) firstTrade = d;
+  if (firstGift < 0 && xw.giftsToday) firstGift = d;
+  if (d % 30 === 0) for (const a of xw.agents) for (const id of a.ties.keys()) maxOwed = Math.max(maxOwed, a.owedBy(id, xw.day));
+}
+let trusted = 0;
+for (const a of xw.agents) for (const id of a.ties.keys()) if (a.trust(id, xw.day) > 2) trusted++;
+check('ties form through barter from a no-tie start', trades > 0 && gifts > 0 && trusted > 0 && firstTrade <= firstGift,
+  trades + ' trades (first day ' + firstTrade + '), ' + gifts + ' gifts (first day ' + firstGift + '), ' + trusted + ' trusted ties after a year');
+const tieA = new Agent(0, 0, xw), tieRec = tieA.tie(1, 0);
+tieRec.owed = 3;
+const owedLater = tieA.owedBy(1, 100);
+check('grudges appear and fade', maxOwed >= P.exchange.owedLimit && owedLater < 3 && owedLater > 0,
+  'largest unreturned balance seen ' + maxOwed.toFixed(2) + ' (limit ' + P.exchange.owedLimit + '); a balance of 3 is ' + owedLater.toFixed(2) + ' after 100 days');
+console.log('bands after a year with exchange: ' + xw.agents.length + '/' + (B.n * B.size) + ' alive, mean belonging ' + mean(xw.agents.map((a) => a.need.belonging)).toFixed(2));
 
 const proj = msAgentDay * 300 * 9000 / 1000;
 console.log('planner cost: ' + msAgentDay.toFixed(3) + ' ms per agent-day → ~' + proj.toFixed(0) + ' s per generation for 300 agents × 9,000 days');

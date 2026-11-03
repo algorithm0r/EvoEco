@@ -161,7 +161,8 @@ var World = class World {
     }
     for (const a of order) a.act(this);
     this.meet(live);                                                   //    meeting and chat
-    // 3. Exchange: Stage 4
+    this.giftsToday = 0;
+    exchangeDay(this, live);                                          // 3. Exchange
     for (const a of live) a.consume(this);                            // 4. Consume
     for (const a of live) a.learn();                                  // 5. Learn
     for (const a of live) a.age(this);                                // 6. Aging and deaths

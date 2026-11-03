@@ -106,6 +106,20 @@ var PARAMETERS = {
     scoutValue: 0.005,    // bonus per unseen hex a scouting stop would reveal
   },
 
+  // --- exchange (ODD §2 Ties, §7.1, §7.2) ---
+  exchange: {
+    tradeWeight: 0.5,     // a barter's weight in the kindness tally, vs 1 for a gift; swept incl. 0
+    tallyMemory: 60,      // days for a tally to fade by 1/e
+    forget: 0.01,         // daily chance of forgetting an unreturned gift (per agent; a setting)
+    owedLimit: 3,         // unreturned gifts beyond which it stops giving (a grudge)
+    belongingSet: 5,      // tie strength that meets the belonging need
+    priceRate: 0.2,       // error-driven update of the price norm
+    relRate: 0.1,         // update of how reliably its trades come off
+    maxLots: 30,          // lots per trade
+    marginalLot: 1,       // units used to measure a good's marginal value to need
+    hoursBaseline: 1e-4,  // weight of plain hour costs in a limit (decides when needs are flat)
+  },
+
   // --- engine ---
   updatesPerDraw: 1,    // fast-forward: days per rendered frame
 
@@ -126,6 +140,7 @@ var PARAMETERS = {
 // Schema drives the auto-generated control panel (ui.js). One entry per live-tunable.
 var PARAM_SCHEMA = [
   { key: 'seed', label: 'Seed', min: 1, max: 100, step: 1, resets: true },
-  { key: 'agents.n', label: 'Agents', min: 0, max: 60, step: 1, resets: true },
+  { key: 'agents.bands.n', label: 'Bands', min: 1, max: 8, step: 1, resets: true },
+  { key: 'agents.bands.size', label: 'Band size', min: 1, max: 40, step: 1, resets: true },
   { key: 'updatesPerDraw', label: 'Days per frame', min: 1, max: 30, step: 1 },
 ];

@@ -4,6 +4,32 @@
 
 <!-- append new entries above this line -->
 
+## 2026-11-02 — Stage 4: exchange and ties
+
+**Done:** `exchange.js`: gifts to ties in need (strongest first; given when the giver's own
+cost falls, belonging included; grudge limit on unreturned gifts), barter in rounds per good,
+scarcest first, holders picking by their own gain, bid rule with geometric middles and going
+rate, walk-away guard by hours and need, lot-by-lot quantity, kindness tallies, owing balance
+with per-agent forgetting, belonging from two-way ties, price norms from trades made, seen and
+told, chat ties-first, Trade arm in the planner (`holdingsCost`/`keepCost` refactor). Limits
+were hours-only at first, which cannot move price with supply and demand; now hours adjusted by
+need (marginal values in the agent's own cost), as §7.2 says. A first controlled test varied
+holdings and moved price the wrong way (food and wood are complements: a fire stretches food);
+the test now varies sellers against buyers, where scarcity decides who picks.
+**Changed:** new `src/exchange.js`; `src/agent.js` (ties, belonging, price norm, chat order),
+`src/planner.js`, `src/world.js`, `src/params.js` (exchange block; band sliders),
+`src/datamanager.js`, `index.html`, `smoketest.mjs`, `runner.mjs`; ODD §7.6 Stage 4 block;
+DEVPLAN Stage 4 closed, Backlog +2.
+**State:** smoke PASS, all checks: wood 1.208 / 0.771 / 0.637 food at 2:8 / 5:5 / 8:2; bands,
+a year from no ties: 755 trades (from day 3), 1,203 gifts (from day 5), 83 trusted ties,
+largest unreturned balance 3.36, a balance of 3 fades to 1.10 in 100 days; 76/100 alive,
+belonging 0.87. Headless seed 1, 2 years: barter peaks in autumn–winter (30–50 per 45 days),
+then gifts replace it within bands (140–190 per 45 days, no barter in year 2); estimate error
+0.32 → 0.15. Planner 0.23 ms per agent-day. Browser: runs (rAF pauses while the pane is
+hidden), no console errors.
+**Next:** Stage 5, the recipe tree, now with exchange in place; or Chris's review of the
+Stage 1–4 Defaults first.
+
 ## 2026-11-02 — Stage 3: bands, meeting, chat, norms; land balanced for bands
 
 **Done:** Chris: "exchange is central, lets do it next." DEVPLAN reordered: meeting (3),

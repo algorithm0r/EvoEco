@@ -106,32 +106,62 @@ function planCost(agent, world, plan) {
   }
   if (plan.length) hours += world.travel(at)[agent.home];
   if (!(hours <= cap)) return Infinity;
-  const sea = world.season();
-  const e = Agent.evening(agent.need, { food, wood, water }, shelter, hours, drank, sea.cold, cap);
-  let cost = needCost(e, true);
-  // Keep: the coming months on what is left (ODD §7.6 best-of-three, Keep arm; a good is
-  // valued over its storage life), with ordinary gathering at the yields the agent has known
-  // in each season, so a store is worth what it covers beyond that (winter). Projected in
-  // steps of `keepStep` days, each step's cost counted for every day in it.
-  let need = e, hold = e.hold;
+  return holdingsCost(agent, world, { food, wood, water }, shelter, hours, drank, agent.need.belonging, true) - bonus;
+}
+
+// The cost of ending the day with `hold`: tonight's evening plus the Keep projection. With
+// `withTrade`, the Trade arm too (ODD §7.6 best of keep / trade / give; trade enters the
+// plan): part of one good may be swapped for the other at the going rate, discounted by how
+// reliably the agent's trades have come off, and the cheaper outcome counts. (Give is decided
+// in the exchange phase, where the recipient's need is known; exchange.js.)
+function holdingsCost(agent, world, hold, shelter, busy, drank, belonging, withTrade) {
+  let best = keepCost(agent, world, hold, shelter, busy, drank, belonging);
+  if (!withTrade || !agent.price.n || !(agent.tradeRel > 0.01)) return best;
+  const p = Math.exp(agent.price.logp), rel = agent.tradeRel;   // p: food per unit of wood
+  for (const f of [0.25, 0.5]) {
+    if (hold.food > 0) {
+      const give = f * hold.food;
+      const c = keepCost(agent, world, { food: hold.food - rel * give, wood: hold.wood + rel * give / p, water: hold.water }, shelter, busy, drank, belonging);
+      if (c < best) best = c;
+    }
+    if (hold.wood > 0) {
+      const give = f * hold.wood;
+      const c = keepCost(agent, world, { food: hold.food + rel * give * p, wood: hold.wood - rel * give, water: hold.water }, shelter, busy, drank, belonging);
+      if (c < best) best = c;
+    }
+  }
+  return best;
+}
+
+// Tonight's evening, then the Keep arm: the coming months on what is left (a good is valued
+// over its storage life), with ordinary gathering at the yields the agent has known in each
+// season, so a store is worth what it covers beyond that (winter). Projected in steps of
+// `keepStep` days, each step's cost counted for every day in it. Belonging is held at
+// tonight's level through the projection.
+function keepCost(agent, world, hold, shelter, busy, drank, belonging) {
+  const A = PARAMETERS.agents, G = PARAMETERS.goods;
+  const cap = agent.capacity();
+  const e = Agent.evening(agent.need, hold, shelter, busy, drank, world.season().cold, cap);
+  let cost = needCost(e, true, belonging);
+  let need = e, h = e.hold;
   const S = A.keepStep, Y = PARAMETERS.year.days;
   for (let d = S; d <= A.horizon; d += S) {
     const beta = Math.pow(A.discount, d);
     const si = Math.floor(((world.day + d) % Y) / Y * 4);
-    hold = {
-      food: hold.food * Math.pow(1 - G.food.rot, S) + S * A.projHours.forage * agent.seasonYield[0][si],
-      wood: hold.wood + S * A.projHours.wood * agent.seasonYield[1][si],
+    h = {
+      food: h.food * Math.pow(1 - G.food.rot, S) + S * A.projHours.forage * agent.seasonYield[0][si],
+      wood: h.wood + S * A.projHours.wood * agent.seasonYield[1][si],
       water: 0,
     };
     shelter = Math.max(0, shelter - G.leanTo.wear * S);
-    const f = Agent.evening(need, hold, shelter, A.projHours.forage + A.projHours.wood, true, world.season(world.day + d).cold, cap, S);
-    cost += beta * S * needCost(f, false);
-    need = f; hold = f.hold;
+    const f = Agent.evening(need, h, shelter, A.projHours.forage + A.projHours.wood, true, world.season(world.day + d).cold, cap, S);
+    cost += beta * S * needCost(f, false, belonging);
+    need = f; h = f.hold;
   }
-  return cost - bonus;
+  return cost;
 }
 
-function needCost(e, withRest) {
+function needCost(e, withRest, belonging) {
   const sq = (x) => (1 - x) * (1 - x);
-  return sq(e.food) + sq(e.water) + sq(e.warmth) + (withRest ? sq(e.rest) : 0);
+  return sq(e.food) + sq(e.water) + sq(e.warmth) + (withRest ? sq(e.rest) : 0) + sq(belonging);
 }

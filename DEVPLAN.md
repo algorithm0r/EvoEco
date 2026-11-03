@@ -94,19 +94,25 @@ hexes only from others). Second half moved to Backlog: with every agent gatherin
 true rate there is no bias to measure yet. Ledger check: meeting is co-location, chat partners
 random, norms pooled experience; no ties, prices or households written in.
 
-### Stage 4 — Exchange and ties  [ PLANNED ]
+### Stage 4 — Exchange and ties  [ DONE ] (closed 2026-11-02)
 ODD §2 (Ties, Owing), §3 (exchange phase), §4.7 (matching), §7.1, §7.2.
-- [ ] Barter: own cost vs estimated other cost, fair bid (geometric middle), going rate, deal
+- [x] Barter: own cost vs estimated other cost, fair bid (geometric middle), going rate, deal
       at the midpoint of bids, walk-away guard; price norms per pair of goods
-- [ ] Matching in rounds per good, scarcest good first, random order within
-- [ ] Kind-offer tally; trust spectrum (regular trade → barter credit → trusted tie); trade
+- [x] Matching in rounds per good, scarcest good first, random order within
+- [x] Kind-offer tally; trust spectrum (regular trade → barter credit → trusted tie); trade
       weight as a swept parameter including 0
-- [ ] Owing balance in occasions; per-agent daily chance of forgetting
-- [ ] Gifts to ties in need, strongest first, before barter
-- [ ] Holdings valued by best of keep / trade / give; trade enters the plan
-- [ ] Log each agent's cost-estimate error (premium decomposition, ODD §7.2)
+- [x] Owing balance in occasions; per-agent daily chance of forgetting (expected value)
+- [x] Gifts to ties in need, strongest first, before barter; belonging from ties
+- [x] Holdings valued by best of keep / trade / give; trade enters the plan (Give decided
+      at exchange, where the recipient's need is known)
+- [x] Log each agent's cost-estimate error (premium decomposition, ODD §7.2): per trade
 **Done when:** in a controlled test, prices move in the right direction with supply and demand;
 ties form through barter from a no-tie start; grudges (unreturned balances) appear and fade.
+✓ Met: smoke PASS (wood 1.208 / 0.771 / 0.637 food at 2:8 / 5:5 / 8:2 sellers to buyers; a
+year from no ties: 755 trades from day 3, 1,203 gifts from day 5, 83 trusted ties; largest
+unreturned balance 3.36, a balance of 3 fades to 1.10 in 100 days). Ledger check: prices come
+from bids on own and estimated costs; ties from tallies of kindness judged by each agent;
+gifts from each giver's own belonging; no tie, price, partner or group is written in.
 
 ### Stage 5 — The recipe tree and tools  [ PLANNED ]
 ODD §2 (Goods and quality, First tree v0, Tools), §4.5, §7.3, §7.6 (partial projects).
@@ -169,6 +175,10 @@ How runs are compared is a research question to settle then (ODD §4.10).
 - [ ] fix: re-balance the numbers raised for solitary survival in Stage 2 (plants r 0.1, cap
       40, 6 units/h; rot 1%/day; Keep 20 days at 0.97) once agents can share, against the
       foundation forming, not against a loner surviving (Chris, 2026-11-02)
+- [ ] feat: trade reliability per place (ODD §7.6 says reliability at places on the route; one
+      per agent for now), so markets as places can emerge (ODD §4.7)
+- [ ] idea: forgetting is the expected value of the daily chance; switch to the random draw if
+      the variance matters
 - [ ] feat: measure survivorship bias in norms once rates differ between agents (Stage 3
       Done-when, second half)
 - [ ] idea: log slack and tinkering hours; scarcity that removes slack should slow discovery

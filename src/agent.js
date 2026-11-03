@@ -42,6 +42,17 @@ var Agent = class Agent {
     this.chatted = 0;          // how many it chatted with today
     this.heard = 0;            // sightings learned from others, all time
     this.metTotal = 0;         // meetings, all time
+    // ties (ODD §2): for each other agent it has dealt with, a fading tally of the kind offers
+    // it judged it received (trust), a fading tally of those it made, the owing balance in
+    // gift occasions (+ = they owe me), and its model of that particular other's price
+    this.ties = new Map();
+    this.forget = PARAMETERS.exchange.forget;   // its own daily chance of forgetting a debt
+    // price norm for food per wood (log, pooled from trades made, seen and told), and how
+    // reliably its own trades have come off (ODD §7.6: trade enters the plan)
+    this.price = { logp: 0, n: 0 };
+    this.tradeRel = 0;
+    this.costs = null;
+    this.need.belonging = 0;   // no ties yet
     // what it has seen (ODD §4.4: passive, where it is): which hexes, and how full of plants
     // and wood each looked on the day it last saw it
     const n = world.grid.n;
@@ -128,6 +139,56 @@ var Agent = class Agent {
     this.hold.water = out.hold.water;
     this.shelter = Math.max(0, this.shelter - PARAMETERS.goods.leanTo.wear);
     for (const k of ['food', 'water', 'warmth']) this.zeroDays[k] = this.need[k] <= 0 ? this.zeroDays[k] + 1 : 0;
+    this.need.belonging = this.belonging(world.day);
+  }
+
+  // ── ties (ODD §2 Ties, Owing) ─────────────────────────────────────────────────────────
+  // The record for another agent, faded to today: tallies fade with time; the owing balance
+  // shrinks at the agent's own forgetting rate (the expected value of its daily chance).
+  tie(id, day) {
+    let t = this.ties.get(id);
+    if (!t) { t = { kind: 0, given: 0, owed: 0, n: 0, ratio: 0, last: day }; this.ties.set(id, t); }
+    const dt = day - t.last;
+    if (dt > 0) {
+      const f = Math.exp(-dt / PARAMETERS.exchange.tallyMemory);
+      t.kind *= f; t.given *= f;
+      t.owed *= Math.pow(1 - this.forget, dt);
+      t.last = day;
+    }
+    return t;
+  }
+  trust(id, day) { return this.ties.has(id) ? this.tie(id, day).kind : 0; }
+  owedBy(id, day) { return this.ties.has(id) ? this.tie(id, day).owed : 0; }
+
+  // Belonging (ODD §2 Needs): ties in both directions, trusting and being trusted. Each tie
+  // counts the smaller of the kindness received and the kindness given.
+  belonging(day) {
+    let s = 0;
+    for (const id of this.ties.keys()) { const t = this.tie(id, day); s += Math.min(t.kind, t.given); }
+    return clamp(s / PARAMETERS.exchange.belongingSet, 0, 1);
+  }
+  belongingIfGave(id, day) {
+    const t = this.tie(id, day);
+    const d = Math.min(t.kind, t.given + 1) - Math.min(t.kind, t.given);
+    return clamp(this.need.belonging + d / PARAMETERS.exchange.belongingSet, 0, 1);
+  }
+  gave(id, day) { const t = this.tie(id, day); t.given += 1; t.owed += 1; t.n++; }
+  received(id, day) { const t = this.tie(id, day); t.kind += 1; t.owed -= 1; t.n++; }
+  // A completed barter is mutual gain (weight `tradeWeight`, swept including 0); a price at
+  // least as good as its own fair middle counts as a full kind offer.
+  traded(id, day, kind, p) {
+    const E = PARAMETERS.exchange, t = this.tie(id, day);
+    t.kind += kind ? 1 : E.tradeWeight;
+    t.given += E.tradeWeight;
+    t.n++;
+    t.ratio = t.ratio ? Math.exp(Math.log(t.ratio) + 0.3 * (Math.log(p) - Math.log(t.ratio))) : p;
+    this.observePrice(p);
+  }
+  observePrice(p) {
+    const P = this.price;
+    if (!P.n) P.logp = Math.log(p);
+    else P.logp += PARAMETERS.exchange.priceRate * (Math.log(p) - P.logp);
+    P.n++;
   }
 
   // One evening, as a pure function (the planner calls it too). Needs run down by the
@@ -194,17 +255,18 @@ var Agent = class Agent {
     return (nH * this.eff[act] + wN * this.norm.eff[act]) / (nH + wN);
   }
 
-  // Chat with up to k of the people met today, chosen at random (ties first once ties exist,
-  // Stage 4). Each tells where it went and what it got: the listener updates its norms and
+  // Chat with up to k of the people met today, ties first, the rest at random (ODD §4.6). Each tells where it went and what it got: the listener updates its norms and
   // takes any newer sighting of those hexes (ODD §4.6).
   chat(world) {
     const k = PARAMETERS.agents.chatK;
-    const pool = this.met.slice();
+    // ties first (strongest trust first), then the rest in random order
+    const pool = shuffleInPlace(this.met.slice(), world.rng);
+    pool.sort((x, y) => this.trust(y.id, world.day) - this.trust(x.id, world.day));
     this.chatted = 0;
     for (let i = 0; i < pool.length && this.chatted < k; i++) {
-      const j = i + world.rng.int(pool.length - i);
-      const b = pool[j]; pool[j] = pool[i]; pool[i] = b;
+      const b = pool[i];
       this.chatted++;
+      if (b.price.n) this.observePrice(Math.exp(b.price.logp));
       for (const o of b.obs) {
         this.observe(o);
         const h = o.hex;

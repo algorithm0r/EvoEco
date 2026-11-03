@@ -689,6 +689,39 @@ Stage 2 had to fill gaps the design left open. Each is a Default awaiting Chris'
   (the losses are learning what winter is), then no deaths in years 2–3; 7–9 hours worked;
   rest mostly met.
 
+#### Exchange and ties as built in Stage 4 — Default (Claude, 2026-11-02; code in `exchange.js`)
+The decided rules (§2 Ties and Owing, §3 phase 3, §4.7, §7.1, §7.2) are built as written. The
+gaps filled:
+- **Goods traded:** food and wood (water stays in the gourd). Price = food per wood.
+- **Where:** at every hex where agents met today, places in random order: gifts first, then
+  barter rounds.
+- **Own limit, hours adjusted by need (§7.2).** The ratio of the marginal value of wood to
+  that of food in the agent's own cost (tonight plus Keep), with plain hour costs (its best
+  known source, trip included) as a small baseline when its needs are flat in both. Hours
+  alone could not move price with supply and demand.
+- **Estimate of the other's limit:** the particular other if it has traded with it before
+  (its past deal prices), else cost norms (others' rates).
+- **Quantity:** lot by lot (a tenth of the seller's stock) while both still gain by their
+  own need, up to 30 lots.
+- **Kindness (§2 tally):** a completed barter counts `tradeWeight` = 0.5 (mutual gain;
+  swept including 0); a price at least as good as the agent's own fair middle counts 1; a
+  gift received counts 1. Tallies fade over ~60 days.
+- **Gifts (§7.1, Give arm of §7.6).** A tie (trust > 0) gives to one in need (short of food
+  for tonight, or of wood for a fire), strongest ties first, when giving lowers its own cost:
+  the belonging it gains outweighs the goods. Not when the recipient's unreturned gifts have
+  reached 3 (a grudge).
+- **Belonging:** each tie counts the smaller of kindness received and kindness given (trusting
+  and being trusted); 5 such units meet the need.
+- **Owing:** gift occasions, given minus returned, shrinking at the agent's own forgetting rate
+  (1% a day, the expected value of the daily chance).
+- **Trade in the plan:** the Trade arm lets a quarter or half of one good be swapped at the
+  going rate, discounted by how reliably the agent's trades have come off (one reliability
+  per agent, not yet per place).
+- **Result, bands, seed 1, a year from no ties:** 755 barters (first on day 3), 1,203 gifts
+  (first on day 5), 83 trusted ties, mean belonging 0.87. Barter peaks in autumn and winter;
+  by year 2 gifts have replaced barter within bands. Controlled market: wood sells for 1.21
+  food with 2 sellers to 8 buyers, 0.77 at 5:5, 0.64 at 8:2.
+
 Specialization is expected mainly from time and space: needs are spread across the
 landscape and the day is limited, so splitting the work saves hours ("you get food, I'll get
 water, meet at the shelter at dark").

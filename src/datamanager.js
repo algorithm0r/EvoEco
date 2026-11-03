@@ -31,6 +31,8 @@ var DataManager = class DataManager {
       food: mean((a) => a.need.food), waterNeed: mean((a) => a.need.water),
       warmth: mean((a) => a.need.warmth), rest: mean((a) => a.need.rest),
       busy: mean((a) => a.busy), heldFood: mean((a) => a.hold.food),
+      belonging: mean((a) => a.need.belonging),
+      trades: (w.tradesToday || []).length, gifts: w.giftsToday || 0,
     };
   }
 
