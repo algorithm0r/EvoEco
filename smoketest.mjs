@@ -16,7 +16,7 @@ import path from 'path';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const indirectEval = eval; // aliased → runs in the global (sloppy) realm, so `var` leaks to globalThis
-for (const f of ['util.js', 'params.js', 'engine.js', 'hex.js', 'mapgen.js', 'agent.js', 'planner.js', 'exchange.js', 'world.js']) {
+for (const f of ['util.js', 'params.js', 'engine.js', 'hex.js', 'mapgen.js', 'agent.js', 'tree.js', 'planner.js', 'exchange.js', 'world.js']) {
   let src = readFileSync(path.join(__dirname, 'src', f), 'utf8');
   src = src.replace(/^\s*(['"])use strict\1;?/, ''); // strip directive so declarations leak to global
   indirectEval(src);
@@ -214,11 +214,11 @@ function market(nWood, nFood, seed) {
   for (let k = 0; k < nWood + nFood; k++) {
     const a = new Agent(k, home, mw);
     a.need.food = 0.3 + 0.4 * r(); a.busy = 6; a.drank = true; a.places = [home];
-    a.hold = k < nWood ? { food: 5 * r(), wood: 20 + 60 * r(), water: 0 } : { food: 20 + 60 * r(), wood: 2 * r(), water: 0 };
+    Object.assign(a.hold, k < nWood ? { food: 5 * r(), wood: 20 + 60 * r() } : { food: 20 + 60 * r(), wood: 2 * r() });
     mw.agents.push(a);
   }
   exchangeDay(mw, mw.agents);
-  return mw.tradesToday.map((t) => Math.log(t.p));
+  return mw.tradesToday.filter((t) => t.key === 'food|wood').map((t) => Math.log(t.p));
 }
 const sdPrice = [[2, 8], [5, 5], [8, 2]].map(([nw, nf]) => {
   let all = [];
@@ -230,10 +230,11 @@ check('price of wood falls as wood sellers outnumber buyers', sdPrice[0] > sdPri
 
 // bands for a year from no ties at all
 const xw = new World();
-let trades = 0, gifts = 0, maxOwed = 0, firstTrade = -1, firstGift = -1;
+let trades = 0, gifts = 0, maxOwed = 0, firstTrade = -1, firstGift = -1, toolTrades = 0;
 for (let d = 1; d <= Y; d++) {
   xw.update();
   trades += xw.tradesToday.length; gifts += xw.giftsToday;
+  for (const t of xw.tradesToday) if (/flint|axe|pick/.test(t.key)) toolTrades++;
   if (firstTrade < 0 && xw.tradesToday.length) firstTrade = d;
   if (firstGift < 0 && xw.giftsToday) firstGift = d;
   if (d % 30 === 0) for (const a of xw.agents) for (const id of a.ties.keys()) maxOwed = Math.max(maxOwed, a.owedBy(id, xw.day));
@@ -248,6 +249,27 @@ const owedLater = tieA.owedBy(1, 100);
 check('grudges appear and fade', maxOwed >= P.exchange.owedLimit && owedLater < 3 && owedLater > 0,
   'largest unreturned balance seen ' + maxOwed.toFixed(2) + ' (limit ' + P.exchange.owedLimit + '); a balance of 3 is ' + owedLater.toFixed(2) + ' after 100 days');
 console.log('bands after a year with exchange: ' + xw.agents.length + '/' + (B.n * B.size) + ' alive, mean belonging ' + mean(xw.agents.map((a) => a.need.belonging)).toFixed(2));
+
+// ── 9. stone tools (Stage 5a) ─────────────────────────────────────────────────────────
+// one agent cuts wood for 2 hours on the same hex, with and without an axe
+const tw = new World({ agents: 0 });
+const woodHex = tw.active.wood.find((i) => tw.terrain[i] === T_FOREST);
+const cut = (withAxe) => {
+  tw.stock.wood[woodHex] = tw.caps.wood[woodHex];
+  const a = new Agent(0, woodHex, tw);
+  a.hold.axe = withAxe ? 1 : 0;
+  a.plan = [{ hex: woodHex, act: A_WOOD, hours: 2 }];
+  a.act(tw);
+  return a;
+};
+const bare = cut(false), axed = cut(true);
+check('an axe multiplies wood cut by its multiplier', Math.abs(axed.hold.wood / bare.hold.wood - TOOLS.axe.mult) < 0.01,
+  'wood in 2 h: bare hands ' + bare.hold.wood.toFixed(2) + ', axe ' + axed.hold.wood.toFixed(2));
+const wearAgent = cut(true);
+for (let k = 0; k < TOOLS.axe.life / 2; k++) { wearAgent.plan = [{ hex: woodHex, act: A_WOOD, hours: 2 }]; wearAgent.act(tw); }
+check('an axe wears out after its life in hours', wearAgent.hold.axe === 0, 'axe left after ' + (TOOLS.axe.life + 2) + ' h of use: ' + wearAgent.hold.axe);
+check('stone tools are made and flint or tools change hands', (xw.crafted || 0) > 0 && toolTrades > 0,
+  (xw.crafted || 0) + ' tools made in the bands year, ' + toolTrades + ' trades in flint or tools');
 
 const proj = msAgentDay * 300 * 9000 / 1000;
 console.log('planner cost: ' + msAgentDay.toFixed(3) + ' ms per agent-day → ~' + proj.toFixed(0) + ' s per generation for 300 agents × 9,000 days');

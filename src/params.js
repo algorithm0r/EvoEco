@@ -41,7 +41,7 @@ var PARAMETERS = {
     soil:   { kind: 'renewable', r: 0.01, floor: 0.2, season: 'none', capBy: { plains: 6, forest: 6, hills: 2 },
               floodplainBonus: 2, floodplainRange: 1 },  // fertile land near water
     water:  { kind: 'flow', inflow: 1.0, season: 'rain', capBy: { river: 60, lake: 100 }, spring: 30 },
-    flint:  { kind: 'deposit', deposit: 400, clusters: 8, radius: 1, fill: 0.6, on: ['hills'] },
+    flint:  { kind: 'deposit', deposit: 400, clusters: 8, radius: 1, fill: 0.6, on: ['hills'], bankFrac: 0.1 },  // hills, and cobbles in river gravels
     clay:   { kind: 'deposit', deposit: 300, bankFrac: 0.35 },  // on land next to river or lake
     copper: { kind: 'deposit', deposit: 300, clusters: 2, radius: 1, fill: 0.5, on: ['hills'] },
     tin:    { kind: 'deposit', deposit: 150, clusters: 1, radius: 0, fill: 1, on: ['hills'],
@@ -61,6 +61,7 @@ var PARAMETERS = {
   goods: {
     plants: { perHour: 6 },   // units gathered per hour from a full hex (falls with stock)
     wood:   { perHour: 4 },
+    flint:  { perHour: 1 },   // by hand; a pick doubles it
     food:   { restores: 0.08, cookedBonus: 1.5, rot: 0.01 },  // per unit of wild plants (nuts and roots keep, berries don't); rots daily
     gourd: 0.5,               // water carried home (in need units)
     drinkDraw: 1,             // water units taken from the source per drink
@@ -99,7 +100,7 @@ var PARAMETERS = {
     normRate: 0.2,        // error-driven update of norms from others' reported experience
     normPrior: 3,         // weight of the norm against the agent's own habit (precision weighting)
     habitCap: 20,         // most experiences a habit counts, so recent reliability rules
-    priorPerHour: { forage: 3, wood: 3 },  // starting guess of the yield per hour from a full hex
+    priorPerHour: { forage: 3, wood: 3, quarry: 1 },  // starting guess of the yield per hour from a full hex
     sightSd: 0.5,         // uncertainty (in fullness) of a sighting once it is old
     sightMemory: 30,      // days for a sighting to grow most of that uncertainty
     curiosity: 1.0,       // optimism per sd of uncertainty

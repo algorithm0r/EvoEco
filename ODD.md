@@ -722,6 +722,25 @@ gaps filled:
   by year 2 gifts have replaced barter within bands. Controlled market: wood sells for 1.21
   food with 2 sellers to 8 buyers, 0.77 at 5:5, 0.64 at 8:2.
 
+#### Stone tools and many goods as built in Stage 5a — Default (Claude, 2026-11-02; `tree.js`)
+- **The tree as data.** Tools, recipes and traded goods live in one file. Stage 5a holds the
+  stone axe (wood ×2) and pick (quarrying ×2), each from 2 flint + 1 wood + 3 hours at home.
+- **A tool is held as remaining life:** 1 when new, minus 1/80 per hour of use; traded whole.
+  Agents learn the bare-handed rate (yield ÷ tool), so a tool's worth is known from the recipe.
+- **Flint is quarried** from deposits in the hills **and from cobbles on some riverbanks**
+  (10% of bank hexes). Hill-only flint lay 5.5–11 hours from every band and no tools were made;
+  knappable stone in river gravels is the realistic common case.
+- **Keep with tools:** the projection's wood-cutting runs at the axe's rate while it lasts;
+  with no axe and the inputs in hand, the agent is assumed to make one (so flint is worth what
+  an axe is worth).
+- **Exchange over any goods:** every pair has its own going rate (§7.2), own limits are
+  marginal values in the agent's own cost for each good, the other's limit is estimated from
+  the particular other or from norm hour costs (a made good: recipe hours + inputs).
+- **Result, bands, seed 1, two years:** 14 tools made, up to 7 axes held at once (winter, when
+  wood is cut most), worn axes remade; 82 trades in flint, 6 axes sold for food; 89/100 alive
+  (up from ~75 before local flint). Tools stay rare at levels 0–1, where they only speed
+  wood-cutting; they are expected to matter with huts and farming (5b).
+
 Specialization is expected mainly from time and space: needs are spread across the
 landscape and the day is limited, so splitting the work saves hours ("you get food, I'll get
 water, meet at the shelter at dark").

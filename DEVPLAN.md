@@ -114,18 +114,53 @@ unreturned balance 3.36, a balance of 3 fades to 1.10 in 100 days). Ledger check
 from bids on own and estimated costs; ties from tallies of kindness judged by each agent;
 gifts from each giver's own belonging; no tie, price, partner or group is written in.
 
-### Stage 5 — The recipe tree and tools  [ PLANNED ]
-ODD §2 (Goods and quality, First tree v0, Tools), §4.5, §7.3, §7.6 (partial projects).
-- [ ] Tree v0 as data (one file): recipes, inputs, qualities, hours, tool requirements
-- [ ] Task-specific tools (axe, hoe/sickle, pick) as production multipliers; wear and repair
-- [ ] Intermediates: wood, charcoal, fired clay, metals
-- [ ] Partial projects carry partial value across days; future discount as a swept parameter
-- [ ] Tinkering as an activity, scored by the curiosity term (~~scouting~~ → **Stage 2**)
-- [ ] Know-how lives in agents; lost when no one practices for a generation
+### Stage 5 — The recipe tree and tools  [ ACTIVE ]
+ODD §2 (Goods and quality, First tree v0, Tools), §4.5, §7.3, §7.6 (partial projects). Split
+2026-11-02 into three parts, each with its own Done-when.
+
+#### 5a — Recipe engine, stone tools, many-goods exchange  [ DONE ] (closed 2026-11-02)
+- [x] Tree v0 as data (one file): recipes, inputs, hours, tool, task, multiplier, life
+- [x] Task-specific stone tools (axe for wood, pick for quarrying) as production multipliers,
+      worn by use and remade
+- [x] Quarrying flint (a deposit, hills and riverbanks) and crafting at home as planner activities
+- [x] Exchange over any goods: per-pair price norms (ODD §7.2: n(n−1)/2 going rates), own
+      limits by need for every good, tools traded whole
+**Done when:** agents make and use stone tools, tools raise their task's yield and wear out and
+are remade, flint or tools change hands in trade, and the Stage 4 checks still pass. ✓ Met:
+smoke PASS (axe ×2.00 wood, worn out after its 80 h; bands year: 3 tools made, 36 trades in
+flint or tools; Stage 4 checks pass). Headless seed 1, two years: 14 made, worn axes remade,
+82 flint trades, 6 axes sold. Tools stay rare at levels 0–1 (they only speed wood-cutting).
+Ledger check: recipes and tools are the tree (data); who makes, holds and trades tools is
+each agent's own plan and bargain.
+
+#### 5b — Crafted levels, tinkering, know-how  [ ACTIVE ]
+- [ ] Level 2–3 recipes: fired clay and pots, huts and houses, farming (hoe/sickle), bread
+- [ ] Intermediates: charcoal, fired clay
+- [ ] Partial projects carry partial value across days (multi-day builds)
+- [ ] Tinkering as an activity, scored by the curiosity term; discovery only with the inputs
+- [ ] Know-how lives in agents; learned by seeing it practised; lost when no one practises
+      for a generation (Learning know-how by seeing it practised, from Stage 3.)
 - [ ] Quality valued intrinsically and instrumentally (food restores more, tools last longer)
-**Done when:** ~~without exchange,~~ (changed 2026-11-02: never test on loners) agents
-holding the right inputs discover level 2+ by tinkering, tools and goods are traded, multi-day builds get started and finished, and a test case shows know-how lost when
-a craft lapses.
+**Done when:** agents holding the right inputs discover level 2+ by tinkering, multi-day builds
+get started and finished, and a test case shows know-how lost when a craft lapses.
+
+#### 5c — Metals  [ PLANNED ]
+- [ ] Copper, tin, bronze, iron: smelting with charcoal, metal tool tiers
+**Done when:** metal tools are made where the chain allows, and long-distance trade in tin or
+bronze appears or its absence is explained by the map.
+
+*Original Stage 5 list and Done-when, kept for the record:*
+> ODD §2 (Goods and quality, First tree v0, Tools), §4.5, §7.3, §7.6 (partial projects).
+> - [ ] Tree v0 as data (one file): recipes, inputs, qualities, hours, tool requirements
+> - [ ] Task-specific tools (axe, hoe/sickle, pick) as production multipliers; wear and repair
+> - [ ] Intermediates: wood, charcoal, fired clay, metals
+> - [ ] Partial projects carry partial value across days; future discount as a swept parameter
+> - [ ] Tinkering as an activity, scored by the curiosity term (~~scouting~~ → **Stage 2**)
+> - [ ] Know-how lives in agents; lost when no one practices for a generation
+> - [ ] Quality valued intrinsically and instrumentally (food restores more, tools last longer)
+> **Done when:** ~~without exchange,~~ (changed 2026-11-02: never test on loners) agents
+> holding the right inputs discover level 2+ by tinkering, tools and goods are traded, multi-day builds get started and finished, and a test case shows know-how lost when
+> a craft lapses.
 
 ### Stage 6 — Households and generations  [ PLANNED ]
 ODD §2 (Households, Agents life cycle), §7.4, §7.5, §7.6 (household planning).
@@ -175,6 +210,9 @@ How runs are compared is a research question to settle then (ODD §4.10).
 - [ ] fix: re-balance the numbers raised for solitary survival in Stage 2 (plants r 0.1, cap
       40, 6 units/h; rot 1%/day; Keep 20 days at 0.97) once agents can share, against the
       foundation forming, not against a loner surviving (Chris, 2026-11-02)
+- [ ] perf: planner cost rose 0.23 → 0.8–1.3 ms per agent-day with craft/quarry candidates and
+      object copies in the cost functions (~35–60 min per generation at 300 agents); profile
+      and trim (habit as a cached plan, ODD §7.6; fewer allocations)
 - [ ] feat: trade reliability per place (ODD §7.6 says reliability at places on the route; one
       per agent for now), so markets as places can emerge (ODD §4.7)
 - [ ] idea: forgetting is the expected value of the daily chance; switch to the random draw if

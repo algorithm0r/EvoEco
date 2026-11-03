@@ -1,26 +1,26 @@
 # EvoEco sim — STATUS
 
-**Updated:** 2026-11-02 (Stage 4 closed)
+**Updated:** 2026-11-02 (Stage 5a closed)
 **Verified:** never (the 2026-11-01 cold ledger audit checked ODD v0.2, not the code or v0.3)
 
-**Stage:** Stages 1–4 `[ DONE ]`; Stage 5 (recipe tree and tools) next, `[ PLANNED ]`.
+**Stage:** Stages 1–4 and 5a `[ DONE ]`; 5b (crafted levels, tinkering, know-how) `[ ACTIVE ]`,
+not started.
 
 **State:**
-- World, agents, bands, meeting, chat, norms, barter, gifts, ties, owing and belonging run.
-  Smoke PASS, all checks @ Stage 4 commit, 2026-11-02. Browser runs, no console errors.
-- From no ties, bands build trust through barter, then gifts replace barter within bands.
-- `ODD.md` v0.3 plus Default blocks for Stages 1–4 (not reviewed by Chris).
+- World, agents, bands, meeting, chat, norms, barter over any goods, gifts, ties, belonging,
+  stone tools (axe, pick) made, used, worn, remade and traded. Smoke PASS, all checks @ Stage
+  5a commit, 2026-11-02.
+- `ODD.md` v0.3 plus Default blocks for Stages 1–5a (not reviewed by Chris).
 
-**Metrics:** price of wood 1.21 / 0.77 / 0.64 food at 2:8 / 5:5 / 8:2 sellers to buyers; a
-year from no ties: 755 trades, 1,203 gifts, 83 trusted ties, belonging 0.87, 76/100 alive;
-planner 0.23 ms per agent-day.
+**Metrics:** bands, seed 1, two years: 89/100 alive, 14 tools made, 82 flint trades; price of
+wood 1.42 / 0.62 / 0.55 food at 2:8 / 5:5 / 8:2; planner 0.8–1.3 ms per agent-day.
 
 **Branches:** `main` only, local; no remote.
 
 **Open:**
-- Stage 1–4 Defaults await Chris's review; numbers provisional.
-- Trade reliability is per agent, not per place (Backlog). Citation check.
+- Planner cost (~35–60 min per generation at 300 agents): Backlog perf item.
+- Stage 1–5a Defaults await Chris's review; numbers provisional. Citation check.
 
-**Next action:** Stage 5, the recipe tree with exchange in place.
+**Next action:** 5b: pots, huts, farming, intermediates, multi-day builds, tinkering, know-how.
 
 **Blockers:** none.

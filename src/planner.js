@@ -19,14 +19,14 @@ function planDay(agent, world) {
   const cands = planCandidates(agent, world);
   for (const c of cands) c.solo = planCost(agent, world, [c]);
   cands.sort((a, b) => a.solo - b.solo);
-  const top = [], kept = [0, 0, 0, 0, 0];
+  const top = [], kept = ACT_NAMES.map(() => 0);
   for (const c of cands) if (kept[c.act] < A.topPerActivity) { top.push(c); kept[c.act]++; }
   let plan = [], cost = planCost(agent, world, plan);
   for (let step = 0; step < A.maxGreedySteps; step++) {
     let bestPlan = null, bestCost = cost;
     for (let k = 0; k < plan.length; k++) {
       const s = plan[k];
-      if (s.act === A_DRINK || s.act === A_SCOUT) continue;
+      if (s.act === A_DRINK || s.act === A_SCOUT || s.act === A_CRAFT) continue;   // fixed-length stops
       const p2 = plan.slice();
       p2[k] = { hex: s.hex, act: s.act, hours: s.hours + A.chunk, unknown: 0 };
       const c = planCost(agent, world, p2);
@@ -62,8 +62,11 @@ function planCandidates(agent, world) {
     if (world.caps.plants[h] > 0) out.push({ hex: h, act: A_FORAGE, hours: A.chunk, unknown: 0 });
     if (world.caps.wood[h] > 0) out.push({ hex: h, act: A_WOOD, hours: A.chunk, unknown: 0 });
     if (world.waterAt[h] >= 0) out.push({ hex: h, act: A_DRINK, hours: A.drinkHours, unknown: 0 });
+    if (world.caps.flint[h] > 0) out.push({ hex: h, act: A_QUARRY, hours: A.chunk, unknown: 0 });
   }
   if (agent.shelter < 1) out.push({ hex: agent.home, act: A_BUILD, hours: A.chunk, unknown: 0 });
+  // make a tool at home (all agents know the stone recipes, ODD §5)
+  for (const r in RECIPES) out.push({ hex: agent.home, act: A_CRAFT, recipe: r, hours: RECIPES[r].hours, unknown: 0 });
   // scouting: the nearest unseen hexes, each valued by how much it would reveal
   unseen.sort((a, b) => fromHome[a] - fromHome[b]);
   for (const h of unseen.slice(0, A.scoutCandidates)) {
@@ -82,31 +85,38 @@ function planEstimate(agent, hex, act, day) {
   const A = PARAMETERS.agents;
   const frac = agent.seenFrac[act][hex];
   const sd = A.sightSd * (1 - Math.exp(-(day - agent.seenDay[hex]) / A.sightMemory));
-  return agent.rate(act) * Math.min(1, frac + A.curiosity * sd);
+  const tool = TOOL_FOR[act], mult = tool && agent.hold[tool] > 0 ? TOOLS[tool].mult : 1;
+  return agent.rate(act) * mult * Math.min(1, frac + A.curiosity * sd);
 }
 
 function planCost(agent, world, plan) {
   const A = PARAMETERS.agents, G = PARAMETERS.goods;
   const cap = agent.capacity();
   let at = agent.home, hours = 0, bonus = 0;
-  let food = agent.hold.food, wood = agent.hold.wood, water = agent.hold.water, shelter = agent.shelter;
+  const hold = Object.assign({}, agent.hold);
+  let shelter = agent.shelter;
   let drank = false;
   for (const s of plan) {
     hours += world.travel(at)[s.hex];
     at = s.hex;
-    if (s.act === A_FORAGE) food += planEstimate(agent, s.hex, s.act, world.day) * s.hours;
-    else if (s.act === A_WOOD) wood += planEstimate(agent, s.hex, s.act, world.day) * s.hours;
-    else if (s.act === A_DRINK) { drank = true; water = Math.max(water, G.gourd); }
+    if (s.act === A_FORAGE || s.act === A_WOOD || s.act === A_QUARRY) {
+      hold[GOOD_OF[s.act]] += planEstimate(agent, s.hex, s.act, world.day) * s.hours;
+    } else if (s.act === A_DRINK) { drank = true; hold.water = Math.max(hold.water, G.gourd); }
     else if (s.act === A_BUILD) {
-      const can = Math.min(s.hours / G.leanTo.hours, wood / G.leanTo.wood, 1 - shelter);
-      wood -= can * G.leanTo.wood;
+      const can = Math.min(s.hours / G.leanTo.hours, hold.wood / G.leanTo.wood, 1 - shelter);
+      hold.wood -= can * G.leanTo.wood;
       shelter += can;
+    } else if (s.act === A_CRAFT) {
+      const R = RECIPES[s.recipe];
+      if (!Object.keys(R.inputs).every((g) => hold[g] >= R.inputs[g])) return Infinity;
+      for (const g in R.inputs) hold[g] -= R.inputs[g];
+      hold[s.recipe] += 1;
     } else if (s.act === A_SCOUT) bonus += A.scoutValue * s.unknown;
     hours += s.hours;
   }
   if (plan.length) hours += world.travel(at)[agent.home];
   if (!(hours <= cap)) return Infinity;
-  return holdingsCost(agent, world, { food, wood, water }, shelter, hours, drank, agent.need.belonging, true) - bonus;
+  return holdingsCost(agent, world, hold, shelter, hours, drank, agent.need.belonging, true) - bonus;
 }
 
 // The cost of ending the day with `hold`: tonight's evening plus the Keep projection. With
@@ -116,17 +126,18 @@ function planCost(agent, world, plan) {
 // in the exchange phase, where the recipient's need is known; exchange.js.)
 function holdingsCost(agent, world, hold, shelter, busy, drank, belonging, withTrade) {
   let best = keepCost(agent, world, hold, shelter, busy, drank, belonging);
-  if (!withTrade || !agent.price.n || !(agent.tradeRel > 0.01)) return best;
-  const p = Math.exp(agent.price.logp), rel = agent.tradeRel;   // p: food per unit of wood
+  const P = agent.price['food|wood'];
+  if (!withTrade || !P || !(agent.tradeRel > 0.01)) return best;
+  const p = Math.exp(P.logp), rel = agent.tradeRel;   // p: food per unit of wood
   for (const f of [0.25, 0.5]) {
     if (hold.food > 0) {
       const give = f * hold.food;
-      const c = keepCost(agent, world, { food: hold.food - rel * give, wood: hold.wood + rel * give / p, water: hold.water }, shelter, busy, drank, belonging);
+      const c = keepCost(agent, world, Object.assign({}, hold, { food: hold.food - rel * give, wood: hold.wood + rel * give / p }), shelter, busy, drank, belonging);
       if (c < best) best = c;
     }
     if (hold.wood > 0) {
       const give = f * hold.wood;
-      const c = keepCost(agent, world, { food: hold.food + rel * give * p, wood: hold.wood - rel * give, water: hold.water }, shelter, busy, drank, belonging);
+      const c = keepCost(agent, world, Object.assign({}, hold, { food: hold.food + rel * give * p, wood: hold.wood - rel * give }), shelter, busy, drank, belonging);
       if (c < best) best = c;
     }
   }
@@ -148,10 +159,17 @@ function keepCost(agent, world, hold, shelter, busy, drank, belonging) {
   for (let d = S; d <= A.horizon; d += S) {
     const beta = Math.pow(A.discount, d);
     const si = Math.floor(((world.day + d) % Y) / Y * 4);
+    // the axe speeds the projected wood-cutting while it lasts; with no axe and the inputs in
+    // hand, the agent is assumed to make one (so flint is worth what an axe is worth)
+    let axe = h.axe, flint = h.flint, wood = h.wood;
+    const R = RECIPES.axe;
+    if (axe <= 0 && flint >= R.inputs.flint && wood >= R.inputs.wood) { axe = 1; flint -= R.inputs.flint; wood -= R.inputs.wood; }
+    const wMult = axe > 0 ? TOOLS.axe.mult : 1;
+    if (axe > 0) axe = Math.max(0, axe - S * A.projHours.wood / TOOLS.axe.life);
     h = {
-      food: h.food * Math.pow(1 - G.food.rot, S) + S * A.projHours.forage * agent.seasonYield[0][si],
-      wood: h.wood + S * A.projHours.wood * agent.seasonYield[1][si],
-      water: 0,
+      food: h.food * Math.pow(1 - G.food.rot, S) + S * A.projHours.forage * agent.seasonYield[A_FORAGE][si],
+      wood: wood + S * A.projHours.wood * agent.seasonYield[A_WOOD][si] * wMult,
+      water: 0, flint, axe, pick: h.pick,
     };
     shelter = Math.max(0, shelter - G.leanTo.wear * S);
     const f = Agent.evening(need, h, shelter, A.projHours.forage + A.projHours.wood, true, world.season(world.day + d).cold, cap, S);

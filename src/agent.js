@@ -12,9 +12,11 @@
 // its deficit squared (convex: whatever is most lacking dominates; no weights). Death comes
 // from days spent at or below 0.
 
-var A_FORAGE = 0, A_WOOD = 1, A_DRINK = 2, A_BUILD = 3, A_SCOUT = 4;
-var ACT_NAMES = ['forage', 'wood', 'drink', 'build', 'scout'];
-var ACT_RES = ['plants', 'wood', 'water', null, null];   // resource each activity draws on
+var A_FORAGE = 0, A_WOOD = 1, A_DRINK = 2, A_BUILD = 3, A_SCOUT = 4, A_QUARRY = 5, A_CRAFT = 6;
+var ACT_NAMES = ['forage', 'wood', 'drink', 'build', 'scout', 'quarry', 'craft'];
+var ACT_RES = ['plants', 'wood', 'water', null, null, 'flint', null];   // resource each activity draws on
+var GATHER = [A_FORAGE, A_WOOD, A_QUARRY];                              // activities that take from a hex
+var GOOD_OF = ['food', 'wood', null, null, null, 'flint', null];        // the good each gathering yields
 
 var Agent = class Agent {
   constructor(id, home, world) {
@@ -25,18 +27,19 @@ var Agent = class Agent {
     this.ageDays = A.startAgeYears * PARAMETERS.year.days;
     this.need = { food: 1, water: 1, warmth: 1, rest: 1, belonging: 1 };
     // holdings: food (raw wild plants), wood, water carried in a gourd
-    this.hold = { food: A.starterFood, wood: 0, water: 0 };   // starterFood is a burn-in scaffold (ODD §5)
+    this.hold = { food: A.starterFood, wood: 0, water: 0, flint: 0, axe: 0, pick: 0 };   // starterFood is a burn-in scaffold (ODD §5)
     this.shelter = 0;          // lean-to condition at home, 0..1
     this.zeroDays = { food: 0, water: 0, warmth: 0 };
     // habits (ODD §4.4, own experience only): for each gathering activity, how much it gets
     // per hour from a full hex. Learned by doing.
-    this.eff = [A.priorPerHour.forage, A.priorPerHour.wood];
-    this.effN = [0, 0];
+    // indexed by activity; only the gathering activities are used
+    this.eff = ACT_NAMES.map((nm) => A.priorPerHour[nm] || 0);
+    this.effN = ACT_NAMES.map(() => 0);
     // what an hour of foraging and of wood-cutting actually brought, by season (spring..winter):
     // the seasonal habit the Keep projection uses
-    this.seasonYield = [[0, 0, 0, 0].map(() => A.priorPerHour.forage), [0, 0, 0, 0].map(() => A.priorPerHour.wood)];
+    this.seasonYield = ACT_NAMES.map((nm) => [0, 0, 0, 0].map(() => A.priorPerHour[nm] || 0));
     // norms (ODD §4.4): the same rates, pooled from what it has seen others get and been told
-    this.norm = { eff: [0, 0], n: [0, 0] };
+    this.norm = { eff: ACT_NAMES.map(() => 0), n: ACT_NAMES.map(() => 0) };
     this.met = [];             // agents met today
     this.places = [home];      // where it was today
     this.chatted = 0;          // how many it chatted with today
@@ -49,7 +52,7 @@ var Agent = class Agent {
     this.forget = PARAMETERS.exchange.forget;   // its own daily chance of forgetting a debt
     // price norm for food per wood (log, pooled from trades made, seen and told), and how
     // reliably its own trades have come off (ODD §7.6: trade enters the plan)
-    this.price = { logp: 0, n: 0 };
+    this.price = {};           // pair key 'a|b' → { logp, n }: units of a per unit of b
     this.tradeRel = 0;
     this.costs = null;
     this.need.belonging = 0;   // no ties yet
@@ -57,7 +60,8 @@ var Agent = class Agent {
     // and wood each looked on the day it last saw it
     const n = world.grid.n;
     this.known = new Uint8Array(n);
-    this.seenFrac = [new Float32Array(n), new Float32Array(n)];
+    this.seenFrac = [];
+    for (const g of GATHER) this.seenFrac[g] = new Float32Array(n);
     this.seenDay = new Int32Array(n);
     for (const h of world.grid.within(home, A.sight)) this.look(world, h);
     this.plan = [];            // today's stops [{hex, act, hours}]
@@ -86,12 +90,16 @@ var Agent = class Agent {
       at = s.hex;
       this.places.push(s.hex);
       this.see(world, s.hex);
-      if (s.act === A_FORAGE || s.act === A_WOOD) {
+      if (s.act === A_FORAGE || s.act === A_WOOD || s.act === A_QUARRY) {
         const res = ACT_RES[s.act], cap = world.caps[res][s.hex];
         const frac = cap > 0 ? world.stock[res][s.hex] / cap : 0;
-        const got = world.take(res, s.hex, G[res].perHour * frac * s.hours);
-        this.hold[s.act === A_FORAGE ? 'food' : 'wood'] += got;
-        this.obs.push({ act: s.act, hex: s.hex, perHour: got / s.hours, frac, season: world.seasonIndex });
+        // a tool for the task multiplies the yield and wears by the hour (ODD §2 Tools)
+        const tool = TOOL_FOR[s.act], mult = tool && this.hold[tool] > 0 ? TOOLS[tool].mult : 1;
+        const got = world.take(res, s.hex, G[res].perHour * frac * mult * s.hours);
+        if (mult > 1) this.hold[tool] = Math.max(0, this.hold[tool] - s.hours / TOOLS[tool].life);
+        this.hold[GOOD_OF[s.act]] += got;
+        // what it learns is the bare-handed rate (the tool's share is known from the recipe)
+        this.obs.push({ act: s.act, hex: s.hex, perHour: got / s.hours / mult, frac, season: world.seasonIndex });
         this.look(world, s.hex);   // sees what it left behind
         if (s.act === A_FORAGE) { this.log.forageHours += s.hours; this.log.forageTravel = Math.max(this.log.forageTravel, world.travel(this.home)[s.hex]); }
       } else if (s.act === A_DRINK) {
@@ -100,6 +108,14 @@ var Agent = class Agent {
           world.take('water', src, PARAMETERS.goods.drinkDraw);
           this.drank = true;
           this.hold.water = Math.max(this.hold.water, G.gourd);
+        }
+      } else if (s.act === A_CRAFT) {
+        // make a tool at home from inputs in hand (ODD §2 First tree v0)
+        const R = RECIPES[s.recipe];
+        if (Object.keys(R.inputs).every((g) => this.hold[g] >= R.inputs[g])) {
+          for (const g in R.inputs) this.hold[g] -= R.inputs[g];
+          this.hold[s.recipe] += 1;
+          world.crafted = (world.crafted || 0) + 1;
         }
       } else if (s.act === A_BUILD) {
         // the lean-to takes wood in proportion to the hours put in
@@ -122,7 +138,7 @@ var Agent = class Agent {
   look(world, h) {
     this.known[h] = 1;
     this.seenDay[h] = world.day;
-    for (let k = 0; k < 2; k++) {
+    for (const k of GATHER) {
       const res = ACT_RES[k], cap = world.caps[res][h];
       this.seenFrac[k][h] = cap > 0 ? world.stock[res][h] / cap : 0;
     }
@@ -176,17 +192,20 @@ var Agent = class Agent {
   received(id, day) { const t = this.tie(id, day); t.kind += 1; t.owed -= 1; t.n++; }
   // A completed barter is mutual gain (weight `tradeWeight`, swept including 0); a price at
   // least as good as its own fair middle counts as a full kind offer.
-  traded(id, day, kind, p) {
+  // `key` names the pair ('a|b'), `p` is units of a per unit of b; the particular other's
+  // price for that pair is remembered as its model of that agent.
+  traded(id, day, kind, key, p) {
     const E = PARAMETERS.exchange, t = this.tie(id, day);
     t.kind += kind ? 1 : E.tradeWeight;
     t.given += E.tradeWeight;
     t.n++;
-    t.ratio = t.ratio ? Math.exp(Math.log(t.ratio) + 0.3 * (Math.log(p) - Math.log(t.ratio))) : p;
-    this.observePrice(p);
+    if (!t.ratio) t.ratio = {};
+    t.ratio[key] = t.ratio[key] ? Math.exp(Math.log(t.ratio[key]) + 0.3 * (Math.log(p) - Math.log(t.ratio[key]))) : p;
+    this.observePrice(key, p);
   }
-  observePrice(p) {
-    const P = this.price;
-    if (!P.n) P.logp = Math.log(p);
+  observePrice(key, p) {
+    let P = this.price[key];
+    if (!P) P = this.price[key] = { logp: Math.log(p), n: 0 };
     else P.logp += PARAMETERS.exchange.priceRate * (Math.log(p) - P.logp);
     P.n++;
   }
@@ -217,7 +236,7 @@ var Agent = class Agent {
     const rest = clamp(free / N.restSet, 0, 1);
     return {
       food: Math.min(food, 1), water: Math.min(water, 1), warmth: clamp(warmth, 0, 1), rest,
-      hold: { food: hf, wood: hw, water: hwat },
+      hold: { food: hf, wood: hw, water: hwat, flint: hold.flint || 0, axe: hold.axe || 0, pick: hold.pick || 0 },
     };
   }
 
@@ -266,7 +285,7 @@ var Agent = class Agent {
     for (let i = 0; i < pool.length && this.chatted < k; i++) {
       const b = pool[i];
       this.chatted++;
-      if (b.price.n) this.observePrice(Math.exp(b.price.logp));
+      for (const key in b.price) this.observePrice(key, Math.exp(b.price[key].logp));
       for (const o of b.obs) {
         this.observe(o);
         const h = o.hex;
@@ -274,8 +293,7 @@ var Agent = class Agent {
           if (!this.known[h]) this.heard++;
           this.known[h] = 1;
           this.seenDay[h] = b.seenDay[h];
-          this.seenFrac[0][h] = b.seenFrac[0][h];
-          this.seenFrac[1][h] = b.seenFrac[1][h];
+          for (const g of GATHER) this.seenFrac[g][h] = b.seenFrac[g][h];
         }
       }
     }

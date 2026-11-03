@@ -4,6 +4,28 @@
 
 <!-- append new entries above this line -->
 
+## 2026-11-02 — Stage 5a: recipe engine, stone tools, many-goods exchange
+
+**Done:** Stage 5 split into 5a (stone tools), 5b (crafted levels, tinkering, know-how), 5c
+(metals). Built `tree.js` (tools, recipes, goods), quarrying and crafting as planner activities,
+tools as remaining life with wear and a yield multiplier, Keep valuing axes (and flint through
+them), and exchange rewritten for any goods with per-pair going rates. First runs made no tools:
+hill-only flint lay 5.5–11 h from every band, so flint was added to 10% of riverbank hexes
+(river gravels). Fixed a planner bug the tools run exposed: extending a craft stop dropped its
+recipe (craft stops are now fixed length).
+**Changed:** new `src/tree.js`; `src/agent.js` (activities, holdings, tool use and wear,
+crafting, pair price norms), `src/planner.js` (candidates, estimates, costs, Keep with axe),
+`src/exchange.js` (rewritten for many goods), `src/params.js` (flint yield, river flint),
+`index.html`, `smoketest.mjs` (pair-price market; tool checks), `runner.mjs`; ODD §7.6 Stage 5a
+block; DEVPLAN 5a closed, 5b active, Backlog perf item.
+**State:** smoke PASS, all checks: axe ×2.00 wood (8.00 → 16.00 in 2 h), worn out after 80 h;
+bands year: 3 tools made, 36 trades in flint or tools; price test 1.420 / 0.618 / 0.551; a year
+from no ties 815 trades, 1,250 gifts, 86 trusted ties. Headless seed 1, two years: 14 tools,
+82 flint trades, 6 axes sold, 89/100 alive. Planner cost up to 0.8–1.3 ms per agent-day
+(Backlog).
+**Next:** 5b: pots, huts, farming, charcoal and fired clay, multi-day builds, tinkering,
+know-how.
+
 ## 2026-11-02 — Stage 4: exchange and ties
 
 **Done:** `exchange.js`: gifts to ties in need (strongest first; given when the giver's own
