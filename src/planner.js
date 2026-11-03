@@ -82,7 +82,7 @@ function planEstimate(agent, hex, act, day) {
   const A = PARAMETERS.agents;
   const frac = agent.seenFrac[act][hex];
   const sd = A.sightSd * (1 - Math.exp(-(day - agent.seenDay[hex]) / A.sightMemory));
-  return agent.eff[act] * Math.min(1, frac + A.curiosity * sd);
+  return agent.rate(act) * Math.min(1, frac + A.curiosity * sd);
 }
 
 function planCost(agent, world, plan) {
@@ -109,14 +109,23 @@ function planCost(agent, world, plan) {
   const sea = world.season();
   const e = Agent.evening(agent.need, { food, wood, water }, shelter, hours, drank, sea.cold, cap);
   let cost = needCost(e, true);
-  // Keep: the next days on what is left, with no gathering (ODD §7.6 best-of-three, Keep arm)
-  let need = e, hold = e.hold, beta = 1;
-  for (let d = 1; d <= A.horizon; d++) {
-    beta *= A.discount;
-    hold = { food: hold.food * (1 - G.food.rot), wood: hold.wood, water: hold.water };
-    shelter = Math.max(0, shelter - G.leanTo.wear);
-    const f = Agent.evening(need, hold, shelter, A.typicalBusy, false, world.season(world.day + d).cold, cap);
-    cost += beta * needCost(f, false);
+  // Keep: the coming months on what is left (ODD §7.6 best-of-three, Keep arm; a good is
+  // valued over its storage life), with ordinary gathering at the yields the agent has known
+  // in each season, so a store is worth what it covers beyond that (winter). Projected in
+  // steps of `keepStep` days, each step's cost counted for every day in it.
+  let need = e, hold = e.hold;
+  const S = A.keepStep, Y = PARAMETERS.year.days;
+  for (let d = S; d <= A.horizon; d += S) {
+    const beta = Math.pow(A.discount, d);
+    const si = Math.floor(((world.day + d) % Y) / Y * 4);
+    hold = {
+      food: hold.food * Math.pow(1 - G.food.rot, S) + S * A.projHours.forage * agent.seasonYield[0][si],
+      wood: hold.wood + S * A.projHours.wood * agent.seasonYield[1][si],
+      water: 0,
+    };
+    shelter = Math.max(0, shelter - G.leanTo.wear * S);
+    const f = Agent.evening(need, hold, shelter, A.projHours.forage + A.projHours.wood, true, world.season(world.day + d).cold, cap, S);
+    cost += beta * S * needCost(f, false);
     need = f; hold = f.hold;
   }
   return cost - bonus;

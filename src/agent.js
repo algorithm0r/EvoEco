@@ -31,6 +31,17 @@ var Agent = class Agent {
     // habits (ODD §4.4, own experience only): for each gathering activity, how much it gets
     // per hour from a full hex. Learned by doing.
     this.eff = [A.priorPerHour.forage, A.priorPerHour.wood];
+    this.effN = [0, 0];
+    // what an hour of foraging and of wood-cutting actually brought, by season (spring..winter):
+    // the seasonal habit the Keep projection uses
+    this.seasonYield = [[0, 0, 0, 0].map(() => A.priorPerHour.forage), [0, 0, 0, 0].map(() => A.priorPerHour.wood)];
+    // norms (ODD §4.4): the same rates, pooled from what it has seen others get and been told
+    this.norm = { eff: [0, 0], n: [0, 0] };
+    this.met = [];             // agents met today
+    this.places = [home];      // where it was today
+    this.chatted = 0;          // how many it chatted with today
+    this.heard = 0;            // sightings learned from others, all time
+    this.metTotal = 0;         // meetings, all time
     // what it has seen (ODD §4.4: passive, where it is): which hexes, and how full of plants
     // and wood each looked on the day it last saw it
     const n = world.grid.n;
@@ -56,18 +67,20 @@ var Agent = class Agent {
     const A = PARAMETERS.agents, G = PARAMETERS.goods;
     let at = this.home, hours = 0;
     this.drank = false;
+    this.places = [this.home];   // where it was today (home in the evening too)
     this.log.forageHours = 0; this.log.forageTravel = 0;
     for (const s of this.plan) {
       const leg = world.travel(at)[s.hex];
       hours += leg;
       at = s.hex;
+      this.places.push(s.hex);
       this.see(world, s.hex);
       if (s.act === A_FORAGE || s.act === A_WOOD) {
         const res = ACT_RES[s.act], cap = world.caps[res][s.hex];
         const frac = cap > 0 ? world.stock[res][s.hex] / cap : 0;
         const got = world.take(res, s.hex, G[res].perHour * frac * s.hours);
         this.hold[s.act === A_FORAGE ? 'food' : 'wood'] += got;
-        this.obs.push({ act: s.act, perHour: got / s.hours, frac });
+        this.obs.push({ act: s.act, hex: s.hex, perHour: got / s.hours, frac, season: world.seasonIndex });
         this.look(world, s.hex);   // sees what it left behind
         if (s.act === A_FORAGE) { this.log.forageHours += s.hours; this.log.forageTravel = Math.max(this.log.forageTravel, world.travel(this.home)[s.hex]); }
       } else if (s.act === A_DRINK) {
@@ -123,16 +136,19 @@ var Agent = class Agent {
   // ODD §2 Warmth). Returns the new levels and what is left. Food and water are NOT floored
   // here, so the planner still sees a gain from a meal too small to lift a starving agent
   // above -1; consume() floors the stored levels at -1.
-  static evening(need, hold, shelter, busy, drank, cold, capacity) {
+  // `days` > 1 lumps several days into one step (the planner's long Keep projection): the
+  // needs run down and the fire burns for that many days, and eating can make it all up.
+  static evening(need, hold, shelter, busy, drank, cold, capacity, days) {
     const N = PARAMETERS.needs, G = PARAMETERS.goods;
-    let food = need.food - N.foodDecay - N.workBurn * busy;
-    let water = drank ? 1 : need.water - N.waterDecay;
+    days = days || 1;
+    let food = need.food - days * (N.foodDecay + N.workBurn * busy);
+    let water = drank ? 1 : need.water - days * N.waterDecay;
     let hf = hold.food, hw = hold.wood, hwat = hold.water;
     // drink from the gourd
     if (water < 1 && hwat > 0) { const d = Math.min(hwat, 1 - water); water += d; hwat -= d; }
     // fire: lit whenever there is the wood (cooking and warmth)
-    const fire = hw >= G.fireWood;
-    if (fire) hw -= G.fireWood;
+    const fire = hw >= G.fireWood * days;
+    if (fire) hw -= G.fireWood * days;
     const per = G.food.restores * (fire ? G.food.cookedBonus : 1);
     if (food < 1 && hf > 0) { const eat = Math.min(hf, (1 - food) / per); food += eat * per; hf -= eat; }
     let warmth = 1 - cold * (1 - G.leanTo.insulation * shelter) + (fire ? G.fireHeat : 0);
@@ -148,11 +164,59 @@ var Agent = class Agent {
   // one error-driven update of the yield per hour from a full hex, from what it got and how
   // full the hex was (a nearly bare hex says little about the rate, so it is skipped)
   learn() {
-    const a = PARAMETERS.agents.learnRate;
+    const A = PARAMETERS.agents;
     for (const o of this.obs) {
-      if (o.frac > 0.05) this.eff[o.act] += a * (o.perHour / o.frac - this.eff[o.act]);
+      const sy = this.seasonYield[o.act];
+      sy[o.season] += A.learnRate * (o.perHour - sy[o.season]);
+      if (o.frac > 0.05) {
+        this.eff[o.act] += A.learnRate * (o.perHour / o.frac - this.eff[o.act]);
+        this.effN[o.act] = Math.min(A.habitCap, this.effN[o.act] + 1);
+      }
     }
     this.obs = [];
+  }
+
+  // Norms: one error-driven update from someone else's experience, seen or told (ODD §4.4).
+  observe(o) {
+    if (!(o.frac > 0.05)) return;
+    const r = o.perHour / o.frac, N = this.norm;
+    if (N.n[o.act] === 0) N.eff[o.act] = r;
+    else N.eff[o.act] += PARAMETERS.agents.normRate * (r - N.eff[o.act]);
+    N.n[o.act]++;
+  }
+
+  // Precision-weighted rate (ODD §4.4 arbitration): the norm as prior, the habit as evidence,
+  // each weighted by how much lies behind it.
+  rate(act) {
+    const A = PARAMETERS.agents;
+    const nH = this.effN[act], wN = this.norm.n[act] > 0 ? A.normPrior : 0;
+    if (nH + wN === 0) return this.eff[act];
+    return (nH * this.eff[act] + wN * this.norm.eff[act]) / (nH + wN);
+  }
+
+  // Chat with up to k of the people met today, chosen at random (ties first once ties exist,
+  // Stage 4). Each tells where it went and what it got: the listener updates its norms and
+  // takes any newer sighting of those hexes (ODD §4.6).
+  chat(world) {
+    const k = PARAMETERS.agents.chatK;
+    const pool = this.met.slice();
+    this.chatted = 0;
+    for (let i = 0; i < pool.length && this.chatted < k; i++) {
+      const j = i + world.rng.int(pool.length - i);
+      const b = pool[j]; pool[j] = pool[i]; pool[i] = b;
+      this.chatted++;
+      for (const o of b.obs) {
+        this.observe(o);
+        const h = o.hex;
+        if (!this.known[h] || b.seenDay[h] > this.seenDay[h]) {
+          if (!this.known[h]) this.heard++;
+          this.known[h] = 1;
+          this.seenDay[h] = b.seenDay[h];
+          this.seenFrac[0][h] = b.seenFrac[0][h];
+          this.seenFrac[1][h] = b.seenFrac[1][h];
+        }
+      }
+    }
   }
 
   // ── Aging and death ──────────────────────────────────────────────────────────────────

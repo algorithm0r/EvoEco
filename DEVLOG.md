@@ -4,6 +4,27 @@
 
 <!-- append new entries above this line -->
 
+## 2026-11-02 — Stage 3: bands, meeting, chat, norms; land balanced for bands
+
+**Done:** Chris: "exchange is central, lets do it next." DEVPLAN reordered: meeting (3),
+exchange and ties (4), then the tree (5). Built bands (§5 layout brought forward), meeting by
+co-location (home included), passive observation of others' work, chat with up to k = 5,
+norms by error-driven update, precision-weighted habit/norm rate. Bands of 20 starved within
+months at the old numbers, so the land was balanced for band density (plants ×10, ~half a
+person per hex per year), with a 0.2 winter growth floor standing in for the winter food the
+tree omits. Keep now looks 120 days in weekly steps and assumes gathering at learned seasonal
+yields (assuming none made agents hoard ~800 units and work 13 h).
+**Changed:** `src/world.js` (placeBands, meet, seasonIndex, winter floor), `src/agent.js`
+(norms, observe, rate, chat, seasonal yields), `src/planner.js` (rate, Keep projection),
+`src/params.js`, `smoketest.mjs` (Stage 3 checks; winter check now "slower than summer");
+ODD §7.6 Stage 3 block; DEVPLAN reordered, Stage 3 closed.
+**State:** smoke PASS, all checks. Bands: 5 × 20, closest centres 17 hexes apart; chat ≤ 5
+(mean met 4.3 per agent-day); 100/100 hold a forage norm, 0.0% error (everyone has the same
+true rate); 63/100 know hexes only from others. Headless, seeds 1–2, 3 years: 71 and 75 of
+100 alive after year 1, no deaths after; 7–9 h worked. Planner 0.24 ms per agent-day.
+**Next:** Stage 4: barter, matching rounds, price norms, ties, owing, gifts, belonging, trade
+in the plan.
+
 ## 2026-11-02 — Stage 2 closed on mechanics; never balance for a loner
 
 **Done:** Chris asked whether we were building self-sufficient foragers. Yes: the DEVPLAN put

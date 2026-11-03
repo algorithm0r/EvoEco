@@ -8,9 +8,10 @@ stage (see `CLAUDE.md`):
 - **Gaps are questions.** Where the ODD is silent, ask Chris, record the answer in the ODD, then
   code it. Numbers are `PARAMETERS`, balanced as we go and logged when changed.
 
-Order of build: the world, then one agent living in it, then the tree, then agents seeing each
-other, then exchange, then households and generations, then the foundation as a whole. Each
-stage is testable on its own before the next adds interaction.
+Order of build: the world, then one agent living in it, then agents meeting each other, then
+exchange and ties, then the tree, then households and generations, then the foundation as a
+whole. (Reordered 2026-11-02: exchange before the tree, and no stage tests loners for
+survival; humans are not solitary.)
 
 ## Built
 - ODD v0.2+ (design, 2026-11-01/02).
@@ -73,30 +74,27 @@ not required (7/8 on the rich map). Ledger check: needs, perception, planning an
 are individual mechanics; nothing about exchange, ties, prices or inequality is written in.
 The numbers raised to get loners through winter are provisional (Backlog).
 
-### Stage 3 — The recipe tree and tools  [ PLANNED ]
-ODD §2 (Goods and quality, First tree v0, Tools), §4.5, §7.3, §7.6 (partial projects).
-- [ ] Tree v0 as data (one file): recipes, inputs, qualities, hours, tool requirements
-- [ ] Task-specific tools (axe, hoe/sickle, pick) as production multipliers; wear and repair
-- [ ] Intermediates: wood, charcoal, fired clay, metals
-- [ ] Partial projects carry partial value across days; future discount as a swept parameter
-- [ ] Tinkering as an activity, scored by the curiosity term (~~scouting~~ → **Stage 2**)
-- [ ] Know-how lives in agents; lost when no one practices for a generation
-- [ ] Quality valued intrinsically and instrumentally (food restores more, tools last longer)
-**Done when:** without exchange, agents holding the right inputs discover level 2+ by
-tinkering, multi-day builds get started and finished, and a test case shows know-how lost when
-a craft lapses.
-
-### Stage 4 — Meeting, chat and norms  [ PLANNED ]
+### Stage 3 — Meeting, chat and norms  [ DONE ] (closed 2026-11-02)
+*Reordered 2026-11-02 (Chris: "exchange is central, lets do it next"): meeting and exchange
+before the tree, so nothing is balanced on loners.*
 ODD §3 (meeting = same hex, same day), §4.4 (norms, arbitration), §4.6 (chat cap k).
-- [ ] Co-location per hex per day
-- [ ] Chat with up to k people met (ties first once ties exist; random otherwise)
-- [ ] Norm tables (cost norms) from own and reported experience; precision-weighted
+- [x] Starting layout: bands a day or two apart (ODD §5, Decided), brought forward from
+      Stage 7: exchange needs neighbours
+- [x] Co-location per hex per day
+- [x] Chat with up to k people met (random; ties first arrives with ties in Stage 4)
+- [x] Norm tables (cost norms) from own and reported experience; precision-weighted
       habit/norm arbitration
-- [ ] Learning know-how by seeing it practiced
+- [x] Balance the land for bands, not loners (plants ×10, winter floor) and Keep on seasonal
+      yields (ODD §7.6 Stage 3 block)
+- ~~Learning know-how by seeing it practiced~~ → **Stage 5** (know-how comes with the tree)
 **Done when:** cost norms converge toward true costs where agents meet often and stay off
-where they don't; survivorship bias in norms is measurable.
+where they don't; survivorship bias in norms is measurable. ✓ First half met: smoke PASS
+(100/100 hold a forage norm, 0.0% error; no norm without a meeting; chat ≤ k; 63/100 know
+hexes only from others). Second half moved to Backlog: with every agent gathering at the same
+true rate there is no bias to measure yet. Ledger check: meeting is co-location, chat partners
+random, norms pooled experience; no ties, prices or households written in.
 
-### Stage 5 — Exchange and ties  [ PLANNED ]
+### Stage 4 — Exchange and ties  [ PLANNED ]
 ODD §2 (Ties, Owing), §3 (exchange phase), §4.7 (matching), §7.1, §7.2.
 - [ ] Barter: own cost vs estimated other cost, fair bid (geometric middle), going rate, deal
       at the midpoint of bids, walk-away guard; price norms per pair of goods
@@ -110,6 +108,19 @@ ODD §2 (Ties, Owing), §3 (exchange phase), §4.7 (matching), §7.1, §7.2.
 **Done when:** in a controlled test, prices move in the right direction with supply and demand;
 ties form through barter from a no-tie start; grudges (unreturned balances) appear and fade.
 
+### Stage 5 — The recipe tree and tools  [ PLANNED ]
+ODD §2 (Goods and quality, First tree v0, Tools), §4.5, §7.3, §7.6 (partial projects).
+- [ ] Tree v0 as data (one file): recipes, inputs, qualities, hours, tool requirements
+- [ ] Task-specific tools (axe, hoe/sickle, pick) as production multipliers; wear and repair
+- [ ] Intermediates: wood, charcoal, fired clay, metals
+- [ ] Partial projects carry partial value across days; future discount as a swept parameter
+- [ ] Tinkering as an activity, scored by the curiosity term (~~scouting~~ → **Stage 2**)
+- [ ] Know-how lives in agents; lost when no one practices for a generation
+- [ ] Quality valued intrinsically and instrumentally (food restores more, tools last longer)
+**Done when:** ~~without exchange,~~ (changed 2026-11-02: never test on loners) agents
+holding the right inputs discover level 2+ by tinkering, tools and goods are traded, multi-day builds get started and finished, and a test case shows know-how lost when
+a craft lapses.
+
 ### Stage 6 — Households and generations  [ PLANNED ]
 ODD §2 (Households, Agents life cycle), §7.4, §7.5, §7.6 (household planning).
 - [ ] Households form from strong mutual ties and dissolve with them; shared shelter
@@ -122,7 +133,7 @@ several generations without scaffolding.
 
 ### Stage 7 — The foundation: burn-in, measures, runner  [ PLANNED ]
 ODD §1 (patterns), §4.10, §5.
-- [ ] Starting layout: 5–8 bands of 20–40 agents, a day or two apart
+- ~~Starting layout: 5–8 bands of 20–40 agents, a day or two apart~~ → **Stage 3**
 - [ ] Scaffolding, each item listed in the ODD, used only during burn-in and removed
 - [ ] Measures: percentiles (10/50/90/99) of quality consumed per category; rest and
       belonging distributions
@@ -158,5 +169,7 @@ How runs are compared is a research question to settle then (ODD §4.10).
 - [ ] fix: re-balance the numbers raised for solitary survival in Stage 2 (plants r 0.1, cap
       40, 6 units/h; rot 1%/day; Keep 20 days at 0.97) once agents can share, against the
       foundation forming, not against a loner surviving (Chris, 2026-11-02)
+- [ ] feat: measure survivorship bias in norms once rates differ between agents (Stage 3
+      Done-when, second half)
 - [ ] idea: log slack and tinkering hours; scarcity that removes slack should slow discovery
       (ODD §7.3), and it bears on the results

@@ -98,7 +98,9 @@ stepDays(Y / 2);
 stepDays(Y / 2);  // a second growing season
 const afterTwo = sum('plants', plantHexes) / capSum('plants', plantHexes);
 const ms = (Date.now() - t0) / w.day;
-check('no regrowth in autumn/winter', afterWinter === 0, 'stripped plants after winter: ' + afterWinter.toFixed(3));
+const winterFrac = afterWinter / capSum('plants', plantHexes);
+check('autumn/winter regrowth only at the winter floor', P.year.winterGrowth === 0 ? afterWinter === 0 : winterFrac < afterSummer,
+  'stripped plants, fraction of cap: after autumn+winter ' + winterFrac.toFixed(3) + ' (floor ' + P.year.winterGrowth + ')');
 check('stripped plants regrow in spring/summer', afterSummer > 0.05 && afterTwo > afterSummer,
   'fraction of cap after 1 season ' + afterSummer.toFixed(3) + ', after 2 ' + afterTwo.toFixed(3));
 check('deposits never regrow', sum('copper', Array.from(w.active.copper)) === 0);
@@ -178,6 +180,29 @@ solo.stock.plants[fav] = 0;
 let after = 0;
 for (let d = 0; d < 20; d++) { solo.update(); for (const st of ag.plan) if (st.act === A_FORAGE && st.hex === fav) after++; }
 check('stops foraging a hex it finds stripped', after <= 1, 'favourite hex used ' + visits.get(fav) + 'x in 40 days; ' + after + 'x in the 20 days after stripping');
+
+// ── 7. meeting, chat and norms (Stage 3) ──────────────────────────────────────────────
+const bw = new World();   // default layout: bands
+const B = P.agents.bands;
+let minSep = Infinity;
+for (const a of bw.bandCentres) for (const b of bw.bandCentres) if (a !== b) minSep = Math.min(minSep, bw.grid.dist(a, b));
+const inBand = bw.agents.every((a) => bw.grid.dist(a.home, bw.bandCentres[a.band]) <= B.radius);
+check('bands placed apart, members near their centre', bw.bandCentres.length === B.n && minSep >= B.spacing && inBand,
+  bw.bandCentres.length + ' bands of ' + B.size + ', closest pair ' + minSep + ' hexes apart');
+let chatCap = true, metSum = 0, md = 0;
+for (let d = 0; d < 60; d++) {
+  bw.update();
+  for (const a of bw.agents) { if (a.chatted > P.agents.chatK) chatCap = false; metSum += a.met.length; md++; }
+}
+check('chat never exceeds k a day', chatCap, 'mean met per agent-day ' + (metSum / md).toFixed(1) + ', k = ' + P.agents.chatK);
+const withNorm = bw.agents.filter((a) => a.norm.n[A_FORAGE] > 0);
+const normErr = mean(withNorm.map((a) => Math.abs(a.norm.eff[A_FORAGE] - P.goods.plants.perHour) / P.goods.plants.perHour));
+check('forage norms converge on the true rate where agents meet', withNorm.length > 0.8 * bw.agents.length && normErr < 0.1,
+  withNorm.length + '/' + bw.agents.length + ' hold a norm; mean error ' + (100 * normErr).toFixed(1) + '%');
+check('no norm without a meeting', bw.agents.concat(bw.dead).every((a) => a.norm.n[A_FORAGE] === 0 || a.metTotal > 0));
+const heard = bw.agents.filter((a) => a.heard > 0).length;
+check('sightings spread by chat', heard > 0, heard + '/' + bw.agents.length + ' know hexes only from others (mean ' + mean(bw.agents.map((a) => a.heard)).toFixed(1) + ')');
+console.log('bands after 60 days: ' + bw.agents.length + '/' + (B.n * B.size) + ' alive');
 
 const proj = msAgentDay * 300 * 9000 / 1000;
 console.log('planner cost: ' + msAgentDay.toFixed(3) + ' ms per agent-day → ~' + proj.toFixed(0) + ' s per generation for 300 agents × 9,000 days');

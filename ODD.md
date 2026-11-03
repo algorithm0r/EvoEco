@@ -664,6 +664,31 @@ Stage 2 had to fill gaps the design left open. Each is a Default awaiting Chris'
   raised to get loners through winter (plant yields and regrowth, slow rot) are provisional,
   to be set again against the foundation forming.
 
+#### Meeting, chat and balancing as built in Stage 3 — Default (Claude, 2026-11-02)
+- **Bands from the start.** The §5 layout (bands a day or two apart, nearness only) is used
+  from Stage 3, since exchange needs neighbours: default 5 bands of 20, centres ≥ 14 hexes
+  apart on land beside water, homes within 2 hexes of the centre.
+- **Meeting.** Agents in the same hex on the same day meet, home in the evening included.
+  Each sees what the others gathered there (passive, no cap) and chats with up to k = 5 of
+  those met, chosen at random (ties first once ties exist). A chat passes on where the other
+  went, what it got and how full those hexes were; the listener updates its norms and takes
+  any newer sighting.
+- **Norms and arbitration (§4.4).** A norm is the rate others get from a full hex, pooled by one
+  error-driven update from what is seen and told. The rate used in planning weighs the
+  agent's own habit (by experiences, capped at 20) against the norm (weight 3).
+- **Balancing against the foundation, not the loner.** Wild plant stocks ×10 (plains 400 a
+  hex): a band of 20–25 foragers ranges over roughly 30–55 hexes, so a hex must feed about
+  half a person a year; at the old numbers bands of 20 starved within months. A winter growth
+  floor of 0.2 stands in for the winter food tree v0 leaves out (hunting, fishing, roots).
+- **Keep, revised.** The Keep projection runs 120 days in weekly steps at a 0.99 daily
+  discount and assumes ordinary gathering (3 h foraging, 1 h wood a day) at the yields the
+  agent has learned for each season (§7.6: expected future need from seasonal norms). A store
+  is worth what it covers beyond that. (Assuming no gathering made agents hoard ~800 units
+  and work 13-hour days.)
+- **Result, 5 bands × 20, seeds 1–2:** about three-quarters come through the first winter
+  (the losses are learning what winter is), then no deaths in years 2–3; 7–9 hours worked;
+  rest mostly met.
+
 Specialization is expected mainly from time and space: needs are spread across the
 landscape and the day is limited, so splitting the work saves hours ("you get food, I'll get
 water, meet at the shelter at dark").

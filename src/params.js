@@ -26,6 +26,7 @@ var PARAMETERS = {
   year: {
     days: 360,
     rainAmplitude: 0.5, // water flow swings ±50% over the year, wettest in spring
+    winterGrowth: 0.2,  // least plant growth factor (autumn and winter)
   },
 
   // --- resources (ODD §2: one mechanism — cap, regrowth, inflow — for every class) ---
@@ -35,7 +36,7 @@ var PARAMETERS = {
   // season: 'growth' (regrows spring–summer only), 'rain', or 'none'.
   // capBy: units per hex by terrain.
   resources: {
-    plants: { kind: 'renewable', r: 0.1, floor: 0.05, season: 'growth', capBy: { plains: 40, forest: 16, hills: 12 } },
+    plants: { kind: 'renewable', r: 0.1, floor: 0.05, season: 'growth', capBy: { plains: 400, forest: 160, hills: 120 } },
     wood:   { kind: 'renewable', r: 0.004, floor: 0.1, season: 'growth', capBy: { forest: 200, plains: 10, hills: 20 } },
     soil:   { kind: 'renewable', r: 0.01, floor: 0.2, season: 'none', capBy: { plains: 6, forest: 6, hills: 2 },
               floodplainBonus: 2, floodplainRange: 1 },  // fertile land near water
@@ -70,7 +71,11 @@ var PARAMETERS = {
 
   // --- agents (Stage 2: solitary; ODD §2 Agents, §4.4, §7.6) ---
   agents: {
-    n: 20,
+    layout: 'bands',      // 'bands' (ODD §5, Decided) or 'scattered' (tests)
+    n: 20,                // agents when scattered
+    // bands a day or two apart; homes within `radius` hexes of the band centre. No ties or
+    // households are pre-built, only nearness (ODD §5)
+    bands: { n: 5, size: 20, spacing: 14, radius: 2 },
     startAgeYears: 20,
     starterFood: 15,      // burn-in scaffold (ODD §5): food in hand on day 1
     wakingHours: 14,      // hours for travel, work and rest each day
@@ -81,11 +86,19 @@ var PARAMETERS = {
     // planning (ODD §7.6)
     maxStops: 3, chunk: 2, drinkHours: 0.25, scoutHours: 0.5,
     topPerActivity: 4, maxGreedySteps: 8, scoutCandidates: 8,
-    horizon: 20,          // days of Keep projection
-    discount: 0.97,       // per day; swept (ODD §7.6)
-    typicalBusy: 6,       // hours assumed worked on projected days
+    horizon: 120,         // days of Keep projection (a good is valued over its storage life)
+    keepStep: 7,          // days per projection step
+    // the projection assumes this many hours a day of foraging and wood-cutting at the yield
+    // the agent has learned for that season (ODD §7.6: expected future need from seasonal norms)
+    projHours: { forage: 3, wood: 1 },
+    discount: 0.99,       // per day; swept (ODD §7.6)
     // learning and curiosity (ODD §4.4)
     learnRate: 0.3,
+    // meeting and chat (ODD §4.4, §4.6)
+    chatK: 5,             // people chatted with per day, of those met
+    normRate: 0.2,        // error-driven update of norms from others' reported experience
+    normPrior: 3,         // weight of the norm against the agent's own habit (precision weighting)
+    habitCap: 20,         // most experiences a habit counts, so recent reliability rules
     priorPerHour: { forage: 3, wood: 3 },  // starting guess of the yield per hour from a full hex
     sightSd: 0.5,         // uncertainty (in fullness) of a sighting once it is old
     sightMemory: 30,      // days for a sighting to grow most of that uncertainty

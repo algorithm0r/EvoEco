@@ -58,8 +58,32 @@ var World = class World {
     // agents (Stage 2: solitary, placed near water as a test setup; band layout is Stage 7)
     this.agents = [];
     this.dead = [];
-    const nAgents = opts.agents != null ? opts.agents : PARAMETERS.agents.n;
-    this.placeAgents(nAgents);
+    if (opts.agents != null) this.placeAgents(opts.agents);
+    else if (PARAMETERS.agents.layout === 'bands') this.placeBands(PARAMETERS.agents.bands);
+    else this.placeAgents(PARAMETERS.agents.n);
+  }
+
+  // Bands a day or two apart (ODD §5): centres on land within a hex of water, at least
+  // `spacing` hexes apart; each member's home within `radius` hexes of its centre.
+  placeBands(B) {
+    const g = this.grid, cand = [];
+    const land = (i) => this.terrain[i] === T_PLAINS || this.terrain[i] === T_FOREST;
+    for (let i = 0; i < g.n; i++) {
+      if (land(i) && g.within(i, 1).some((m) => this.terrain[m] === T_RIVER || this.terrain[m] === T_LAKE)) cand.push(i);
+    }
+    this.bandCentres = [];
+    for (let tries = 0; tries < 2000 && this.bandCentres.length < B.n && cand.length; tries++) {
+      const c = cand[this.rng.int(cand.length)];
+      if (this.bandCentres.every((b) => g.dist(b, c) >= B.spacing)) this.bandCentres.push(c);
+    }
+    for (let b = 0; b < this.bandCentres.length; b++) {
+      const homes = g.within(this.bandCentres[b], B.radius).filter((h) => this.hours[h] >= 0 && this.terrain[h] !== T_RIVER);
+      for (let k = 0; k < B.size; k++) {
+        const a = new Agent(this.agents.length, homes[this.rng.int(homes.length)], this);
+        a.band = b;
+        this.agents.push(a);
+      }
+    }
   }
 
   placeAgents(n) {
@@ -87,7 +111,9 @@ var World = class World {
     return {
       phase,
       name: ['spring', 'summer', 'autumn', 'winter'][Math.floor(phase * 4)],
-      growth: Math.max(0, s),
+      // a floor of winter growth stands in for winter food the v0 tree leaves out (hunting,
+      // fishing, roots); without it half the year has no food at all
+      growth: Math.max(Y.winterGrowth, s),
       rain: 1 + Y.rainAmplitude * c,
       cold: Math.max(0, -s),
     };
@@ -97,6 +123,7 @@ var World = class World {
   update() {
     this.day++;
     const sea = this.season();
+    this.seasonIndex = Math.floor(sea.phase * 4);
     for (const k in this.caps) {
       const R = PARAMETERS.resources[k];
       const f = R.season === 'growth' ? sea.growth : (R.season === 'rain' ? sea.rain : 1);
@@ -133,12 +160,39 @@ var World = class World {
       const t = order[i]; order[i] = order[j]; order[j] = t;
     }
     for (const a of order) a.act(this);
-    // 3. Exchange: none before Stage 5
+    this.meet(live);                                                   //    meeting and chat
+    // 3. Exchange: Stage 4
     for (const a of live) a.consume(this);                            // 4. Consume
     for (const a of live) a.learn();                                  // 5. Learn
     for (const a of live) a.age(this);                                // 6. Aging and deaths
     for (const a of live) if (!a.alive) { a.deathDay = this.day; this.dead.push(a); }
     this.agents = live.filter((a) => a.alive);
+  }
+
+  // Meeting is co-location (ODD §3): agents who were in the same hex today, including
+  // home in the evening, meet. Each sees what the others worked at there (passive, no cap),
+  // then chats with up to k of the people it met (ODD §4.6).
+  meet(live) {
+    const at = new Map();
+    for (const a of live) {
+      a.met = [];
+      for (const h of a.places) {
+        let list = at.get(h);
+        if (!list) at.set(h, list = []);
+        if (list[list.length - 1] !== a) list.push(a);
+      }
+    }
+    for (const [h, list] of at) {
+      if (list.length < 2) continue;
+      for (const a of list) {
+        for (const b of list) {
+          if (b === a) continue;
+          if (a.met.indexOf(b) < 0) a.met.push(b);
+          for (const o of b.obs) if (o.hex === h) a.observe(o);
+        }
+      }
+    }
+    for (const a of live) { a.metTotal += a.met.length; a.chat(this); }
   }
 
   // Hours from `hex` to every hex within a day's waking hours, cached (terrain never changes).
