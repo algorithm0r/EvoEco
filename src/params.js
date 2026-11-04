@@ -70,8 +70,9 @@ var PARAMETERS = {
     fireHeat: 0.35,           // warmth a fire adds
     // structures (inputs and hours in tree.js BUILDS): warmth, daily wear; an unfinished hut
     // weathers at partWear a day
-    leanTo: { insulation: 0.45, wear: 0.01 },
-    hut:    { insulation: 0.8, wear: 0.002, partWear: 0.003 },
+    // sleepers: how many a structure shelters (a hut once begun; ODD §5, Default)
+    leanTo: { insulation: 0.45, wear: 0.01, sleepers: 2 },
+    hut:    { insulation: 0.8, wear: 0.002, partWear: 0.003, sleepers: 5 },
     pot:    { cap: 2, wear: 1 / 300 },
     // grain and fields (Stage 5d): food per unit; cooked with fire in a pot; daily rot; grain
     // per seed at full fertility (soil stock ÷ soilFull); soil drawn per seed; work rates by
@@ -92,7 +93,8 @@ var PARAMETERS = {
     starterFood: 15,      // burn-in scaffold (ODD §5): food in hand on day 1
     wakingHours: 14,      // hours for travel, work and rest each day
     sight: 2,             // hexes known around home at the start
-    // death: days at zero before it kills; old age: Gompertz hazard per year, work declines
+    // death: days at zero before it kills (food and water: the body's reserve below zero is
+    // this many days of the daily need, ODD §2 Needs); old age: Gompertz hazard per year, work declines
     deathDays: { food: 20, water: 3, warmth: 5 },
     oldAge: { gompertzA: 0.0003, gompertzB: 0.08, declineStart: 50, declineSpan: 30, floor: 0.3 },
     // planning (ODD §7.6)
@@ -108,14 +110,13 @@ var PARAMETERS = {
     discount: 0.99,       // per day; swept (ODD §7.6)
     // learning and curiosity (ODD §4.4)
     learnRate: 0.3,
-    flowRate: 0.05,       // update of what a day brings in, by season (a memory of ~20 days)
-    fatalCost: 1000,      // cost of a night that would kill (far above any other plan's)
+    flowRate: 0.05,       // update of the seasonal habits (what a day brings in, evening food, working day; a memory of ~20 days), and of norms told in chat
     keepPersist: 0.5,     // share of a gap from its usual food level the projection keeps a week on
     // meeting and chat (ODD §4.4, §4.6)
     chatK: 5,             // people chatted with per day, of those met
     normRate: 0.2,        // error-driven update of norms from others' reported experience
-    normPrior: 3,         // weight of the norm against the agent's own habit (precision weighting)
-    habitCap: 20,         // most experiences a habit counts, so recent reliability rules
+    arbRate: 0.1,         // update of how far habit and norm each miss its own experience (ODD §4.4)
+    arbExtreme: 0.9,      // a weight beyond this becomes 1: one source alone
     priorPerHour: { forage: 3, wood: 3, quarry: 1, dig: 3 },  // starting guess of the yield per hour from a full hex
     sightSd: 0.5,         // uncertainty (in fullness) of a sighting once it is old
     sightMemory: 30,      // days for a sighting to grow most of that uncertainty
@@ -131,6 +132,15 @@ var PARAMETERS = {
     projectPrior: 2,      // pseudo-count of finished projects behind the chance of finishing
   },
 
+  // --- moving camp (ODD §5, Decided — Chris, 2026-11-03; numbers Default) ---
+  camp: {
+    move: true,           // bands move camp as a group; off: homes fixed near the band centre
+    every: 7,             // days between a camp's decisions (the days a move is weighed over)
+    sites: 5,             // sites shortlisted, by how full the members saw the land around them
+    look: 2,              // hexes around a site that the shortlist looks at
+    warmer: 0.05,         // insulation by which a bed counts as noticeably warmer
+  },
+
   // --- exchange (ODD §2 Ties, §7.1, §7.2) ---
   exchange: {
     tradeWeight: 0.5,     // a barter's weight in the kindness tally, vs 1 for a gift; swept incl. 0
@@ -141,6 +151,7 @@ var PARAMETERS = {
     priceRate: 0.2,       // error-driven update of the price norm
     relRate: 0.1,         // update of how reliably its trades come off
     maxLots: 30,          // lots per trade
+    partnersTried: 12,    // partners a holder tries at a place, known ones first (Chris, 2026-11-03)
     marginalLot: 1,       // units used to measure a good's marginal value to need
     hoursBaseline: 1e-4,  // weight of plain hour costs in a limit (decides when needs are flat)
   },

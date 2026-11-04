@@ -195,11 +195,11 @@ for (let d = 0; d < 60; d++) {
   for (const a of bw.agents) { if (a.chatted > P.agents.chatK) chatCap = false; metSum += a.met.length; md++; }
 }
 check('chat never exceeds k a day', chatCap, 'mean met per agent-day ' + (metSum / md).toFixed(1) + ', k = ' + P.agents.chatK);
-const withNorm = bw.agents.filter((a) => a.norm.n[A_FORAGE] > 0);
-const normErr = mean(withNorm.map((a) => Math.abs(a.norm.eff[A_FORAGE] - P.goods.plants.perHour) / P.goods.plants.perHour));
+const withNorm = bw.agents.filter((a) => a.yld[A_FORAGE].nn > 0);
+const normErr = mean(withNorm.map((a) => Math.abs(a.yld[A_FORAGE].n - P.goods.plants.perHour) / P.goods.plants.perHour));
 check('forage norms converge on the true rate where agents meet', withNorm.length > 0.8 * bw.agents.length && normErr < 0.1,
   withNorm.length + '/' + bw.agents.length + ' hold a norm; mean error ' + (100 * normErr).toFixed(1) + '%');
-check('no norm without a meeting', bw.agents.concat(bw.dead).every((a) => a.norm.n[A_FORAGE] === 0 || a.metTotal > 0));
+check('no norm without a meeting', bw.agents.concat(bw.dead).every((a) => a.yld[A_FORAGE].nn === 0 || a.metTotal > 0));
 const heard = bw.agents.filter((a) => a.heard > 0).length;
 check('sightings spread by chat', heard > 0, heard + '/' + bw.agents.length + ' know hexes only from others (mean ' + mean(bw.agents.map((a) => a.heard)).toFixed(1) + ')');
 console.log('bands after 60 days: ' + bw.agents.length + '/' + (B.n * B.size) + ' alive');
@@ -371,8 +371,8 @@ while (fw.day < P.goods.grain.closeDay) fw.update();
 const expected = P.goods.grain.prior + P.agents.learnRate * ((ownReaped + gift) / (seeds * fert) - P.goods.grain.prior);
 check('a field sown in spring ripens on its day and anyone may reap it', ripeAt === P.goods.grain.ripeDay && friend.hold.grain + gift > 0 && Math.abs(yielded - seeds * P.goods.grain.yieldPerSeed * fert) < 1e-6,
   seeds.toFixed(0) + ' seeds at fertility ' + fert.toFixed(2) + ' → ' + yielded.toFixed(1) + ' grain on day ' + ripeAt + '; the friend reaped ' + (friend.hold.grain + gift).toFixed(1) + ', the planter ' + ownReaped.toFixed(1));
-check("grain given back by the reaper counts in the planter's learned return", field.returned === gift && Math.abs(planter.farmReturn - expected) < 1e-9 && fw.fields.length === 0,
-  'returned ' + field.returned.toFixed(1) + '; learned return per seed ' + planter.farmReturn.toFixed(2) + ' (own reaping alone would give ' +
+check("grain given back by the reaper counts in the planter's learned return", field.returned === gift && Math.abs(planter.farmL.h - expected) < 1e-9 && fw.fields.length === 0,
+  'returned ' + field.returned.toFixed(1) + '; learned return per seed ' + planter.farmL.h.toFixed(2) + ' (own reaping alone would give ' +
   (P.goods.grain.prior + P.agents.learnRate * (ownReaped / (seeds * fert) - P.goods.grain.prior)).toFixed(2) + ')');
 const farmFound = xw.discoveries.filter((d) => d.what === 'farm');
 check('farming is discovered by tinkering in the bands year (wild grain in hand)', farmFound.length > 0,

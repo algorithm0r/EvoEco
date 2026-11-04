@@ -2,7 +2,8 @@
 // The exchange phase (ODD §3 phase 3): at every hex where agents met today, first gifts to
 // those in need, then barter in rounds, one good at a time, scarcest first.
 //
-// Goods: GOODS in tree.js (water stays in the gourd). A barter price is an exchange ratio
+// Goods: GOODS in tree.js, water included (Chris, 2026-11-03), up to the room in the
+// receiver's gourd and pot (ODD §2 water ladder). A barter price is an exchange ratio
 // (ODD §7.2) for a pair of goods, quoted one way: for the pair (a, b) with a before b in
 // GOODS, `p` is units of a per unit of b. Each pair has its own going rate (n(n−1)/2 of them).
 //
@@ -16,7 +17,11 @@
 //   at the geometric midpoint of the two bids. Walk-away guard: each side must still gain, by
 //   its limit and by its own need (lot by lot, through the same cost the planner uses).
 // - Matching (§4.7): rounds per good, scarcest first (wanted ÷ held at the place); holders
-//   of that good, in random order, pick the partner and good giving them the largest gain.
+//   of that good, in random order, pick the partner and good giving them the largest gain,
+//   among at most a dozen partners, known and trusted ones first (Chris, 2026-11-03).
+
+// Room left for good g in the agent's containers (only water needs one so far)
+function room(agent, g) { return g === 'water' ? Math.max(0, waterCarried(agent.hold) - agent.hold.water) : Infinity; }
 
 function pairKey(a, b) { return GOODS.indexOf(a) < GOODS.indexOf(b) ? a + '|' + b : b + '|' + a; }
 
@@ -74,12 +79,24 @@ function hourCosts(agent, world) {
     out[GOOD_OF[act]] = best;
   }
   out.grain = out.food * PARAMETERS.goods.food.restores / PARAMETERS.goods.grain.restores;   // as food
+  out.water = waterHours(agent, world, reach);
   for (const r in RECIPES) {
     let c = RECIPES[r].hours;
     for (const g in RECIPES[r].inputs) c += RECIPES[r].inputs[g] * out[g];
     out[r] = c;
   }
   return (agent.costs = out);
+}
+
+// Hours per unit of water: a trip to the nearest known water within reach and back, a drink,
+// and what its containers carry home.
+function waterHours(agent, world, reach) {
+  const tr = world.travel(agent.home);
+  let best = Infinity;
+  for (let h = 0; h < world.grid.n; h++) {
+    if (world.waterAt[h] >= 0 && agent.known[h] && tr[h] <= reach) best = Math.min(best, 2 * tr[h]);
+  }
+  return (best + PARAMETERS.agents.drinkHours) / waterCarried(agent.hold);
 }
 
 // Marginal value of one more unit of good g to the agent's cost (tonight plus Keep), by
@@ -90,7 +107,8 @@ function marginal(agent, world, g) {
   const d = WHOLE[g] ? 1 : PARAMETERS.exchange.marginalLot, h = agent.hold;
   const lo = Object.assign({}, h), hi = Object.assign({}, h);
   lo[g] = Math.max(0, h[g] - d);
-  hi[g] = h[g] + d;
+  hi[g] = h[g] + Math.min(d, room(agent, g));
+  if (!(hi[g] > lo[g])) return (agent.mu[g] = 0);
   const v = (costWith(agent, world, lo) - costWith(agent, world, hi)) / (hi[g] - lo[g]);
   return (agent.mu[g] = Math.max(0, v));
 }
@@ -108,19 +126,21 @@ function ownRatio(agent, world, a, b) {
 
 // Its estimate of another's limit (ODD §7.2): the particular other if it has traded this
 // pair with it before, else cost norms (the generalized other: others' rates), as hours.
-function estRatio(agent, other, a, b) {
+function estRatio(agent, other, a, b, world) {
   const t = agent.ties.get(other.id), key = a + '|' + b;
   if (t && t.ratio && t.ratio[key]) return t.ratio[key];
-  const c = normCosts(agent);
+  const c = normCosts(agent, world);
   return c[b] / c[a];
 }
-function normCosts(agent) {
+// (water: no norm of trips is kept, so its own hours stand in)
+function normCosts(agent, world) {
   const out = {};
   for (const act of GATHER) {
-    const r = agent.norm.n[act] ? agent.norm.eff[act] : agent.rate(act);
+    const r = agent.yld[act].nn ? agent.yld[act].n : agent.rate(act);
     out[GOOD_OF[act]] = 1 / r;
   }
   out.grain = out.food * PARAMETERS.goods.food.restores / PARAMETERS.goods.grain.restores;
+  out.water = hourCosts(agent, world).water;
   for (const r in RECIPES) {
     let c = RECIPES[r].hours;
     for (const g in RECIPES[r].inputs) c += RECIPES[r].inputs[g] * out[g];
@@ -137,7 +157,8 @@ function costWith(agent, world, hold, belonging) {
 
 // ── gifts ──────────────────────────────────────────────────────────────────────────────
 // Units of a good the agent lacks for tonight (food to its set point, counting the grain it
-// holds; grain as the same lack in grain units; wood for one fire).
+// holds; grain as the same lack in grain units; wood for one fire; water to its set point if
+// it has not drunk today, up to the room in its containers).
 function shortfall(agent, g) {
   const N = PARAMETERS.needs, G = PARAMETERS.goods;
   if (g === 'food' || g === 'grain') {
@@ -146,12 +167,17 @@ function shortfall(agent, g) {
     return lack / G[g].restores;
   }
   if (g === 'wood') return Math.max(0, G.fireWood - agent.hold.wood);
+  if (g === 'water') {
+    if (agent.drank) return 0;
+    const tonight = agent.need.water - N.waterDecay;
+    return Math.min(room(agent, g), Math.max(0, 1 - tonight - agent.hold.water));
+  }
   return 0;
 }
 
 function giftsAt(world, here) {
   const E = PARAMETERS.exchange;
-  for (const g of ['food', 'grain', 'wood']) {
+  for (const g of ['food', 'grain', 'wood', 'water']) {
     for (const j of here) {
       let need = shortfall(j, g);
       if (need <= 0) continue;
@@ -161,7 +187,8 @@ function giftsAt(world, here) {
       for (const i of givers) {
         if (need <= 0) break;
         if (i.owedBy(j.id, world.day) >= E.owedLimit) continue;          // a grudge: unreturned gifts
-        const amount = Math.min(need, i.hold[g]);
+        const amount = Math.min(need, i.hold[g], room(j, g));
+        if (!(amount > 1e-6)) continue;
         const before = costWith(i, world, i.hold);
         const hold2 = Object.assign({}, i.hold);
         hold2[g] -= amount;
@@ -174,6 +201,7 @@ function giftsAt(world, here) {
         i.gave(j.id, world.day);
         j.received(i.id, world.day);
         world.giftsToday = (world.giftsToday || 0) + 1;
+        world.giftAmounts[g] = (world.giftAmounts[g] || 0) + amount;   // all time, by good (measures)
       }
     }
   }
@@ -196,8 +224,8 @@ function barterAt(world, hex, here) {
     for (const i of holders) {
       // i offers g; pick the partner and the good in return giving i the largest gain
       let best = null;
-      for (const j of here) {
-        if (j === i || done.has(j.id)) continue;
+      for (const j of partnersFor(world, i, here)) {
+        if (done.has(j.id)) continue;
         for (const l of GOODS) {
           if (l === g || !canGive(j, l)) continue;
           const deal = priceFor(world, i, g, j, l);
@@ -211,6 +239,21 @@ function barterAt(world, hex, here) {
       trade(world, hex, i, g, best.j, best.l, best.deal);
     }
   }
+}
+
+// Whom a holder tries (ODD §4.7, Chris 2026-11-03: no one can check every other person).
+// Those it has dealt with, most trusted first, skipping any whose unreturned gifts have
+// reached its grudge limit; then the others at the place in random order; a dozen at most.
+function partnersFor(world, i, here) {
+  const E = PARAMETERS.exchange, day = world.day, known = [], others = [];
+  for (const j of here) {
+    if (j === i) continue;
+    if (!i.ties.has(j.id)) others.push(j);
+    else if (i.owedBy(j.id, day) < E.owedLimit) known.push(j);
+  }
+  known.sort((x, y) => i.trust(y.id, day) - i.trust(x.id, day));
+  shuffleInPlace(others, world.rng);
+  return known.concat(others).slice(0, E.partnersTried);
 }
 
 function canGive(a, g) { return WHOLE[g] ? a.hold[g] >= 1 : a.hold[g] > 1e-6; }
@@ -227,7 +270,7 @@ function priceFor(world, i, g, j, l) {
     const p = Math.exp(P.logp);   // units of the first per unit of the second
     return GOODS.indexOf(l) < GOODS.indexOf(g) ? p : 1 / p;
   };
-  const fairI = Math.sqrt(vi * estRatio(i, j, l, g)), fairJ = Math.sqrt(vj * estRatio(j, i, l, g));
+  const fairI = Math.sqrt(vi * estRatio(i, j, l, g, world)), fairJ = Math.sqrt(vj * estRatio(j, i, l, g, world));
   const gi = going(i), gj = going(j);
   const bidI = gi ? Math.max(fairI, gi) : fairI;      // i wants much l for its g
   const bidJ = gj ? Math.min(fairJ, gj) : fairJ;      // j wants to pay little l
@@ -239,7 +282,7 @@ function priceFor(world, i, g, j, l) {
 
 // Change in each side's cost from one lot (i gives `lot` of g for lot × r of l); + = gain.
 function lotGain(world, i, g, j, l, deal) {
-  let w = Math.min(deal.lot, i.hold[g], j.hold[l] / deal.r);
+  let w = Math.min(deal.lot, i.hold[g], j.hold[l] / deal.r, room(j, g), room(i, l) / deal.r);
   if (WHOLE[g]) w = Math.floor(w);
   if (WHOLE[l] && w * deal.r > j.hold[l] + 1e-9) w = 0;
   if (!(w > 1e-6)) return { gi: -1, gj: -1, w: 0 };
@@ -273,8 +316,8 @@ function trade(world, hex, i, g, j, l, deal) {
   const p = first === l ? deal.r : 1 / deal.r;
   world.tradesToday.push({ hex, key, p, give: g, get: l, qty: moved, seller: i.id, buyer: j.id,
     // the model knows true limits; log each side's estimate error (ODD §7.2 measurement)
-    errI: Math.log(estRatio(i, j, l, g) / ownRatio(j, world, l, g)),
-    errJ: Math.log(estRatio(j, i, l, g) / ownRatio(i, world, l, g)) });
+    errI: Math.log(estRatio(i, j, l, g, world) / ownRatio(j, world, l, g)),
+    errJ: Math.log(estRatio(j, i, l, g, world) / ownRatio(i, world, l, g)) });
   // kindness, judged against each side's own fair middle (ODD §2 Ties)
   i.traded(j.id, world.day, deal.r >= deal.fairI, key, p);
   j.traded(i.id, world.day, deal.r <= deal.fairJ, key, p);

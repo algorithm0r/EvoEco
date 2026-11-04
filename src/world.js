@@ -1,7 +1,8 @@
 'use strict';
 // The world holds all state and advances it one day per update (ODD §2 Scales: one tick =
-// one day). Stage 1: the landscape only — hex map, resources, seasons, travel times. It is
-// an engine entity (has update) but draws nothing: rendering is the Observer's job.
+// one day): the landscape (hex map, resources, seasons, travel times), the agents' day,
+// camps, dwellings and fields. It is an engine entity (has update) but draws nothing:
+// rendering is the Observer's job.
 //
 // Construct with `new World()` to generate a map from PARAMETERS.seed, or
 // `new World({ map })` with a map from exportMap() to hold one map fixed (ODD §2: some
@@ -42,6 +43,7 @@ var World = class World {
       this.active[k] = Int32Array.from(a);
     }
     this.day = 0;
+    this.seasonIndex = 0;   // set each update; spring before the first
     this.travelCache = new Map();
     // where an agent standing in each hex can drink: the hex itself, or a river or lake
     // beside it (lakes can't be entered, but their shores can be drunk from); -1 if neither
@@ -64,6 +66,8 @@ var World = class World {
     this.fields = [];
     this.grainHex = new Float32Array(this.grid.n);
     this.learnedBySeeing = [];
+    this.dwellings = [];   // lean-tos and huts, lived in or empty (ODD §5 Moving camp)
+    this.giftAmounts = {};
     this.made = {};
     if (opts.agents != null) this.placeAgents(opts.agents);
     else if (PARAMETERS.agents.layout === 'bands') this.placeBands(PARAMETERS.agents.bands);
@@ -83,14 +87,183 @@ var World = class World {
       const c = cand[this.rng.int(cand.length)];
       if (this.bandCentres.every((b) => g.dist(b, c) >= B.spacing)) this.bandCentres.push(c);
     }
+    // with moving camp, the camp is one hex holding the band's homes (ODD §5, Decided)
+    const moving = PARAMETERS.camp.move;
+    if (moving) this.camps = [];
     for (let b = 0; b < this.bandCentres.length; b++) {
-      const homes = g.within(this.bandCentres[b], B.radius).filter((h) => this.hours[h] >= 0 && this.terrain[h] !== T_RIVER);
+      const homes = moving ? [this.bandCentres[b]]
+        : g.within(this.bandCentres[b], B.radius).filter((h) => this.hours[h] >= 0 && this.terrain[h] !== T_RIVER);
+      const camp = moving ? { hex: this.bandCentres[b], members: [] } : null;
+      if (camp) this.camps.push(camp);
       for (let k = 0; k < B.size; k++) {
         const a = new Agent(this.agents.length, homes[this.rng.int(homes.length)], this);
         a.band = b;
+        if (camp) { a.camp = camp; camp.members.push(a); }
         this.agents.push(a);
       }
     }
+  }
+
+  // ── moving camp (ODD §5, Decided — Chris, 2026-11-03) ──────────────────────────────────
+  // Every `every` days each camp weighs moving. Candidate sites are land beside water within a
+  // day's walk; the shortlist is the sites whose surroundings the members have seen fullest
+  // of plants and wood. Each member scores each site by the cost of its own best day there
+  // (siteDay). The band moves to the site with the lowest summed cost when, over the days
+  // until it weighs again, that beats staying by more than the moving day costs (the walk
+  // there). Then each member chooses for itself: follow, stay, or join another camp within
+  // reach, whichever costs it least over those days, with the ties it would leave behind
+  // costed through belonging. No leader: the rule makes a group decision but not who decides.
+  campsDay() {
+    const C = PARAMETERS.camp, n = C.every;
+    const tab = projectionTable(this);
+    let K = 1;   // weight of a day's belonging in a day's cost (tonight and the projection)
+    for (const T of tab) K += T.beta * T.len;
+    const sq = (x) => (1 - x) * (1 - x);
+    for (const camp of this.camps.slice()) {
+      if (!camp.members.length || camp.movedDay === this.day) continue;
+      const M = camp.members, tr = this.travel(camp.hex);
+      const stay = M.map((a) => siteDay(a, this, camp.hex, 0));
+      const sStay = stay.reduce((x, y) => x + y, 0);
+      let best = -1, bestDay = null, bestSum = sStay;
+      for (const s of this.campSites(camp)) {
+        const d = M.map((a) => siteDay(a, this, s, 0));
+        const sum = d.reduce((x, y) => x + y, 0);
+        if (sum < bestSum) { best = s; bestDay = d; bestSum = sum; }
+      }
+      if (best < 0) continue;
+      const arrive = M.map((a) => siteDay(a, this, best, tr[best]));
+      const sArrive = arrive.reduce((x, y) => x + y, 0);
+      if (!(sArrive + (n - 1) * bestSum < n * sStay)) continue;
+      // each member's own choice
+      const others = this.camps.filter((c) => c !== camp && c.members.length && c.hex !== best && c.hex !== camp.hex && tr[c.hex] <= PARAMETERS.agents.wakingHours);
+      const atBest = this.camps.find((c) => c !== camp && c.hex === best);
+      const stayers = this.camps.filter((c) => c !== camp && c.hex === camp.hex).flatMap((c) => c.members);
+      const goers = M.concat(atBest ? atBest.members : []);
+      const choice = new Map();
+      M.forEach((a, k) => {
+        const b0 = a.need.belonging, adj = (b) => n * K * (sq(b) - sq(b0));
+        let pick = 'follow', c = arrive[k] + (n - 1) * bestDay[k] + adj(a.belongingWith(goers, this.day));
+        const cStay = n * stay[k] + adj(a.belongingWith(stayers, this.day));
+        if (cStay < c) { pick = 'stay'; c = cStay; }
+        for (const o of others) {
+          const cJoin = siteDay(a, this, o.hex, tr[o.hex]) + (n - 1) * siteDay(a, this, o.hex, 0) + adj(a.belongingWith(o.members, this.day));
+          if (cJoin < c) { pick = o; c = cJoin; }
+        }
+        choice.set(a, pick);
+      });
+      const followers = M.filter((a) => choice.get(a) === 'follow');
+      const left = M.filter((a) => choice.get(a) === 'stay');
+      this.campMoves = (this.campMoves || 0) + 1;
+      if (left.length) this.campSplits = (this.campSplits || 0) + 1;
+      // followers move (to a camp already there, if there is one); stayers keep the old camp
+      let dest = atBest;
+      if (!dest) { dest = { hex: best, members: [] }; this.camps.push(dest); }
+      dest.movedDay = this.day;
+      for (const a of followers) this.moveTo(a, dest, tr[best]);
+      for (const a of M) {
+        const o = choice.get(a);
+        if (typeof o === 'object') { this.moveTo(a, o, tr[o.hex]); this.campJoins = (this.campJoins || 0) + 1; }
+      }
+      camp.members = left;
+    }
+    this.camps = this.camps.filter((c) => c.members.length);
+  }
+
+  // An agent walks to a camp and makes its home there: its dwelling is left behind (for
+  // anyone), it sleeps in the best one with room at the camp or on bare ground of its own, and
+  // it sees the land around the new home.
+  moveTo(a, camp, walk) {
+    this.leaveDwelling(a);
+    a.settle(this, camp.hex);
+    const d = this.bestDwelling(camp.hex, a);
+    if (d) { d.sleepers.push(a.id); a.shelter = d; } else a.shelter = this.newDwelling(camp.hex, a.id);
+    a.walked = Math.min(walk, a.capacity());
+    a.camp = camp;
+    camp.members.push(a);
+    for (const h of this.grid.within(camp.hex, PARAMETERS.agents.sight)) a.look(this, h);
+  }
+
+  // Dwellings (ODD §5 Moving camp, Decided: things in the world; a hut shelters several, who
+  // share by choice).
+  newDwelling(hex, id) {
+    const d = newShelter(hex);
+    d.sleepers.push(id);
+    this.dwellings.push(d);
+    return d;
+  }
+  leaveDwelling(a) {
+    const s = a.shelter.sleepers, k = s.indexOf(a.id);
+    if (k >= 0) s.splice(k, 1);
+  }
+  // beds left in a dwelling: a hut once begun holds more than a lean-to or bare ground
+  dwellingRoom(d) {
+    const G = PARAMETERS.goods;
+    return (d.hut > 0 ? G.hut.sleepers : G.leanTo.sleepers) - d.sleepers.length;
+  }
+  // how strongly `a` is tied to those sleeping in `d`
+  tiedTo(a, d) {
+    let s = 0;
+    for (const id of d.sleepers) if (id !== a.id && a.ties.has(id)) s += a.tie(id, this.day).kind;
+    return s;
+  }
+  // Of two places to sleep, is `d` better for `a` than `cur`? Noticeably warmer; or about as
+  // warm and among those it is more strongly tied to.
+  betterBed(a, d, cur) {
+    if (!cur) return true;
+    const di = shelterIns(d), ci = shelterIns(cur), E = PARAMETERS.camp.warmer;
+    if (di > ci + E) return true;
+    return di >= ci - E && this.tiedTo(a, d) > this.tiedTo(a, cur);
+  }
+  // the best dwelling with room for `a` at a hex, other than its own; null if none
+  bestDwelling(hex, a) {
+    let best = null;
+    for (const d of this.dwellings) {
+      if (d.hex !== hex || d === a.shelter || this.dwellingRoom(d) <= 0) continue;
+      if (this.betterBed(a, d, best)) best = d;
+    }
+    return best;
+  }
+  // Each evening each agent at a camp moves to a better bed there if one has room (ODD §5):
+  // no one is turned out, and an agent stays put unless the move is better.
+  bedDown(order) {
+    for (const a of order) {
+      if (!a.camp) continue;
+      const d = this.bestDwelling(a.home, a);
+      if (!d || !this.betterBed(a, d, a.shelter)) continue;
+      this.leaveDwelling(a);
+      d.sleepers.push(a.id);
+      a.shelter = d;
+      this.bedMoves = (this.bedMoves || 0) + 1;
+    }
+  }
+  // empty dwellings weather as lived-in ones do (Agent.consume); a dwelling with nothing left
+  // and no one in it is gone
+  wearDwellings() {
+    for (const d of this.dwellings) if (!d.sleepers.length) wearShelter(d, 1);
+    this.dwellings = this.dwellings.filter((d) => d.sleepers.length || d.leanTo > 0 || d.hut > 0);
+  }
+
+  // The shortlist of sites a camp weighs: land beside water within a day's walk, ranked by
+  // how full of plants and wood the members last saw the land within `look` hexes of it.
+  campSites(camp) {
+    const C = PARAMETERS.camp, tr = this.travel(camp.hex), M = camp.members, out = [];
+    for (let h = 0; h < this.grid.n; h++) {
+      if (h === camp.hex || !(tr[h] <= PARAMETERS.agents.wakingHours) || this.waterAt[h] < 0) continue;
+      if (this.terrain[h] !== T_PLAINS && this.terrain[h] !== T_FOREST) continue;
+      let score = 0;
+      for (const m of this.grid.within(h, C.look)) {
+        const p = this.caps.plants[m] > 0, w = this.caps.wood[m] > 0;
+        if (!p && !w) continue;
+        for (const a of M) {
+          if (!a.known[m]) continue;
+          if (p) score += a.seenFrac[A_FORAGE][m];
+          if (w) score += a.seenFrac[A_WOOD][m];
+        }
+      }
+      out.push({ h, score });
+    }
+    out.sort((x, y) => y.score - x.score);
+    return out.slice(0, C.sites).map((x) => x.h);
   }
 
   placeAgents(n) {
@@ -163,7 +336,10 @@ var World = class World {
   fieldsDay() {
     const G = PARAMETERS.goods.grain, doy = this.day % PARAMETERS.year.days;
     if (!this.fields.length) return;
-    if (doy === G.ripeDay) for (const f of this.fields) { f.grain = f.yield; f.ripe = true; }
+    if (doy === G.ripeDay) {
+      // a planter knows when its own field ripens (ODD §5 Moving camp, Default)
+      for (const f of this.fields) { f.grain = f.yield; f.ripe = true; f.planter.seenGrain[f.hex] = f.yield; }
+    }
     else if (doy > G.ripeDay) for (const f of this.fields) f.grain *= 1 - G.fieldDecay;
     if (doy >= G.closeDay) {
       for (const f of this.fields) {
@@ -231,6 +407,7 @@ var World = class World {
   // the order contested hexes are drawn from.
   agentDay() {
     const live = this.agents;
+    if (this.camps && PARAMETERS.camp.move && this.day % PARAMETERS.camp.every === 0) this.campsDay();   // moving camp
     for (const a of live) a.plan = planDay(a, this);                 // 1. Plan
     const order = live.slice();
     for (let i = order.length - 1; i > 0; i--) {                       // 2. Travel and work
@@ -243,11 +420,17 @@ var World = class World {
     for (const a of live) a.xnet = { food: -a.hold.food, wood: -a.hold.wood };
     exchangeDay(this, live);                                          // 3. Exchange
     for (const a of live) { a.xnet.food += a.hold.food; a.xnet.wood += a.hold.wood; }   // net in exchange
+    if (this.camps) this.bedDown(order);                              //    where to sleep
     for (const a of live) a.consume(this);                            // 4. Consume
     for (const a of live) a.learn();                                  // 5. Learn
     for (const a of live) a.age(this);                                // 6. Aging and deaths
-    for (const a of live) if (!a.alive) { a.deathDay = this.day; this.dead.push(a); }
+    for (const a of live) if (!a.alive) { a.deathDay = this.day; this.dead.push(a); this.leaveDwelling(a); }
+    this.wearDwellings();
     this.agents = live.filter((a) => a.alive);
+    if (this.camps) {
+      for (const c of this.camps) c.members = c.members.filter((a) => a.alive);
+      this.camps = this.camps.filter((c) => c.members.length);
+    }
   }
 
   // Meeting is co-location (ODD §3): agents who were in the same hex today, including

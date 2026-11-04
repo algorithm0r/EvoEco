@@ -117,6 +117,22 @@ Homeostatic set points:
 - **Food, water, warmth (shelter), rest, belonging.**
 - Distance below set point is the agent's cost ("surprise"), and the cost is **convex**, so
   whatever is most lacking dominates choice. No fixed weights.
+- **Below zero, the scale runs to death (Decided, Chris 2026-11-03).** How far a need can
+  fall below zero is the way to death, on the same scale for every need, so the night a need
+  kills is the worst case in the ordinary measure (level -1, cost 4, the most any need can
+  cost), with no penalty added beside it. Chris: "final days should register as the worst
+  possible case in the normal measure. if thirst is not outweighing food when thirst is maxed
+  we have a problem with the weighting." Food and water: below zero is a debt drawn on the
+  body's reserve, which holds the daily need for the days the need takes to kill (§7.5
+  numbers: 20 days of food, 3 of water); the need runs down at its usual rate, a meal pays
+  the debt back, and death comes when the reserve is gone. Warmth, which is not a stock:
+  the days spent at zero over the days it takes to kill.
+  - **A night that kills costs the worst case for every day it takes away — Default (Claude's
+    reading of the rule above, 2026-11-03).** Food, water and warmth at -1, rest and belonging
+    at 0, on every day of the Keep projection (§7.6), discounted as any projected day is: a
+    dead agent has nothing. Without it, the dying night cost 4 while the projection still
+    counted the agent's life after it, and an agent died of thirst on a winter food trip that
+    the projection valued at about 5.
 - **Belonging** = basic trust-based reciprocity ties, in both directions (trusting and being
   trusted). An agent short on belonging seeks ties.
 - **Rest** = free time; also stands in for higher-order needs.
@@ -167,6 +183,15 @@ Deliberately small; it grows later.
 | 1 | cooked wild food (needs wood) | carried in a gourd | lean-to (branches) |
 | 2 | farmed grain cooked in a pot (land cleared with axe; hoe, sickle) | carried and stored in a clay pot | hut (poles cut with axe, thatch, hearth) |
 | 3 | bread (grain ground on a quern stone, baked in a clay oven) | well near home (dug with a pick, lined) | house (timber cut with a metal axe, clay daub, hearth) |
+
+- **Water is a good like any other (Decided — Chris, 2026-11-03).** It is gifted and
+  bartered, up to the room in the receiver's gourd and pot. Chris's aim: one agent forages,
+  another fetches water, and they meet and gift or barter to sustain each other.
+- **Containers and carrying (Open — raised by Chris, 2026-11-03).** An emerging dimension:
+  containers (gourds, pots and later skins for water; baskets for berries and other foraged
+  goods) and porting as a service, with its transport technology (carrying by hand, pack
+  goats, oxen, horses, wagons). Nothing yet limits what an agent carries except water, so a
+  basket would do nothing until a carrying limit exists.
 
 - **Warmth has levels from two sources (Decided — Chris, 2026-11-02).** Shelter level sets a
   base, and a fire (firewood used up daily) adds to it. A hut without fuel is better than no
@@ -307,8 +332,67 @@ To be extended as rules are written: every new rule gets checked against this li
     included. Example: time spent and load brought back from a field — measured for yourself,
     observed for every returner.
 - Nobody copies anybody; norms are pooled experience. Conformity and tradition can still emerge.
-- **Arbitration — Default (proposed):** weight habit and norm by recent reliability (precision
-  weighting: norm as prior, habit as evidence). Equal reliability gives a blend; unequal acts as a switch.
+- ~~**Arbitration — Default (proposed):** weight habit and norm by recent reliability (precision
+  weighting: norm as prior, habit as evidence). Equal reliability gives a blend; unequal acts as a switch.~~
+  Superseded by the next bullet (2026-11-03).
+- **Every learned value has a habit, a norm, and a record of which pays off (Decided — Chris,
+  2026-11-03):** "in all these cases where the agent is learning some value they keep both a
+  habit and a norm. and then they keep a comparison of those, and how often each pays off.
+  they either blend using this estimate or plan with one or the other randomly using the
+  estimate, and at extremes the estimate probably overrules the other (only plan with one)."
+  The learned values are:
+  - the yields;
+  - the seasonal flows (food and wood gathered, and food and wood netted in exchange);
+  - the usual evening food level;
+  - the usual working day;
+  - the return on sowing.
+
+  Until now only the yields had a norm. So an agent could not learn from others what a
+  season brings before living through it.
+  - **As built (Default, Claude):**
+    - **Blending.** The agent blends, the first of Chris's two options. Each time its own
+      experience of a value comes in, it scores how far the habit and the norm each missed,
+      as a running mean of the squared miss (rate `arbRate` 0.1). The weights go by the
+      inverse of those scores. A weight beyond `arbExtreme` (0.9) becomes 1: at the extremes
+      one source alone is used.
+    - **Before experience.** Before any experience of its own, the agent uses the norm if it
+      has one. Before the scores exist, it weighs the two equally.
+    - **What feeds the norm.** As before, the norm comes from others' experience, not the
+      agent's own. Yields are taken from what an agent sees others get, and from what it
+      is told in chat. For the other values, a speaker in chat tells its own habit for each
+      season (what it has found a day brings). It tells only values it has lived, so an
+      agent can hear about winter in summer. Norms move at `normRate`.
+    - **Scoring.** Both sources are scored against the agent's own experience, which is
+      what "pays off" means here.
+    - **Rates (Decided — Chris, 2026-11-03: "fix 1 and 2 please").**
+      - **Told values.** These move the norm at the seasonal habits' rate (`flowRate` 0.05),
+        not at `normRate` 0.2. At 0.2, with up to 5 chats a day, a seasonal norm was mostly
+        replaced every day: just the last few speakers, a jumpy source scored against a slow
+        one.
+      - **The working day.** It learns at 0.05 like the other seasonal habits, not at 0.3.
+      - **Yields.** Yield norms from seeing and being told today's yields keep `normRate` 0.2.
+    - **Replaces** the fixed weighting of yields (habit by experiences capped at 20, norm
+      weight 3).
+  - **Result, bands, seed 1, three years (one run each; nothing given, and farming known).**
+    - **Norms reach everyone.** By the second spring all 100 agents had heard norms for
+      every season.
+    - **No first-winter knowledge.** Everyone starts on the same day, so no one has a winter
+      to tell before the first winter. The heard norms only start to count once ages
+      overlap (births, Stage 6).
+    - **Habit and norm about equal.** Weights sat near 0.5 for the flows, the working day
+      and the return on sowing. Nobody reached an extreme: members of a band live on the
+      same land in the same season, so the two sources miss about equally.
+    - **Yields went to the norm alone in year 1, then 0.5.** An hour's yield from a full hex
+      has no noise in the model. So the first observed norm is exact, while the habit is
+      still climbing from its prior. Once the habit catches up, both miss by zero and count
+      equally.
+    - **Survival and farming.** All 100 alive in both runs. Farming fell: with it known, 2
+      seeds sown in three years against 155 in the shared-hut run before this change.
+      Neither change is attributed: one run each.
+    - **Cost.** Hearing in chat is 0.2% of run time.
+  - **Open:** this ODD's Decided line above says norms are updated "its own included". Since
+    Stage 3 the code has fed norms from others only, and this build keeps that, so the habit
+    and the norm stay separate sources to compare.
 - **Observation is passive and costs no hours**; it happens where agents meet (shelter, field,
   water source), by seeing and by chat with the people met, capped at k a day (§4.6). What can
   be learned depends on where you are and whom you meet.
@@ -347,6 +431,15 @@ To be extended as rules are written: every new rule gets checked against this li
 
 ### 4.7 Interaction
 - **Reciprocity** between tied agents; **barter** between strangers (§7.1–7.2).
+- **Bounded partner search (Decided — Chris, 2026-11-03).** No one can check every other
+  person at a place, so a perfect market is impossible at high numbers. A trader tries known,
+  trusted partners first (not the crooks) and a new person only rarely, and stops at about a
+  dozen. Chris: "all folks will trade first with known trusted vendors (not the crooks tho)
+  and pick a new person only rarely."
+  - **As built — Default (Claude, 2026-11-03):** partners it has dealt with, most trusted
+    first, skipping any whose unreturned gifts have reached the grudge limit (§2 Owing); then
+    others at the place in random order; 12 in all (`partnersTried`). A partner whose trades
+    felt unfair is not skipped, only ranked lower (an unfair trade adds half the kindness).
 - Partner search: strangers can barter only if they met (co-location, §3). No separate search
   rule is needed to bring them together: the route planner values trade by how reliably it has
   happened at each place (§7.6), so agents with goods to trade route through those places.
@@ -429,6 +522,120 @@ trade places and price norms must all form.
 - **Starting know-how: stone and fire (Decided — Chris, 2026-11-02).** Agents start knowing
   fire and the stone tools (axe, hoe/sickle, pick), as Homo sapiens had both long before any
   economy.
+- **Moving camp (Open — Chris, 2026-11-03).** A band camped in one hex strips the ground
+  around it when it cannot move (§7.6 Stage 3 note). Chris: moving camp "is starting to sound
+  better. this creates a tradeoff for hunter gatherer vs agriculture": mobility keeps the
+  forage fresh, fields tie a band to one place. Design to come; it ties to carrying (§2).
+  - **The band moves as a group (Decided — Chris, 2026-11-03):** "bands typically move as a
+    group." The camp is one hex holding the band's homes.
+  - **When and where: the summed cost of the members (Decided — Chris, 2026-11-03, on
+    Claude's proposal):** "i like this." Candidate sites are hexes beside water within a day's
+    walk. Each member scores each site by its own planning cost there (forage and wood within
+    reach, mostly). The band moves to the site with the lowest summed cost when it beats
+    staying by more than the cost of the moving day. Fields and huts left behind count against
+    moving, which is the hunter-gatherer vs agriculture trade-off. No leader is written in: the
+    rule makes a group decision but not who decides.
+  - **Who goes: each member chooses (Decided — Chris, 2026-11-03, on Claude's proposal):**
+    "you can implement this, but i would expect everyone to go under this." When the band
+    moves, each member follows it, stays, or joins another camp within reach, whichever costs
+    them least, with ties left behind costed through belonging. A band is whoever camps
+    together, so bands can split and merge. Chris expects everyone to go: belonging should
+    outweigh a field.
+  - **As built (Default, 2026-11-03):**
+    - **Weighing.** Each camp weighs moving every 7 days, and a move is weighed over those 7
+      days. Its summed cost is the walk-day at the site plus 6 ordinary days, against 7 days
+      staying.
+    - **Day cost.** A member's day at a site is the cost of its best planned day were home
+      there, searched without the trade arm. The site has no shelter yet, and fields beyond
+      half a day's reach of it bring nothing back. The walk-day has the walk's hours taken
+      out of the day.
+    - **Shortlist.** Candidate sites are plains or forest beside water within a day's walk.
+      Five are shortlisted by how full of plants and wood the members last saw the land
+      within 2 hexes of each; members see only what they have seen.
+    - **Belonging.** It enters each member's own choice as a day's belonging cost weighted
+      like the planner's: tonight plus the discounted projection. The belonging counted is
+      from ties to those who would camp there, assuming the rest of the band follows.
+    - **Shelter and goods.** A hut or lean-to is left behind. All goods are carried; there
+      is no carrying limit until containers (Stage 5e).
+    - **Merging.** A camp moving to a hex where another camp is merges with it.
+  - **Huts and fields are things in the world; anyone may use a hut (Decided — Chris,
+    2026-11-03):** "yes, huts and fields should be things in the world. anyone may use the
+    hut." This is open access, as with harvest (§2). A structure stays where it was built and
+    weathers whether or not anyone lives in it. An agent arriving at a camp takes the best
+    empty structure there.
+  - **A hut shelters several, who share by choice (Decided — Chris, 2026-11-03, on Claude's
+    proposal):** "yes i like your emergent model." A hut holds several sleepers, and a
+    lean-to one or two. Each evening each agent chooses where at camp to sleep. Anyone
+    sleeping in a structure may build on it or repair it, so who puts in the hours and who
+    rides along is left to the model. No household is written in: one is just what we see
+    when the same people keep sharing a hut. Shared body heat is left out for now.
+    - **As built (Default):**
+      - **Capacity.** A hut, once begun, holds 5 sleepers; a lean-to or bare ground, 2.
+      - **Choosing a bed.** Each evening, in a random order, each agent moves to the warmest
+        structure at its camp with room. Among equally warm ones it picks the one whose
+        sleepers it has the strongest ties to, and otherwise it stays put. No one is turned
+        out of a full hut. An agent with no room anywhere has bare ground of its own to
+        build on.
+      - **Wear.** Each structure weathers once a day however many sleep in it. When a
+        part-built hut falls, everyone sleeping in it counts it as an abandoned project.
+    - **Result, bands, seed 1, three years (one run each).**
+      - **Sharing.** Huts fill: 4.8–5.0 sleepers in each lived-in hut. The work is spread:
+        80–95% of those sleeping in a finished hut had put hours into it, and its top
+        builder did 32–54% of the hours. Free riders are few so far.
+      - **Warmth.** Midwinter warmth was 0.57–0.75 against 0.45–0.50 with one agent per
+        structure. In the bands year (smoke test), 73 huts were started against 193.
+      - **Farming known.** 56 seeds were sown in year 3, then 99 the next spring, and 535
+        grain reaped, against 12 seeds in three years with one agent per structure.
+        Possibly the hours freed from hut-building; not checked.
+      - **Nothing given.** 83 of 100 alive, with 15 hunger deaths in year 3. Most were in a
+        camp that merged to 39–40 and stayed that size through the winter. With one agent
+        per structure the same seed kept 98. One run, so the cause is unchecked: watch for
+        merged camps outgrowing their land.
+  - *(Superseded 2026-11-03 by the bullet above: one agent per structure.)*
+    - **As built (Default):**
+      - **Occupancy.** ~~A structure (lean-to, hut, or a hut part-built) shelters one agent, as
+        when each agent built its own. Arrivals take the empty ones best first, in the order
+        they arrive.~~ Anyone in one may go on building it.
+      - **Wear.** Empty structures weather at the same rates and are gone at zero.
+      - **Own fields.** A planter knows when its own field ripens, so it counts the field as
+        seen ripe on that day. Others learn of ripe grain by seeing it, or by being told in
+        chat by someone who worked that hex.
+      - **Far fields.** A field farther than half a day's reach from home brings nothing back
+        in the projection.
+    - **Result, bands, seed 1, three years (one run each).**
+      - **Returning.** Camps come back to sites they used before: 152 returns in 299 moves
+        with nothing given. By year 3, arrivals took finished huts 96 times and part-built
+        ones 152 times.
+      - **Huts and seasons.** Huts are lived in through winter and empty in spring, when
+        camps move on (39–64 empty finished huts each spring).
+      - **Survival.** 98 of 100 alive with nothing given; 95 of 100 with farming known.
+        Winter is still hard: mean food −0.16 to −0.36 and warmth 0.41–0.52 at midwinter.
+      - **Farming, nothing given.** The first sowing was in the third spring (8 seeds, 49 by
+        summer). The planters reaped 319 grain and others 65, against 31 seeds and 274 grain
+        with fixed homes.
+      - **Farming, known from the start.** Only 12 seeds were sown in three years, against
+        115 seeds and 1,032 grain with fixed homes. Mobile bands farm far less: Chris's
+        hunter-gatherer vs agriculture trade-off, appearing without being written in.
+      - **No far fields.** Nobody reaped a field more than 3 hexes from home.
+    - **Result, bands, seed 1, two years.**
+      - **Survival.** 98 of 100 alive (2 hunger deaths), against 87 with homes fixed near the
+        band centre (12 hunger, 1 old age).
+      - **Splitting.** The bands scattered in the first spring. At the start there are no
+        ties, so belonging holds no one, and by day 60 there were 16 camps, some of one or
+        two agents.
+      - **Re-forming.** As ties formed they came back together. From day 180 on, membership
+        never changed: 7 camps of 24, 20, 20, 17, 10, 4 and 3. So Chris's "everyone goes"
+        holds once ties exist, not before.
+      - **Seasons.** Camps move most weeks in spring and summer and rarely in autumn and
+        winter, when the hut keeps them. Huts finished in autumn are left behind in spring.
+      - **Land and food.** Plants near home averaged 0.51 of cap, against 0.46. Winter food
+        dipped as before (0.40 at day 300). No one sowed in two years, against 5 seeds with
+        fixed homes.
+      - **Cost.** Weighing camps about doubles run time: 3.4 ms per agent-day against 1.65.
+      - **Bug fixed while testing.** The walk at first shortened every day of the year-long
+        projection, not just today. A 1.5-hour walk then looked like it cost hundreds, and
+        camps barely moved: 8 moves in two years, homes all in one hex, and 0.34 of plants
+        near home.
 - **Starting layout: bands (Decided — Chris, 2026-11-02, on Claude's proposal).** Several
   bands (say 5–8 of 20–40 agents) start a day or two's walk apart. No ties or households are
   pre-built; only nearness is given.
@@ -636,12 +843,13 @@ least cost: a shortest path for energy minimizing.
 #### One agent's day as built in Stage 2 — Default (Claude, 2026-11-02; numbers in `params.js`)
 Stage 2 had to fill gaps the design left open. Each is a Default awaiting Chris's review.
 - **Need levels.** Food and water are levels that run down daily (food also by hours worked)
-  and can fall below 0 to −1, a hunger or thirst debt, so a starving agent still values a
-  small meal. Warmth (shelter base + fire, scaled by the season's cold) and rest (free hours
+  and can fall below 0, a hunger or thirst debt, so a starving agent still values a small
+  meal. (Until 2026-11-03 the debt stopped at -1 and death counted days at or below zero;
+  now the debt runs down the body's reserve, §2 Needs.) Warmth (shelter base + fire, scaled by the season's cold) and rest (free hours
   against a set point of 6) are worked out each evening in [0, 1]. Cost = Σ deficit², with
   belonging held at its set point until there is anyone to tie to.
-- **Death.** More than 20 days at or below 0 food, 3 for water, 5 for warmth; old age by a
-  Gompertz hazard, with working hours declining after 50.
+- **Death.** The reserve gone: 20 days' food or 3 days' water owed (§2 Needs), or more than 5
+  days at zero warmth; old age by a Gompertz hazard, with working hours declining after 50.
 - **The evening.** Drink (at the source, or from the gourd), light a fire whenever there is
   the wood, eat cooked food (×1.5) to the set point, rest. Wild plant food rots 1% a day
   (nuts and roots keep), so autumn stores carry into winter.
@@ -674,6 +882,11 @@ Stage 2 had to fill gaps the design left open. Each is a Default awaiting Chris'
 - **Bands from the start.** The §5 layout (bands a day or two apart, nearness only) is used
   from Stage 3, since exchange needs neighbours: default 5 bands of 20, centres ≥ 14 hexes
   apart on land beside water, homes within 2 hexes of the centre.
+- **One camp per band, tried and set aside (2026-11-03).** Chris proposed putting a band's
+  homes in one hex, which fits the scale (an hour's walk across). In the test (bands, seed 1)
+  20 agents who cannot move camp stripped the plants within a hex of it to 0.30 of full by
+  spring (0.58 with homes spread over 2 hexes) and 31 died of hunger in year 1 (11 spread).
+  Homes stay spread over 2 hexes; how bandmates meet at home is open.
 - **Meeting.** Agents in the same hex on the same day meet, home in the evening included.
   Each sees what the others gathered there (passive, no cap) and chats with up to k = 5 of
   those met, chosen at random (ties first once ties exist). A chat passes on where the other
@@ -699,6 +912,7 @@ Stage 2 had to fill gaps the design left open. Each is a Default awaiting Chris'
 The decided rules (§2 Ties and Owing, §3 phase 3, §4.7, §7.1, §7.2) are built as written. The
 gaps filled:
 - **Goods traded:** food and wood (water stays in the gourd). Price = food per wood.
+  (Superseded: every good in the tree is traded since 5a, and water since 2026-11-03, §2.)
 - **Where:** at every hex where agents met today, places in random order: gifts first, then
   barter rounds.
 - **Own limit, hours adjusted by need (§7.2).** The ratio of the marginal value of wood to
@@ -817,10 +1031,20 @@ Chris asked for calibration before farming. What was found and changed:
   season (learned the same way). That stands for "a hungry agent forages more, a full one
   less". **Open for review: the half per week is a set number** (`keepPersist` 0.5). It could
   be learned from the agent's own weeks.
-- **Agents know a need can kill.** A plan that would make tonight one more day at or below
+- ~~**Agents know a need can kill.**~~ **Replaced 2026-11-03 by Chris's rule (§2 Needs: below
+  zero, the scale runs to death).** The 1000 patched a measure in which water one day from
+  death cost the same as food two weeks from it. Result with the new scale and the lost days
+  priced (bands, seed 1, two years): 88/100 alive, no thirst deaths (11 hunger, 1 old age);
+  evenings at or below zero water 0.48% (from 0.95%); runs of three dry evenings, the last
+  one before death, 15 (from 37). The 83 evenings two or more days dry were nearly all on
+  13.5-hour days with food at about 0.2: hungry agents in autumn, winter and spring on long
+  food trips that leave no hours for a 3-hour drink. What it was: a plan that would make tonight one more day at or below
   zero than the need allows (§2 death rule) costs 1000, far above any other plan. So an agent
-  pushes thirst to the edge but drinks before it dies, and a gift to a dying tie is worth a
-  great deal to the giver. **New rule, for Chris's review.** Before it, 7–10 of 100 agents
+  pushes thirst to the edge but drinks before it dies. It also enters the dying agent's own
+  limits in barter: one food short of dying values food enormously and bids high for it. It
+  does not enter a giver's choice (a gift weighs only the giver's own costs). (Corrected
+  2026-11-03: an earlier line here said a gift to a dying tie was worth a great deal to the
+  giver; the code never did that.) **New rule, for Chris's review.** Before it, 7–10 of 100 agents
   died of thirst in two years by trading one more dry day for food, morning after morning.
 - **Route search.** The shortlist keeps, per activity, the best stops by gain and the best by
   gain per hour of the day they take. The route is then built greedily twice, once by most
@@ -880,6 +1104,13 @@ through others counts (§2). The rest are Claude's proposals:
   at 0.98–0.99 through that autumn and winter, against about 0.8 before farming. Grain changed
   hands about 3,000 times. The return through others is small so far (a few grain).
 - **Not yet:** bread (quern, clay oven), wells, clearing forest for fields, tending.
+- **Do fields take land from wild plants? (Open — raised 2026-11-04.)** As built, plants and
+  soil are separate stocks in a hex: sowing draws soil only, foraging draws plants only, and
+  there is no land area, so farming is pure addition to the wild harvest. Proposed (Claude): a
+  hex has a fixed amount of land; a field takes land in proportion to its seeds out of the
+  hex's wild-plant cap while it stands, and wild plants regrow from the floor when it closes.
+  Clearing forest would do the same against wood. Folded into Stage 6, since growth is what
+  makes it bind.
 
 Specialization is expected mainly from time and space: needs are spread across the
 landscape and the day is limited, so splitting the work saves hours ("you get food, I'll get

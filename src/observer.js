@@ -44,7 +44,7 @@ var Observer = class Observer {
       }
       ctx.globalAlpha = 1;
       if (w.spring[i]) {
-        ctx.strokeStyle = '#bfe6ff';
+        ctx.strokeStyle = Observer.MARK.spring;
         ctx.beginPath(); ctx.arc(c.x, c.y, s * 0.5, 0, TAU); ctx.stroke();
       }
     }
@@ -56,7 +56,7 @@ var Observer = class Observer {
     const w = this.world, g = w.grid;
     ctx.save();
     ctx.lineWidth = 1;
-    ctx.strokeStyle = 'rgba(255,240,200,0.55)';
+    ctx.strokeStyle = Observer.MARK.route;
     for (const a of w.agents) {
       if (!a.plan.length) continue;
       const h = g.centre(a.home, s);
@@ -69,19 +69,38 @@ var Observer = class Observer {
     // fields (Stage 5d): green while growing, gold once ripe
     for (const f of w.fields) {
       const c = g.centre(f.hex, s);
-      ctx.fillStyle = f.ripe ? '#e8c547' : '#a7c957';
+      ctx.fillStyle = f.ripe ? Observer.MARK.ripe : Observer.MARK.growing;
       ctx.fillRect(c.x - s * 0.35, c.y - s * 0.35, s * 0.7, s * 0.7);
     }
+    // empty huts (ODD §5: things in the world, anyone may use one): a faint square
+    ctx.save();
+    ctx.strokeStyle = Observer.MARK.emptyHut;
+    for (const d of w.dwellings || []) {
+      if (d.sleepers.length || !(d.hut > 0)) continue;
+      const c = g.centre(d.hex, s);
+      if (!d.hutDone) ctx.setLineDash([2, 2]); else ctx.setLineDash([]);
+      ctx.strokeRect(c.x - s * 0.8, c.y - s * 0.8, s * 1.6, s * 1.6);
+    }
+    ctx.restore();
+    // camps (ODD §5 Moving camp): a ring at each camp's hex
+    ctx.strokeStyle = Observer.MARK.camp;
+    ctx.lineWidth = 2;
+    for (const c of w.camps || []) {
+      if (!c.members.length) continue;
+      const p = g.centre(c.hex, s);
+      ctx.beginPath(); ctx.arc(p.x, p.y, s * 1.6, 0, TAU); ctx.stroke();
+    }
+    ctx.lineWidth = 1;
     for (const a of w.agents) {
       const h = g.centre(a.home, s);
       const worst = Math.min(a.need.food, a.need.water, a.need.warmth, a.need.rest);
       ctx.fillStyle = hsl(120 * clamp(worst, 0, 1), 80, 55);
-      ctx.strokeStyle = '#000';
+      ctx.strokeStyle = Observer.MARK.outline;
       ctx.beginPath(); ctx.arc(h.x, h.y, s * 0.55, 0, TAU); ctx.fill(); ctx.stroke();
       // a finished hut: a square around the home; one being built: a dashed square
       if (a.shelter.hut > 0) {
         ctx.save();
-        ctx.strokeStyle = '#f2e6c8';
+        ctx.strokeStyle = Observer.MARK.hut;
         if (!a.shelter.hutDone) ctx.setLineDash([2, 2]);
         ctx.strokeRect(h.x - s * 0.8, h.y - s * 0.8, s * 1.6, s * 1.6);
         ctx.restore();
@@ -111,3 +130,8 @@ var Observer = class Observer {
 // indexed by terrain code (mapgen.js TERRAIN)
 Observer.COLORS = ['#6f8f52', '#2f5a36', '#8a7656', '#3a7cc2', '#2a5d9a'];
 Observer.DEPOSIT = { flint: '#d8d8d0', clay: '#c4703a', copper: '#e08a2c', tin: '#a9c9e8', iron: '#b0302a' };
+// the world's other marks, named so the page's legend draws them in the same colours
+Observer.MARK = {
+  spring: '#bfe6ff', route: 'rgba(255,240,200,0.55)', growing: '#a7c957', ripe: '#e8c547',
+  hut: '#f2e6c8', emptyHut: 'rgba(242,230,200,0.45)', outline: '#000', camp: '#ffd84d',
+};

@@ -52,8 +52,14 @@ Follow `~/.claude/conventions.md`. STATUS is overwritten every close (present tr
 append-only, newest on top (history); DEVPLAN stages carry `[ DONE ] / [ ACTIVE ] / [ PLANNED ]`
 tokens and a `**Done when:**` criterion. `/log-session` rewrites STATUS — don't hand-edit its
 `Verified:` line (that moves only on a cold `/audit`).
+- **Versions (Chris, 2026-11-03):** each closed stage gets an annotated tag on its commit,
+  `v0.N.0`, numbered in order (v0.1.0 Stage 1 … v0.7.0 Stage 5b-cal, v0.8.0 Stage 5d; the next
+  closed stage is v0.9.0). The ODD keeps its own design version (v0.3 …); the two are separate
+  numbers.
 
 ## Run
-- Browser: open `index.html`.
+- Browser: http://localhost:8000/research/EvoEco/sim/ (the always-on Static Server,
+  conventions §4a′). Never start a server to view it; opening `index.html` from disk in the
+  preview pane loads it without scripts.
 - Headless batch: `node runner.mjs --reps N` (writes to MongoDB via the Server).
 - Smoke (no DB): `node smoketest.mjs` — prints the numbers that go in the DEVLOG entry.

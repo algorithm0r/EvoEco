@@ -14,13 +14,15 @@ whole. (Reordered 2026-11-02: exchange before the tree, and no stage tests loner
 survival; humans are not solitary.)
 
 ## Built
-- ODD v0.2+ (design, 2026-11-01/02).
+- ODD v0.3 (design, 2026-11-01/02, amended as built).
 - Scaffolded from engine v2 (vanilla-JS canvas + standard DB client), 2026-11-02.
-- Stage 1 world: seeded hex map (terrain, rivers, springs, deposits), one resource mechanism,
-  seasons, terrain-weighted travel times, map drawn with resource layers (2026-11-02).
+- Stages 1–4, 5a, 5b, 5b-cal, 5d (tags v0.1.0–v0.8.0): the world, agents, bands, chat, norms,
+  exchange and ties, stone tools, pots, huts, tinkering, know-how, farming, moving camp,
+  shared huts, learned values with habit and norm.
 
 ## Not yet built
-- The EvoEco model itself.
+- Births, aging and households (Stage 6); metals (5c); containers (5e); clearing, bread,
+  wells (5f); the foundation's burn-in and measures (Stage 7); the ladder (Stage 9 on).
 
 ## Stages
 
@@ -174,21 +176,36 @@ alive over two years, all deaths hunger in year 1, none of thirst; ~0.7 ms per a
 **Done when:** metal tools are made where the chain allows, and long-distance trade in tin or
 bronze appears or its absence is explained by the map.
 
-#### 5d — Farming, bread and wells  [ ACTIVE ]
+#### 5d — Farming, moving camp, shared shelter  [ DONE ] (closed 2026-11-04)
 Harvest settled (Chris, 2026-11-03; ODD §2): anyone may harvest a planted field, and what
 returns to the planter through others (a friend harvests and gifts a share) counts in the
-planter's learned return on planting.
+planter's learned return on planting. Closed half-built (Chris, 2026-11-04: Stage 6 first).
 - [x] Fields sown with a hoe in spring and reaped with a sickle after they ripen, by anyone; wild grain as
       the first seed; farming found by tinkering; the planter's learned return counts grain
       gifted back by those who reaped its field (Chris's rule). The projection reaches a
       year. (From 5b.)
-- [ ] Clearing forest for fields with an axe; tending
+- ~~Clearing forest for fields with an axe; tending~~ → **5f**
 - [x] Grain cooked in a pot (food level 2): restores more, keeps (From 5b.)
-- [ ] Bread from a quern and a clay oven (food level 3)
-- [ ] Well near home, dug with a pick and lined (water level 3): a structure under open access
+- ~~Bread from a quern and a clay oven (food level 3)~~ → **5f**
+- ~~Well near home, dug with a pick and lined (water level 3)~~ → **5f**
+- [x] Bands move camp, weighed weekly; each member follows, stays or joins another camp (ODD §5)
+- [x] Huts and fields are things in the world; a hut shelters 5, beds chosen by warmth then ties
+- [x] Every learned value keeps a habit, a norm and a score of which pays off (ODD §4.4, fix 2)
+- [x] Claude Basic 0.6.0 view: controls under the map, line charts and histograms
 **Done when:** fields are cleared, sown and harvested across a year, grain and bread are made
 and eaten, and the planter's learned return counts what comes back through others, with a
-ledger check.
+ledger check. Half met: sowing, harvest, cooked grain and the return through others are built
+(smoke PASS); clearing and bread are not, moved to **5f**. Ledger check: fields, huts and camp
+sites are things in the world under open access; who sows, reaps, builds, sleeps where and
+follows whom is each agent's own plan and ties.
+
+#### 5f — Clearing, bread and wells  [ PLANNED ]
+(From 5d.)
+- [ ] Clearing forest for fields with an axe; tending
+- [ ] Bread from a quern and a clay oven (food level 3)
+- [ ] Well near home, dug with a pick and lined (water level 3): a structure under open access
+**Done when:** fields are cleared and sown, bread is made and eaten, and a well is dug and used,
+with a ledger check.
 
 *Original Stage 5 list and Done-when, kept for the record:*
 > ODD §2 (Goods and quality, First tree v0, Tools), §4.5, §7.3, §7.6 (partial projects).
@@ -203,8 +220,21 @@ ledger check.
 > holding the right inputs discover level 2+ by tinkering, tools and goods are traded, multi-day builds get started and finished, and a test case shows know-how lost when
 > a craft lapses.
 
-### Stage 6 — Households and generations  [ PLANNED ]
-ODD §2 (Households, Agents life cycle), §7.4, §7.5, §7.6 (household planning).
+#### 5e — Containers and carrying  [ PLANNED ]
+Raised by Chris, 2026-11-03 (ODD §2, Open). Design first.
+- [ ] A carrying limit per trip (what one person carries home by hand)
+- [ ] Containers: baskets for foraged goods; skins for water beside gourds and pots
+- [ ] Porting as a service; transport: pack goats, oxen, horses, sledges, wagons
+**Done when:** set once the design is settled.
+
+### Stage 6 — Households and generations  [ ACTIVE ]
+ODD §2 (Households, Agents life cycle), §7.4, §7.5, §7.6 (household planning). Brought forward
+ahead of 5c/5e/5f (Chris, 2026-11-04): population turnover, culture passed to the next
+generation, and growth that brings bands into competition. Design first, one question at a time.
+- [ ] Camps weighing made cheaper before generation runs (45% of run time) (From Backlog.)
+- [ ] Fields take land from wild plants while they stand (raised 2026-11-04; growth is what
+      makes it bind) (From Backlog.)
+- [ ] Check fix 2's point once ages overlap: the young know winter before living one (From Backlog.)
 - [ ] Households form from strong mutual ties and dissolve with them; shared shelter
 - [ ] Household planning by sequential best response; ties anticipated from habit
 - [ ] Care from rest hours; dependent childhood; old-age decline and care
@@ -290,3 +320,48 @@ How runs are compared is a research question to settle then (ODD §4.10).
       farming spreads and ties carry grain gifts
 - [ ] idea: farming takes about three years to start from nothing; the binding limit is
       seed held through winter. Note it when burn-in length is set (Stage 7)
+- [x] feat: water as an exchange good, up to the room in the receiver's gourd and pot (Chris,
+      2026-11-03)
+- [ ] perf: planning is 83% of run time and its cost grows through a run (0.47 ms per
+      agent-day in days 1–120, 1.2 by days 600–720) as agents hold and know more; exchange
+      is 12%. Candidates: coarser far projection steps, caching the projection for unchanged
+      holdings, fewer candidates. (A "water tripled barter cost" reading on 2026-11-03 was
+      two runs sharing the machine; measured alone, two years went 0.71 → 0.86 ms with fix 1,
+      water in exchange and the partner cap.)
+- [x] feat: bands move camp (ODD §5, Chris 2026-11-03): weighed weekly by the members' summed
+      day costs at shortlisted sites; each member follows, stays or joins another camp. Two
+      years: 98/100 alive vs 87 fixed; bands scatter in the first spring (no ties yet) and
+      re-form by day 180
+- ~~perf: weighing camps doubles run time (3.4 vs 1.65 ms per agent-day, two years).
+      Candidates: fewer shortlisted sites, members' stay cost reused from the morning plan,
+      skipping a weighing when the shortlist has not changed~~ → **Stage 6**
+- [x] feat: huts and lean-tos are things in the world, anyone may use one (Chris,
+      2026-11-03); a planter knows its own field ripens; chat passes on ripe grain; fields
+      beyond half a day's reach drop out of the projection's harvest
+- [x] feat: a hut shelters 5 and a lean-to 2, beds chosen each evening by warmth then ties
+      (Chris, 2026-11-03); huts fill, and 80–95% of sleepers helped build
+- [ ] idea: nothing given, seed 1: a merged camp of ~40 lost 15 to hunger in year 3 (83/100
+      alive vs 98 with one agent per structure). Check across seeds whether merged camps
+      outgrow their land; the move rule sums costs but nothing weighs camp size directly
+- [x] feat: every learned value keeps a habit, a norm and a score of which pays off; the
+      agent blends by the scores (ODD §4.4, Chris 2026-11-03 "fix 2"). Seasonal flows,
+      evening food, working day and sowing return are now told in chat
+- ~~idea: fix 2 can only show its point (knowing winter before living one) once ages
+      overlap; check it when births land (Stage 6)~~ → **Stage 6**
+- [ ] idea: run-to-run variation is now the bottleneck for reading results (survival 83 →
+      100, farming 155 → 2 seeds across this session's changes, one seed each). A multi-seed
+      measure before any further claim
+- ~~perf: camps weighing is 45% of run time (120-day profile, 2026-11-03)~~ → **Stage 6**
+- [x] fix: the told-norm rate slowed to the habits' rate (0.05) and the working day learns at
+      the same rate (Chris, 2026-11-04, "fix 1 and 2"); seed 1's bands year lost 19 to hunger
+      with the slower told rate (100/100 at 0.2), seeds 2 and 3 unaffected, cause undiagnosed
+- [ ] idea: diagnose seed 1's first-winter hunger under the slower told rate (projected vs
+      lived winter food, 0.05 vs 0.2); Chris accepted the fix as is (2026-11-04)
+- [ ] fix: the UI charts looked sparse at day 45 (lines only near x = 0); check the sampling
+      interval in the Claude Basic view
+- [ ] idea: with farming known, mobile bands sowed 12 seeds in three years against 115 with
+      fixed homes (seed 1, one run each). Check across seeds before reading it as the
+      foraging vs farming trade-off
+- [ ] fix: carrying has no limit when a camp moves; ties to containers (5e)
+- [ ] idea: the initial state may need work (Chris, 2026-11-03: "we can leave it for now"):
+      with no ties at the start, bands scatter in the first spring and re-form by day 180

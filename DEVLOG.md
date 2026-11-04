@@ -4,6 +4,61 @@
 
 <!-- append new entries above this line -->
 
+## 2026-11-04 — Stage 5d closed: moving camp, shared huts, habit and norm; Stage 6 next
+
+**Done:** Five pieces, each decided by Chris and recorded in the ODD before coding:
+- *Moving camp (ODD §5).* Every 7 days a band shortlists 5 sites, ranked by how full of plants
+  and wood the members last saw the land within 2 hexes. Each member scores each site by its
+  own best day there (planBest without trade). The band moves if arrival plus six days at the
+  site cost less than seven days staying. Each member then follows, stays or joins another
+  camp, with belonging weighed. The walk is charged against the day (`walked`). Fix along the
+  way: the projection had charged the walk to every future day (`capAhead`).
+- *Huts and fields are things in the world (§5).* Anyone may use a hut. Dwellings live in
+  `world.dwellings`, and empty ones wear on their own. A planter knows its own field ripens,
+  chat passes on ripe grain, and fields beyond half a day's reach drop out of the harvest
+  projection.
+- *Shared huts (§5).* A hut holds 5 and a lean-to 2. Each evening agents choose beds by warmth,
+  then ties (`bedDown`); no one is turned out of a full hut.
+- *Fix 2: habit, norm and arbitration (§4.4).* Every learned value (yields, seasonal flows,
+  evening food, working day, sowing return) keeps a habit, a norm and the squared misses of
+  each against own experience. They are blended by inverse error, and the blend snaps at
+  0.9. Chat tells habits the speaker has lived. Rate fixes: the told norm moves at 0.05 (was
+  0.2), and the working day learns at 0.05 (was 0.3).
+- *View.* A sub-session vendored Claude Basic 0.6.0. Controls sit under the map, with line
+  charts and histograms; `src/charts.js` is removed.
+
+Then Chris brought Stage 6 forward (population turnover, culture across generations, growth
+into competition between bands). 5d closed half-built; clearing, bread and wells went to a
+new 5f.
+**Changed:** `src/agent.js`, `src/world.js`, `src/planner.js`, `src/exchange.js`,
+`src/params.js` (`camp`, hut and lean-to sleepers, `arbRate`, `arbExtreme`), `src/observer.js`,
+`src/ui.js`, `src/datamanager.js`, `src/main.js`, `index.html`, `vendor/claude-basic/`, and
+`smoketest.mjs`. ODD §5 gained four Decided blocks with as-built notes and results. ODD §4.4
+gained fix 2, its rates, and one Open (whether a norm includes its own observations). §2 now
+has an Open on fields taking land from wild plants. DEVPLAN: 5d closed, 5f added, Stage 6
+active (camp perf, land, the fix 2 check moved in from the Backlog). CLAUDE.md and README:
+the run URL on the 8000 server, versions. The stale port-8765 `launch.json` above the repo
+is removed.
+**State:** Smoke PASS, all 39 checks @ v0.8.0 (run on 2026-11-04 before the header-comment
+edits). The bands year with exchange kept 81/100 alive, against 100 at v0.7.0-1; this is the
+seed-1 hunger under the slower told rate. Over the year: 1,879 trades, 2,779 gifts and 234
+trusted ties; 24 discoveries by tinkering, 10 of them farming. The planner costs 0.81 ms per
+agent-day. Measurements (bands, one seed each unless noted):
+- *Moving camp, two years, seed 1:* 98/100 alive, against 87 with fixed homes.
+- *Huts in the world, three years:* 152 returns to old sites; finished huts were reused 96
+  times.
+- *Shared huts:* huts hold 4.8–5, and 80–95% of sleepers helped build. Midwinter warmth is
+  0.57–0.75. Nothing given: 83/100 alive (a merged camp of 40 lost 15).
+- *Fix 2:* 100/100 in both runs.
+- *Rate fixes, one year, seeds 1–3:* 81 / 99 / 100 alive. Seed 1 lost 19 to hunger, against
+  100 with the told rate at 0.2; the cause is undiagnosed, and Chris accepted the fix as is.
+- *Speed:* camp weighing is 45% of run time.
+- *View:* loads and runs at http://localhost:8000/research/EvoEco/sim/; the charts looked
+  sparse at day 45.
+**Next:** Stage 6, households and generations, design first: aging, births by household ROI,
+dependent childhood, care from rest hours, households from ties. Camp weighing made cheaper
+before generation runs.
+
 ## 2026-11-03 — Stage 5d (part 1): farming
 
 **Done:** Grain, fields, sowing (hoe), reaping (sickle) by anyone, and wild grain from plains

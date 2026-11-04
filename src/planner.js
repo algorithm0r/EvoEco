@@ -21,7 +21,11 @@
 // thirst beside the water at home); by gain per hour, cheap poor work near home can fill the
 // day so the good trip no longer fits. (2026-11-03.)
 
-function planDay(agent, world) {
+function planDay(agent, world) { return planBest(agent, world, true).plan; }
+
+// The best route and its cost. Without `withTrade` the trade arm is left out throughout (the
+// cheaper search that scores camp sites, ODD §5 Moving camp).
+function planBest(agent, world, withTrade) {
   const A = PARAMETERS.agents;
   agent.costs = null;                     // hour costs as of this morning
   agent.hutV = hutValue(agent, world);   // worked out once a day (also used in the exchange)
@@ -43,21 +47,21 @@ function planDay(agent, world) {
       kept[c.act]++;
     }
   }
-  const base = planCost(agent, world, []);
-  const byGain = greedyRoute(agent, world, top, base, false);
-  const byRate = greedyRoute(agent, world, top, base, true);
-  return byRate.cost < byGain.cost ? byRate.plan : byGain.plan;
+  const base = planCost(agent, world, [], withTrade);
+  const byGain = greedyRoute(agent, world, top, base, false, withTrade);
+  const byRate = greedyRoute(agent, world, top, base, true, withTrade);
+  return byRate.cost < byGain.cost ? byRate : byGain;
 }
 
 // One greedy build of the route from the shortlist: each step takes the improving move with
 // the most gain (perHour false) or the most gain per hour of the day it adds (perHour true).
-function greedyRoute(agent, world, top, base, perHour) {
+function greedyRoute(agent, world, top, base, perHour, withTrade) {
   const A = PARAMETERS.agents;
   let plan = [], cost = base, hours = 0;
   for (let step = 0; step < A.maxGreedySteps; step++) {
     let bestPlan = null, bestCost = cost, bestScore = 0, bestHours = hours;
     const consider = (p2) => {
-      const c = planCost(agent, world, p2);
+      const c = planCost(agent, world, p2, withTrade);
       if (!(c < cost)) return;
       const h2 = perHour ? planHours(agent, world, p2) : 0;
       const score = perHour ? (cost - c) / Math.max(0.25, h2 - hours) : cost - c;
@@ -84,6 +88,26 @@ function greedyRoute(agent, world, top, base, perHour) {
     plan = bestPlan; cost = bestCost; hours = bestHours;
   }
   return { plan, cost };
+}
+
+// The cost of the agent's best day were its home at `hex`, after a morning's walk of `walk`
+// hours to get there (ODD §5 Moving camp: each member scores a site by its own planning
+// cost there). At a new site it would take the best empty dwelling there, if any (its own is
+// left behind), and fields beyond a half day's reach of it bring nothing back
+// (pendingGrain). The agent is restored after.
+function siteDay(agent, world, hex, walk) {
+  const keep = { home: agent.home, shelter: agent.shelter, drinkTrip: agent.drinkTrip,
+    farmFert: agent.farmFert, hutV: agent.hutV, walked: agent.walked };
+  agent.walked = 0;
+  agent.walked = Math.min(walk, agent.capacity());
+  if (hex !== agent.home) {
+    agent.settle(world, hex);
+    agent.shelter = (world.dwellings && world.bestDwelling(hex, agent)) || newShelter(hex);
+  }
+  const cost = planBest(agent, world, false).cost;
+  Object.assign(agent, keep);
+  agent.costs = null;
+  return cost;
 }
 
 // Hours a route takes: travel between its stops and back home, and the work at each.
@@ -237,12 +261,15 @@ function keepCost(agent, world, hold, shelter, busy, drank, belonging) {
   const cap = agent.capacity();
   const tab = projectionTable(world);
   const e = Agent.evening(agent.need, hold, shelterIns(shelter), busy, drank, tab.coldNow, cap);
-  let cost = needCost(e, true, belonging);
-  // a night that would kill it (one more day at or below zero than the need allows) is the
-  // worst outcome there is: agents know thirst, hunger and cold kill (Default, 2026-11-03)
-  const D = A.deathDays;
-  if ((e.food <= 0 && agent.zeroDays.food + 1 > D.food) || (e.water <= 0 && agent.zeroDays.water + 1 > D.water) ||
-      (e.warmth <= 0 && agent.zeroDays.warmth + 1 > D.warmth)) cost += A.fatalCost;
+  let cost = needCost(e, true, belonging, agent.coldDays);
+  // a night that kills is the worst case of every need, tonight and on every day it takes
+  // away (ODD §2 Needs: below zero the scale runs to death; a dead agent has nothing)
+  if (e.food <= -needReserve('food') || e.water <= -needReserve('water') ||
+      (e.warmth <= 0 && agent.coldDays + 1 > A.deathDays.warmth)) {
+    let lost = 0;
+    for (const T of tab) lost += T.beta * T.len;
+    return cost + lost * WORST_NEED_COST;
+  }
   // the weeks ahead, as plain numbers (this loop is most of the model's run time): the evening
   // of Agent.evening for a lumped week with water drunk, inlined
   const sq = (x) => (1 - x) * (1 - x), cold = (T) => T.cold;
@@ -250,12 +277,14 @@ function keepCost(agent, world, hold, shelter, busy, drank, belonging) {
   let nf = e.food;
   let lean = shelter.leanTo, hut = shelter.hut, hutDone = shelter.hutDone;
   // grain it expects back at harvest: fields sown earlier and any sown today (Stage 5d)
-  const arriving = agent.pendingGrain() + (hold.sown || 0);
+  const arriving = agent.pendingGrain(world) + (hold.sown || 0);
   const farming = agent.knows.has('farm') && agent.farmFert > 0;
   let projSown = 0, ripened = false, carryWork = 0;
   const rateWood = Math.max(0.1, agent.rate(A_WOOD));
   const keeps = KEEP_RECIPES.filter(([r]) => agent.knows.has(r));
-  const belongCost = sq(belonging);
+  const capAhead = cap + agent.walked;   // a walk moving camp shortens today only
+  const belongCost = sq(belonging), RF = needReserve('food');
+  let waterDays = (h.water || 0) / N.waterDecay;   // days of drinking the water held covers
   for (let k = 0; k < tab.length; k++) {
     const T = tab[k], S = T.len, si = T.si;
     for (const [r, ins] of keeps) {
@@ -270,12 +299,14 @@ function keepCost(agent, world, hold, shelter, busy, drank, belonging) {
     // a step as the agent has lived this season: what it brings in by gathering and nets in
     // exchange (ODD §7.6: expected future need from seasonal norms)
     const F = agent.flow[si];
-    if (h.axe > 0) h.axe = Math.max(0, h.axe - S * F.wood / rateWood / TOOLS.axe.life);
-    h.food = Math.max(0, h.food * T.rot + S * (F.food + F.xfood));
-    h.wood = Math.max(0, h.wood + S * (F.wood * wMult + F.xwood));
+    if (h.axe > 0) h.axe = Math.max(0, h.axe - S * F.wood.v / rateWood / TOOLS.axe.life);
+    h.food = Math.max(0, h.food * T.rot + S * (F.food.v + F.xfood.v));
+    h.wood = Math.max(0, h.wood + S * (F.wood.v * wMult + F.xwood.v));
     if (h.pot > 0) h.pot = Math.max(0, h.pot - G.pot.wear * S);
     h.grain = (h.grain || 0) * T.grot;
-    let work = agent.busyHabit[si] + agent.drinkTrip * Math.min(1, N.waterDecay / waterCarried(h)) + carryWork / S;
+    const covered = Math.min(S, waterDays);
+    waterDays -= covered;
+    let work = agent.busyHabit[si].v + agent.drinkTrip * Math.min(1, N.waterDecay / waterCarried(h)) * (1 - covered / S) + carryWork / S;
     carryWork = 0;
     // harvest (Stage 5d): fields sown before (this year's, at the first ripening) and any the
     // projection sowed come back at the agent's learned return, less the hours of reaping
@@ -295,7 +326,7 @@ function keepCost(agent, world, hold, shelter, busy, drank, belonging) {
     // (half a week), as a hungry agent forages more and a full one less. (Without this, lived
     // inflows that just cover the day's need carried tonight's hunger unchanged for months,
     // and food outweighed even a lethal thirst.)
-    const Lf = agent.livedFood[si];
+    const Lf = agent.livedFood[si].v;
     let food = Lf + T.persist * (nf - Lf) - S * (N.foodDecay + N.workBurn * work);
     const fire = Math.min(1, h.wood / (G.fireWood * S));
     h.wood -= fire * G.fireWood * S;
@@ -305,8 +336,9 @@ function keepCost(agent, world, hold, shelter, busy, drank, belonging) {
     if (food < 1 && h.grain > 0) { const eat = Math.min(h.grain, (1 - food) / perG); food += eat * perG; h.grain -= eat; }
     food = Math.min(food, 1);
     const warmth = clamp(1 - cold(T) * (1 - ins) + fire * G.fireHeat, 0, 1);
-    const rest = clamp((cap - work) / N.restSet, 0, 1);
-    cost += T.beta * S * (sq(food) + sq(warmth) + sq(rest) + belongCost);   // water drunk: no deficit
+    const rest = clamp((capAhead - work) / N.restSet, 0, 1);
+    const fl = food >= 0 ? food : Math.max(-1, food / RF);   // below zero, the way to death (needLevel)
+    cost += T.beta * S * (sq(fl) + sq(warmth) + sq(rest) + belongCost);   // water drunk: no deficit
     nf = food;
     // spring sowing (Stage 5d): grain still held is sown, as with the axe and the pot (made
     // when the inputs are in hand), on the best land near home; its hours fall in the next step
@@ -387,7 +419,13 @@ function projectionTable(world) {
 // the recipes the Keep projection assumes made, with their inputs as [good, quantity] lists
 var KEEP_RECIPES = Object.keys(RECIPES).filter((r) => RECIPES[r].keep).map((r) => [r, Object.entries(RECIPES[r].inputs)]);
 
-function needCost(e, withRest, belonging) {
+// the need cost of a day with every need at its worst: food, water and warmth at death (-1),
+// rest and belonging at 0
+var WORST_NEED_COST = 3 * 4 + 1 + 1;
+
+// tonight's need cost; below zero each need counts as the way to death (ODD §2 Needs)
+function needCost(e, withRest, belonging, coldDays) {
   const sq = (x) => (1 - x) * (1 - x);
-  return sq(e.food) + sq(e.water) + sq(e.warmth) + (withRest ? sq(e.rest) : 0) + sq(belonging);
+  return sq(needLevel('food', e.food)) + sq(needLevel('water', e.water)) + sq(needLevel('warmth', e.warmth, coldDays)) +
+    (withRest ? sq(e.rest) : 0) + sq(belonging);
 }

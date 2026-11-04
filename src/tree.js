@@ -53,6 +53,6 @@ var DISCOVERABLE = {
 };
 
 // goods that change hands (water stays in the gourd or pot); the index orders each pair for prices
-var GOODS = ['food', 'wood', 'flint', 'axe', 'pick', 'clay', 'pot', 'grain', 'hoe', 'sickle'];
+var GOODS = ['food', 'wood', 'flint', 'axe', 'pick', 'clay', 'pot', 'grain', 'hoe', 'sickle', 'water'];
 // goods traded whole, one at a time
 var WHOLE = { axe: true, pick: true, pot: true, hoe: true, sickle: true };
