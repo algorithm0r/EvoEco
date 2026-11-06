@@ -60,8 +60,10 @@ function shuffleInPlace(arr, rng) {
 
 // ── own valuation ──────────────────────────────────────────────────────────────────────
 // Hours per unit of each good: gathered goods at the agent's best known source within reach
-// (a trip yields rate × fullness × tool × chunk units for 2 × travel + chunk hours); a made
-// good is its recipe's hours plus its inputs' hours.
+// (a trip yields rate × fullness × tool × chunk units for 2 × travel + chunk hours), a food
+// out of its season costing what it would cost as the food in season (Stage 5g: hours per unit
+// of food); a made good is its recipe's hours plus its inputs' hours, and a processed food its
+// input's hours plus the processing.
 function hourCosts(agent, world) {
   if (agent.costs) return agent.costs;
   const A = PARAMETERS.agents;
@@ -71,21 +73,39 @@ function hourCosts(agent, world) {
     const tool = TOOL_FOR[act], mult = tool && agent.hold[tool] > 0 ? TOOLS[tool].mult : 1;
     const rate = agent.rate(act) * mult, seen = agent.seenFrac[act];
     let best = Infinity;
-    for (let h = 0; h < world.grid.n; h++) {
+    for (let h = 0; h < world.grid.n && world.inSeason(ACT_RES[act]); h++) {
       if (!agent.known[h] || !(tr[h] <= reach) || !(seen[h] > 0.02)) continue;
       const c = (2 * tr[h] + A.chunk) / (rate * seen[h] * A.chunk);
       if (c < best) best = c;
     }
     out[GOOD_OF[act]] = best;
   }
-  out.grain = out.food * PARAMETERS.goods.food.restores / PARAMETERS.goods.grain.restores;   // as food
+  foodHours(out);
   out.water = waterHours(agent, world, reach);
+  madeHours(out);
+  return (agent.costs = out);
+}
+// Foods that cannot be had now (out of season, or no source known) cost what the cheapest food
+// to hand costs, per unit of food (Stage 5g).
+function foodHours(out) {
+  const G = PARAMETERS.goods;
+  let perFood = Infinity;
+  for (const k of FOODS) if (out[k] < Infinity) perFood = Math.min(perFood, out[k] / G[k].restores);
+  for (const k of FOODS) if (!(out[k] < Infinity)) out[k] = perFood * G[k].restores;
+}
+// made goods: a recipe's hours plus its inputs'; a processed food, its input's hours per unit
+// made plus the processing hours, if cheaper than the food as it stands
+function madeHours(out) {
   for (const r in RECIPES) {
     let c = RECIPES[r].hours;
     for (const g in RECIPES[r].inputs) c += RECIPES[r].inputs[g] * out[g];
     out[r] = c;
   }
-  return (agent.costs = out);
+  for (const p in PROCESSES) {
+    const P = PROCESSES[p];
+    const c = (out[P.from] + 1 / P.perHour + (P.wood ? P.wood * out.wood : 0)) / P.ratio;
+    if (!(out[P.to] <= c)) out[P.to] = c;
+  }
 }
 
 // Hours per unit of water: a trip to the nearest known water within reach and back, a drink,
@@ -139,13 +159,10 @@ function normCosts(agent, world) {
     const r = agent.yld[act].nn ? agent.yld[act].n : agent.rate(act);
     out[GOOD_OF[act]] = 1 / r;
   }
-  out.grain = out.food * PARAMETERS.goods.food.restores / PARAMETERS.goods.grain.restores;
+  for (const k of FOODS) if (out[k] == null) out[k] = Infinity;
+  foodHours(out);
   out.water = hourCosts(agent, world).water;
-  for (const r in RECIPES) {
-    let c = RECIPES[r].hours;
-    for (const g in RECIPES[r].inputs) c += RECIPES[r].inputs[g] * out[g];
-    out[r] = c;
-  }
+  madeHours(out);
   return out;
 }
 
@@ -156,15 +173,16 @@ function costWith(agent, world, hold, belonging) {
 }
 
 // ── gifts ──────────────────────────────────────────────────────────────────────────────
-// Units of a good the agent lacks for tonight (food to its set point, counting the grain it
-// holds; grain as the same lack in grain units; wood for one fire; water to its set point if
-// it has not drunk today, up to the room in its containers).
+// Units of a good the agent lacks for tonight (a food: food to its set point, counting every
+// food it holds, in units of that food; wood for one fire; water to its set point if it has
+// not drunk today, up to the room in its containers).
 function shortfall(agent, g) {
   const N = PARAMETERS.needs, G = PARAMETERS.goods;
-  if (g === 'food' || g === 'grain') {
+  if (G[g] && G[g].restores) {
     const tonight = agent.need.food - N.foodDecay - N.workBurn * agent.busy;
-    const lack = Math.max(0, (1 - tonight) - agent.hold.food * G.food.restores - (agent.hold.grain || 0) * G.grain.restores);
-    return lack / G[g].restores;
+    let lack = 1 - tonight;
+    for (const k of FOODS) lack -= agent.hold[k] * G[k].restores;
+    return Math.max(0, lack) / G[g].restores;
   }
   if (g === 'wood') return Math.max(0, G.fireWood - agent.hold.wood);
   if (g === 'water') {
@@ -175,9 +193,11 @@ function shortfall(agent, g) {
   return 0;
 }
 
+// goods given on need: every food, wood and water
+var GIFT_GOODS = FOODS.concat(['wood', 'water']);
 function giftsAt(world, here) {
   const E = PARAMETERS.exchange;
-  for (const g of ['food', 'grain', 'wood', 'water']) {
+  for (const g of GIFT_GOODS) {
     for (const j of here) {
       let need = shortfall(j, g);
       if (need <= 0) continue;

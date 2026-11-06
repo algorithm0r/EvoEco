@@ -4,8 +4,9 @@
 //
 // A tool is a multiplier on production for its task (ODD §2 Tools). It is held as remaining
 // life: a new tool is 1, and each hour of use takes 1/life off it. Starting know-how (ODD §5,
-// Decided) is stone and fire: the stone tools and level 1 of each ladder (the lean-to).
-// Level 2 on must be discovered by tinkering (ODD §7.3).
+// Decided) is a setting, PARAMETERS.agents.knowhow: by default the stone tools only (fire needs
+// no know-how), and every level on a ladder must be discovered by tinkering (ODD §7.3).
+// Stage 5g adds the processing of foods.
 
 // tasks a tool can speed, by activity
 var TOOLS = {
@@ -41,18 +42,35 @@ var BUILDS = {
   hut:    { inputs: { wood: 20, clay: 6 }, hours: 40, level: 2, tool: 'axe' },
 };
 
-// what every agent knows at the start (ODD §5)
-var START_KNOWHOW = ['axe', 'pick', 'hoe', 'sickle', 'leanTo'];
+// processing (ODD §2 Plant kinds, Stage 5g): work at home that turns a food into another with
+// other properties (tree's GOODS entries in params.js). Per hour, `perHour` units of `from`
+// become `ratio` units each of `to`; `wood` is burned per unit taken (a fire), and `tool`, a
+// good held, is needed but not used up (a grinding stone)
+var PROCESSES = {
+  drying:   { from: 'greens', to: 'driedGreens', ratio: 1 / 3, perHour: 12 },      // keeps
+  roasting: { from: 'nuts', to: 'roastedNuts', ratio: 1, perHour: 10, wood: 0.1 },  // keeps, a little more food
+  grinding: { from: 'grain', to: 'meal', ratio: 1, perHour: 4, tool: 'flint' },     // more food, no pot to cook it
+};
+
 // what tinkering can find, and what each needs at hand: goods held or resources in the hex,
 // plus the tool (ODD §7.3: the chance of finding a level depends on holding its inputs)
 var DISCOVERABLE = {
+  // shelter level 1 (ODD §5: no tech level known by default)
+  leanTo: { needs: ['wood'] },
+  drying: { needs: ['greens'] },
+  roasting: { needs: ['nuts', 'wood'] },
+  grinding: { needs: ['grain', 'flint'] },
   pot: { needs: ['clay', 'wood'] },
   hut: { needs: ['clay', 'wood'], tool: 'axe' },
   // food level 2: sowing grain (Stage 5d); 'soil' is fertile land in the hex
   farm: { needs: ['grain', 'soil'] },
 };
 
-// goods that change hands (water stays in the gourd or pot); the index orders each pair for prices
-var GOODS = ['food', 'wood', 'flint', 'axe', 'pick', 'clay', 'pot', 'grain', 'hoe', 'sickle', 'water'];
+// the foods (ODD §2 Plant kinds, Stage 5g), in the order they are eaten: fastest-rotting first
+var FOODS = ['greens', 'grain', 'roots', 'nuts', 'driedGreens', 'roastedNuts', 'meal']
+  .sort((a, b) => PARAMETERS.goods[b].rot - PARAMETERS.goods[a].rot);
+// goods that change hands (water stays in the gourd or pot); the index orders each pair for
+// prices, so every food comes before wood
+var GOODS = FOODS.concat(['wood', 'flint', 'axe', 'pick', 'clay', 'pot', 'hoe', 'sickle', 'water']);
 // goods traded whole, one at a time
 var WHOLE = { axe: true, pick: true, pot: true, hoe: true, sickle: true };

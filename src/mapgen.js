@@ -4,8 +4,11 @@
 // from the rng passed in, so one seed gives one map.
 //
 // Order: elevation and moisture noise → terrain by quantile (lake, hills, forest, plains) →
-// rivers traced downhill from springs in the hills → resource caps by terrain, floodplain,
-// riverbank and clustered deposits.
+// rivers traced downhill from springs in the hills → land and plant cover (Stage 5g) →
+// resource caps by terrain, land, floodplain, riverbank and clustered deposits.
+//
+// Terrain is the map as generated: it sets crossing times and where deposits lie. Forest in
+// it is the start cover; what grows changes after (ODD §2: forest is cover, not terrain).
 
 var TERRAIN = ['plains', 'forest', 'hills', 'river', 'lake'];
 var T_PLAINS = 0, T_FOREST = 1, T_HILLS = 2, T_RIVER = 3, T_LAKE = 4;
@@ -99,6 +102,21 @@ function generateMap(grid, P, rng) {
     }
   }
 
+  // land and plant cover (ODD §2 Plant kinds share a hex's land, Stage 5g): land by ground;
+  // the tree edge is how far a hex's moisture lies above the forest threshold (0 below it),
+  // and land with an edge starts under trees
+  const L = P.land, land = new Float32Array(n), edge = new Float32Array(n);
+  const cover = { grass: new Float32Array(n), roots: new Float32Array(n), trees: new Float32Array(n) };
+  let maxM = forestT;
+  for (let i = 0; i < n; i++) if (terrain[i] !== T_LAKE && terrain[i] !== T_RIVER) maxM = Math.max(maxM, moist[i]);
+  for (let i = 0; i < n; i++) {
+    land[i] = L.size[TERRAIN[terrain[i]]] || 0;
+    if (!(land[i] > 0)) continue;
+    edge[i] = maxM > forestT ? clamp((moist[i] - forestT) / (maxM - forestT), 0, 1) : 0;
+    const start = edge[i] > 0 || terrain[i] === T_FOREST ? L.forest : L.open;
+    for (const c in cover) cover[c][i] = start[c];
+  }
+
   // resource caps
   const caps = {};
   const isWater = (i) => terrain[i] === T_RIVER || terrain[i] === T_LAKE;
@@ -110,6 +128,8 @@ function generateMap(grid, P, rng) {
     if (R.capBy) {
       for (let i = 0; i < n; i++) cap[i] = R.capBy[TERRAIN[terrain[i]]] || 0;
     }
+    // crops and plants: what a hex's land holds under full cover
+    if (R.perLand) for (let i = 0; i < n; i++) cap[i] = land[i] * R.perLand;
     if (R.floodplainBonus) {
       for (let i = 0; i < n; i++) if (cap[i] > 0 && !isWater(i) && nearWater(i, R.floodplainRange)) cap[i] *= R.floodplainBonus;
     }
@@ -120,7 +140,7 @@ function generateMap(grid, P, rng) {
     if (R.clusters) centres[name] = placeClusters(grid, terrain, R, cap, rng, centres.copper);
     caps[name] = cap;
   }
-  return { terrain, elev, spring, caps, centres };
+  return { terrain, elev, spring, caps, centres, land, edge, cover };
 }
 
 // Deposits in clusters on the listed terrains. With distanceFromCopper set, each cluster

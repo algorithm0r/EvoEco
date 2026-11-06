@@ -35,12 +35,16 @@ var DataManager = class DataManager {
     const mean = (f) => L.length ? L.reduce((s, a) => s + f(a), 0) / L.length : null;
     return {
       day: w.day,
-      plants: w.stockFraction('plants'), wood: w.stockFraction('wood'),
+      greens: w.stockFraction('greens'), seeds: w.stockFraction('seeds'), nuts: w.stockFraction('nuts'),
+      roots: w.stockFraction('roots'), wood: w.stockFraction('wood'),
       soil: w.stockFraction('soil'), water: w.stockFraction('water'),
+      // Stage 5g: the land under each cover, and food in hand by kind
+      cover: { grass: w.coverShare('grass'), roots: w.coverShare('roots'), trees: w.coverShare('trees'), fields: w.coverShare('fields') },
+      held: Object.fromEntries(FOODS.map((k) => [k, mean((a) => a.hold[k])])),
       alive: L.length, dead: w.dead.length,
       food: mean((a) => a.level('food')), waterNeed: mean((a) => a.level('water')),
       warmth: mean((a) => a.level('warmth')), rest: mean((a) => a.need.rest),
-      busy: mean((a) => a.busy), heldFood: mean((a) => a.hold.food),
+      busy: mean((a) => a.busy), heldFood: mean((a) => FOODS.reduce((s, k) => s + a.hold[k] * PARAMETERS.goods[k].restores, 0)),
       belonging: mean((a) => a.need.belonging),
       trades: (w.tradesToday || []).length, gifts: w.giftsToday || 0,
       // Stage 5b: crafted levels and know-how (ODD §7.3)
@@ -51,6 +55,8 @@ var DataManager = class DataManager {
       knowFarm: L.filter((a) => a.knows.has('farm')).length, fields: w.fields.length,
       sown: w.sown || 0, reaped: w.reaped || 0, returnedGrain: w.returnedGrain || 0,
       heldGrain: mean((a) => a.hold.grain), farmReturn: mean((a) => a.farmReturn),
+      // Stage 6: tie structure within camps, tracked from before births (ODD §4.10)
+      ties: w.tieStructure(),
     };
   }
 
@@ -84,7 +90,15 @@ var DataManager = class DataManager {
     r.farmReturn.push(mean((a) => a.farmReturn, planters));
     r.discoveries.push(w.discoveries.length);
     r.learnedBySeeing.push(w.learnedBySeeing.length);
-    for (const k of ['pot', 'hut', 'farm']) r['know_' + k].push(L.filter((a) => a.knows.has(k)).length);
+    for (const k of ['leanTo', 'pot', 'hut', 'farm', 'drying', 'roasting', 'grinding']) r['know_' + k].push(L.filter((a) => a.knows.has(k)).length);
+    for (const c of ['grass', 'roots', 'trees', 'fields']) r['cover_' + c].push(w.coverShare(c));
+    // food in hand, in days of eating (Stage 5g)
+    const day = PARAMETERS.needs.foodDecay;
+    for (const g of ['raw', 'kept']) r['held_' + g].push(mean((a) => FOODS.reduce((s, k) => s +
+      ((PARAMETERS.goods[k].rot > 0.01) === (g === 'raw') ? a.hold[k] * PARAMETERS.goods[k].restores : 0), 0) / day));
+    const ts = this.samples[this.samples.length - 1].ties;   // sample() ran just before
+    r.tieDensity.push(ts.density); r.tieClustering.push(ts.clustering);
+    r.tieLargest.push(ts.largest); r.tieInside.push(ts.inside);
     for (const k in DataManager.DISTS) {
       const D = DataManager.DISTS[k], bins = new Array(D.bins).fill(0);
       for (const a of L) bins[clamp(Math.floor((D.get(a) - D.lo) / (D.hi - D.lo) * D.bins), 0, D.bins - 1)]++;
@@ -128,7 +142,10 @@ var DataManager = class DataManager {
 // the per-period measures the live view charts (each an array in dm.rec)
 DataManager.SERIES = ['alive', 'died', 'food', 'water', 'warmth', 'rest', 'belonging', 'camps', 'campMoves',
   'hutsLivedIn', 'hutsEmpty', 'hutsBuilding', 'leanTos', 'trades', 'gifts', 'sown', 'reaped', 'planters',
-  'fields', 'farmReturn', 'discoveries', 'learnedBySeeing', 'know_pot', 'know_hut', 'know_farm'];
+  'fields', 'farmReturn', 'discoveries', 'learnedBySeeing', 'know_leanTo', 'know_pot', 'know_hut', 'know_farm',
+  'know_drying', 'know_roasting', 'know_grinding', 'cover_grass', 'cover_roots', 'cover_trees', 'cover_fields',
+  'held_raw', 'held_kept',
+  'tieDensity', 'tieClustering', 'tieLargest', 'tieInside'];
 // the distributions across the living, binned each period: need levels run from -1 (the
 // reserve spent, ODD §2 Needs) to 1; rest and belonging from 0 to 1
 DataManager.DISTS = {

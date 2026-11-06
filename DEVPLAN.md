@@ -16,9 +16,10 @@ survival; humans are not solitary.)
 ## Built
 - ODD v0.3 (design, 2026-11-01/02, amended as built).
 - Scaffolded from engine v2 (vanilla-JS canvas + standard DB client), 2026-11-02.
-- Stages 1–4, 5a, 5b, 5b-cal, 5d (tags v0.1.0–v0.8.0): the world, agents, bands, chat, norms,
+- Stages 1–4, 5a, 5b, 5b-cal, 5d, 5g (tags v0.1.0–v0.9.0): the world, agents, bands, chat, norms,
   exchange and ties, stone tools, pots, huts, tinkering, know-how, farming, moving camp,
-  shared huts, learned values with habit and norm.
+  shared huts, learned values with habit and norm, shared land, food kinds,
+  processing.
 
 ## Not yet built
 - Births, aging and households (Stage 6); metals (5c); containers (5e); clearing, bread,
@@ -201,9 +202,11 @@ follows whom is each agent's own plan and ties.
 
 #### 5f — Clearing, bread and wells  [ PLANNED ]
 (From 5d.)
-- [ ] Clearing forest for fields with an axe; tending
+- ~~Clearing forest for fields with an axe~~ → **5g** (clearing is cutting a hex's trees)
+- [ ] Tending fields
 - [ ] Bread from a quern and a clay oven (food level 3)
 - [ ] Well near home, dug with a pick and lined (water level 3): a structure under open access
+- [ ] Processing, the rest: smoking, parching, leaching; pickling later (needs salt) (From 5g.)
 **Done when:** fields are cleared and sown, bread is made and eaten, and a well is dug and used,
 with a ledger check.
 
@@ -220,6 +223,26 @@ with a ledger check.
 > holding the right inputs discover level 2+ by tinkering, tools and goods are traded, multi-day builds get started and finished, and a test case shows know-how lost when
 > a craft lapses.
 
+#### 5g — Plant kinds, shared land and processing  [ DONE ] (closed 2026-11-06)
+Decided 2026-11-05 (ODD §2 Landscape and resources). Before Stage 6 (Chris, 2026-11-05: "let's
+do it now before stage 6"); Stage 6's build waits on it. Design gaps first, one at a time.
+- [x] One plant-life capacity per hex, shared by wild food kinds, trees and fields; replaces
+      the separate plants and wood caps (soil stays its own fertility stock, ODD Default)
+- [x] A few wild food kinds differing by season, keeping, hours and terrain; winter roots and
+      stored nuts replace the winter-growth floor
+- [x] Trees as a slow competitor; succession (cleared → grass → forest)
+- [x] Fields take land as they stand (From Stage 6.); sown on grass and root land, forest cut
+      first (clearing, from 5f)
+- [x] Processing as tree recipes: drying, roasting, grinding
+- ~~Processing, the rest: smoking, parching, leaching; pickling later (needs salt)~~ → **5f**
+- [x] Starting know-how as a setting, default no tech level (ODD §5, Decided 2026-11-05)
+- [x] Rebalance forage yields, wood and farming against bands (never a loner)
+**Done when:** fields and forest take land from wild food and give it back on abandonment,
+food kinds are gathered in their seasons and some are processed to keep, and bands persist
+through winter without the floor, with a ledger check.
+✓ Met: fields and cleared forest give land back (smoke); four kinds in season; processing
+practised from year 2; 92/100 through year 1, 82/100 after three, no floor; ledger clean.
+
 #### 5e — Containers and carrying  [ PLANNED ]
 Raised by Chris, 2026-11-03 (ODD §2, Open). Design first.
 - [ ] A carrying limit per trip (what one person carries home by hand)
@@ -232,13 +255,30 @@ ODD §2 (Households, Agents life cycle), §7.4, §7.5, §7.6 (household planning
 ahead of 5c/5e/5f (Chris, 2026-11-04): population turnover, culture passed to the next
 generation, and growth that brings bands into competition. Design first, one question at a time.
 - [ ] Camps weighing made cheaper before generation runs (45% of run time) (From Backlog.)
-- [ ] Fields take land from wild plants while they stand (raised 2026-11-04; growth is what
-      makes it bind) (From Backlog.)
+- ~~Fields take land from wild plants while they stand (raised 2026-11-04; growth is what
+      makes it bind) (From Backlog.)~~ → **5g**
+- [ ] Trust: familiarity slows forgetting; grudge tolerance grows with trust; a tie's need
+      weighs in the giver's cost by its share of the giver's belonging (ODD §2 Ties, 2026-11-05)
+- [ ] Spin-up: adults 15–45, no kin; burn-in a generation, save and reload the colony (ODD §5)
 - [ ] Check fix 2's point once ages overlap: the young know winter before living one (From Backlog.)
-- [ ] Households form from strong mutual ties and dissolve with them; shared shelter
-- [ ] Household planning by sequential best response; ties anticipated from habit
-- [ ] Care from rest hours; dependent childhood; old-age decline and care
-- [ ] Births by household ROI; population endogenous
+- [x] Track tie structure within camps from before births (density, clustering, largest group,
+      share of strong ties inside camp; Chris, 2026-11-04). Baseline in ODD §4.10: no strong
+      ties between camps; large camps are loose webs, small camps cliques; ties seasonal
+- [x] Design walk (ODD §2, §5, §7.4, §7.6): sexes, emergent households, planning together,
+      both parents consent, care as investment, childhood stages (2026-11-04); trust as one
+      continuous record, old-age care as gifts, starting ages, fertility limits, the prior
+      from experience, monthly conception (2026-11-05)
+- ~~Households form from strong mutual ties and dissolve with them; shared shelter~~
+      (2026-11-04: households are emergent, no entity) → measured, not built
+- ~~Household planning by sequential best response; ties anticipated from habit~~ → planning
+      together among strong ties (ODD §7.6)
+- [ ] Planning together: morning announcements; later planners count ties' hauls by a
+      learned reliability; the evening exchange is the swap (ODD §7.6)
+- [ ] Sexes, pregnancy, nursing; childhood stages (nursing, learning, helping, apprenticing
+      out, mature); the mother passes the child on; a child as its mother's extension
+- [ ] Care from rest hours; old-age decline, kept by gifts from ties
+- [ ] Births: monthly conception, both parents' ROI with the prior from experience;
+      population endogenous
 - [ ] Death: holdings stay where they lie (open access)
 **Done when:** households form and dissolve on their own, and a population persists across
 several generations without scaffolding.
@@ -278,9 +318,10 @@ How runs are compared is a research question to settle then (ODD §4.10).
 - [ ] idea: the trickle-down note (ODD open questions 2), revisit when capital is built
 - [ ] idea: water is sparse (rivers, lakes, springs only; ~6% of hexes); check against
       band placement in Stage 7, maybe more springs or seasonal ponds
-- [ ] fix: re-balance the numbers raised for solitary survival in Stage 2 (plants r 0.1, cap
+- [x] fix: re-balance the numbers raised for solitary survival in Stage 2 (plants r 0.1, cap
       40, 6 units/h; rot 1%/day; Keep 20 days at 0.97) once agents can share, against the
-      foundation forming, not against a loner surviving (Chris, 2026-11-02)
+      foundation forming, not against a loner surviving (Chris, 2026-11-02) (done in 5g: those
+  numbers are gone, rebalanced against bands)
 - [x] perf: planner cost rose 0.23 → 0.8–1.3 ms per agent-day with craft/quarry candidates and
       object copies in the cost functions (~35–60 min per generation at 300 agents); profile
       and trim (habit as a cached plan, ODD §7.6; fewer allocations)
@@ -357,11 +398,19 @@ How runs are compared is a research question to settle then (ODD §4.10).
       with the slower told rate (100/100 at 0.2), seeds 2 and 3 unaffected, cause undiagnosed
 - [ ] idea: diagnose seed 1's first-winter hunger under the slower told rate (projected vs
       lived winter food, 0.05 vs 0.2); Chris accepted the fix as is (2026-11-04)
-- [ ] fix: the UI charts looked sparse at day 45 (lines only near x = 0); check the sampling
-      interval in the Claude Basic view
+- [x] ~~fix: the UI charts looked sparse at day 45~~ not a bug: they sample every 10 days and
+      show a whole three-year run, so at day 45 the lines span the first 4 of 108 points
 - [ ] idea: with farming known, mobile bands sowed 12 seeds in three years against 115 with
       fixed homes (seed 1, one run each). Check across seeds before reading it as the
       foraging vs farming trade-off
 - [ ] fix: carrying has no limit when a camp moves; ties to containers (5e)
 - [ ] idea: the initial state may need work (Chris, 2026-11-03: "we can leave it for now"):
       with no ties at the start, bands scatter in the first spring and re-form by day 180
+- [ ] fix: late-winter squeeze: the three-year deaths (8, 1, 9) all come at winter's end, when
+      roots near camp are dug down and stores run out; check after Stage 6 changes the mix
+- [ ] idea: roots and tree cover decline under use (0.21 → 0.165, 0.354 → 0.302 over three
+      years, mostly firewood); watch in longer runs, emergent not imposed
+- [ ] feat: the trade arm in `holdingsCost` weighs one main food against wood; generalize to
+      the food kinds
+- [ ] idea: `priorPerHour` per food is a hand choice (about the old prior's food each season);
+      replace with the prior from experience when Stage 6 builds it

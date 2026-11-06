@@ -2,8 +2,9 @@
 // The view. Reads world state and draws it; never mutates the model. Keeping all rendering
 // here is what makes the world headless-safe.
 //
-// Layers: 'terrain' shows terrain with deposits and springs marked; a resource name
-// ('plants', 'wood', 'soil', 'water') shades each hex by stock / cap.
+// Layers: 'terrain' shows the ground with deposits and springs marked, land under trees drawn
+// as forest (Stage 5g: forest is cover, so clearing shows); a resource name ('greens',
+// 'seeds', 'nuts', 'roots', 'wood', 'soil', 'water') shades each hex by amount / cap.
 var Observer = class Observer {
   constructor(world) {
     this.world = world;
@@ -18,10 +19,12 @@ var Observer = class Observer {
     const shade = this.layer !== 'terrain' ? this.layer : null;
     for (let i = 0; i < g.n; i++) {
       const c = g.centre(i, s);
-      let fill = Observer.COLORS[this.world.terrain[i]];
+      let t = this.world.terrain[i];
+      if (t === T_FOREST || t === T_PLAINS) t = w.cover.trees[i] > 0.5 ? T_FOREST : T_PLAINS;
+      let fill = Observer.COLORS[t];
       if (shade) {
         const cap = w.caps[shade][i];
-        fill = cap > 0 ? Observer.ramp(shade, w.stock[shade][i] / cap) : '#1a1e25';
+        fill = cap > 0 ? Observer.ramp(shade, w.amount(shade, i) / cap) : '#1a1e25';
       }
       Observer.hex(ctx, c.x, c.y, s, fill);
     }
@@ -123,7 +126,7 @@ var Observer = class Observer {
 
   // dark → full colour as the fraction goes 0 → 1
   static ramp(layer, f) {
-    const hue = { plants: 95, wood: 130, soil: 35, water: 205 }[layer];
+    const hue = { greens: 95, seeds: 50, nuts: 25, roots: 15, wood: 130, soil: 35, water: 205 }[layer];
     return hsl(hue, 55, 10 + 45 * clamp(f, 0, 1));
   }
 };

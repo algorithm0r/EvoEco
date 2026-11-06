@@ -20,6 +20,10 @@ var World = class World {
       this.caps = {};
       for (const k in m.caps) this.caps[k] = Float32Array.from(m.caps[k]);
       this.centres = m.centres || {};
+      this.land = Float32Array.from(m.land);
+      this.edge = Float32Array.from(m.edge);
+      this.coverStart = {};
+      for (const c in m.cover) this.coverStart[c] = Float32Array.from(m.cover[c]);
     } else {
       this.grid = new HexGrid(P.map.width, P.map.height);
       const g = generateMap(this.grid, P, this.rng);
@@ -27,22 +31,40 @@ var World = class World {
       this.spring = g.spring;
       this.caps = g.caps;
       this.centres = g.centres;
+      this.land = g.land;
+      this.edge = g.edge;
+      this.coverStart = g.cover;
     }
+    // plant cover, as shares of each hex's land (ODD §2 Plant kinds, Stage 5g), and the share
+    // fields take while they stand; `landHexes` lists the hexes with land
+    this.cover = {};
+    for (const c in this.coverStart) this.cover[c] = Float32Array.from(this.coverStart[c]);
+    this.fieldLand = new Float32Array(this.grid.n);
+    const lh = [];
+    for (let i = 0; i < this.grid.n; i++) if (this.land[i] > 0) lh.push(i);
+    this.landHexes = Int32Array.from(lh);
     // hours to cross each hex (-1 impassable), from terrain
     this.hours = new Float32Array(this.grid.n);
     for (let i = 0; i < this.grid.n; i++) this.hours[i] = P.terrainHours[TERRAIN[this.terrain[i]]];
 
-    // stocks start full; `active` lists the hexes where a resource exists, so a day's
-    // regrowth touches only those
+    // stocks start full (a crop as ripe as its season allows, none out of it); a plant is its
+    // cover and has no stock of its own. `active` lists the hexes where a resource exists, so
+    // a day's regrowth touches only those
+    this.day = 0;
     this.stock = {};
     this.active = {};
     for (const k in this.caps) {
-      this.stock[k] = Float32Array.from(this.caps[k]);
+      const R = PARAMETERS.resources[k];
       const a = [];
       for (let i = 0; i < this.grid.n; i++) if (this.caps[k][i] > 0) a.push(i);
       this.active[k] = Int32Array.from(a);
+      if (R.kind === 'plant') continue;
+      this.stock[k] = Float32Array.from(this.caps[k]);
+      if (R.kind === 'crop') {
+        const on = this.inSeason(k), cv = this.cover[R.cover];
+        for (let i = 0; i < this.grid.n; i++) this.stock[k][i] = on ? this.caps[k][i] * cv[i] : 0;
+      }
     }
-    this.day = 0;
     this.seasonIndex = 0;   // set each update; spring before the first
     this.travelCache = new Map();
     // where an agent standing in each hex can drink: the hex itself, or a river or lake
@@ -243,21 +265,64 @@ var World = class World {
     this.dwellings = this.dwellings.filter((d) => d.sleepers.length || d.leanTo > 0 || d.hut > 0);
   }
 
+  // ── measures (ODD §4.10; Chris, 2026-11-04: "are there local cliques in bands or are bands
+  // a secure clique?") ─────────────────────────────────────────────────────────────────────
+  // A strong tie is a mutual one: each has had at least `strongTie` kind offers (faded) from
+  // the other. Over camps of 2 or more, the means of: density (share of member pairs strongly
+  // tied), clustering (of a member's strong ties, the share tied to each other), and the
+  // largest group (the biggest set joined by strong ties, as a share of the camp); and over
+  // all strong ties, the share that are within a camp. Reads only; changes nothing.
+  tieStructure() {
+    const T = PARAMETERS.measures.strongTie, day = this.day;
+    const strong = (a, b) => a.ties.has(b.id) && b.ties.has(a.id) && Math.min(a.trust(b.id, day), b.trust(a.id, day)) >= T;
+    let n = 0, dens = 0, clus = 0, clusN = 0, largest = 0, inside = 0, all = 0;
+    for (const c of this.camps || []) {
+      const M = c.members;
+      if (M.length < 2) continue;
+      const nb = M.map(() => []), root = M.map((_, i) => i);
+      const find = (x) => { while (root[x] !== x) x = root[x] = root[root[x]]; return x; };
+      let edges = 0;
+      for (let i = 0; i < M.length; i++) for (let j = i + 1; j < M.length; j++) {
+        if (!strong(M[i], M[j])) continue;
+        edges++; nb[i].push(j); nb[j].push(i); root[find(i)] = find(j);
+      }
+      const size = {};
+      for (let i = 0; i < M.length; i++) size[find(i)] = (size[find(i)] || 0) + 1;
+      for (let i = 0; i < M.length; i++) {
+        const N = nb[i];
+        if (N.length < 2) continue;
+        let t = 0;
+        for (let x = 0; x < N.length; x++) for (let y = x + 1; y < N.length; y++) if (nb[N[x]].includes(N[y])) t++;
+        clus += t / (N.length * (N.length - 1) / 2); clusN++;
+      }
+      dens += edges / (M.length * (M.length - 1) / 2);
+      largest += Math.max(...Object.values(size)) / M.length;
+      inside += edges; n++;
+    }
+    const byId = new Map(this.agents.map((a) => [a.id, a]));
+    for (const a of this.agents) for (const id of a.ties.keys()) {
+      const b = byId.get(id);
+      if (b && id > a.id && strong(a, b)) all++;
+    }
+    return n ? { density: dens / n, clustering: clusN ? clus / clusN : null, largest: largest / n, inside: all ? inside / all : null }
+      : { density: null, clustering: null, largest: null, inside: null };
+  }
+
   // The shortlist of sites a camp weighs: land beside water within a day's walk, ranked by
-  // how full of plants and wood the members last saw the land within `look` hexes of it.
+  // how full of food in season and of wood the members last saw the land within `look` hexes
+  // of it.
   campSites(camp) {
     const C = PARAMETERS.camp, tr = this.travel(camp.hex), M = camp.members, out = [];
+    const acts = FORAGE.filter((k) => this.inSeason(ACT_RES[k])).concat([A_WOOD]);
     for (let h = 0; h < this.grid.n; h++) {
       if (h === camp.hex || !(tr[h] <= PARAMETERS.agents.wakingHours) || this.waterAt[h] < 0) continue;
       if (this.terrain[h] !== T_PLAINS && this.terrain[h] !== T_FOREST) continue;
       let score = 0;
       for (const m of this.grid.within(h, C.look)) {
-        const p = this.caps.plants[m] > 0, w = this.caps.wood[m] > 0;
-        if (!p && !w) continue;
+        if (!(this.land[m] > 0)) continue;
         for (const a of M) {
           if (!a.known[m]) continue;
-          if (p) score += a.seenFrac[A_FORAGE][m];
-          if (w) score += a.seenFrac[A_WOOD][m];
+          for (const k of acts) score += a.seenFrac[k][m];
         }
       }
       out.push({ h, score });
@@ -281,8 +346,10 @@ var World = class World {
   }
 
   // ── seasons ────────────────────────────────────────────────────────────────────────────
-  // phase 0 = start of spring. growth > 0 in spring and summer only; rain peaks in spring;
-  // cold > 0 in autumn and winter (for the warmth need, Stage 2).
+  // phase 0 = start of spring. growth follows the sun's curve in spring and summer and is 0
+  // in autumn and winter (the winter floor retired with the plant kinds, Stage 5g: winter food
+  // is roots and stores); rain peaks in spring; cold > 0 in autumn and winter (for the warmth
+  // need, Stage 2).
   season(day) {
     if (day == null) day = this.day;
     const Y = PARAMETERS.year;
@@ -291,12 +358,18 @@ var World = class World {
     return {
       phase,
       name: ['spring', 'summer', 'autumn', 'winter'][Math.floor(phase * 4)],
-      // a floor of winter growth stands in for winter food the v0 tree leaves out (hunting,
-      // fishing, roots); without it half the year has no food at all
-      growth: Math.max(Y.winterGrowth, s),
+      growth: Math.max(0, s),
       rain: 1 + Y.rainAmplitude * c,
       cold: Math.max(0, -s),
     };
+  }
+
+  // is a crop or plant in its season (from–to as shares of the year)? Others always are
+  inSeason(res, day) {
+    if (day != null) return resInSeason(res, this.season(day).phase);
+    if (this._inDay !== this.day) { this._inDay = this.day; this._in = {}; }   // today's, cached
+    const c = this._in[res];
+    return c != null ? c : (this._in[res] = resInSeason(res, this.season().phase));
   }
 
   // ── one day ────────────────────────────────────────────────────────────────────────────
@@ -304,11 +377,20 @@ var World = class World {
     this.day++;
     const sea = this.season();
     this.seasonIndex = Math.floor(sea.phase * 4);
+    this.coverDay(sea.growth);
     for (const k in this.caps) {
       const R = PARAMETERS.resources[k];
-      const f = R.season === 'growth' ? sea.growth : (R.season === 'rain' ? sea.rain : 1);
+      const f = R.season === 'rain' ? sea.rain : 1;
       const cap = this.caps[k], st = this.stock[k], act = this.active[k];
-      if (R.kind === 'renewable') {
+      if (R.kind === 'crop') {
+        // the season's crop, ripe when its season opens (the cover's share of the land), never
+        // more than the cover now bears; picked bare, a hex is empty for the season; gone at
+        // the season's end
+        const cv = this.cover[R.cover], on = this.inSeason(k), was = this.inSeason(k, this.day - 1);
+        if (on && !was) for (let j = 0; j < act.length; j++) st[act[j]] = cap[act[j]] * cv[act[j]];
+        else if (on) for (let j = 0; j < act.length; j++) { const i = act[j]; st[i] = Math.min(st[i], cap[i] * cv[i]); }
+        else if (was) st.fill(0);
+      } else if (R.kind === 'renewable') {
         // logistic regrowth toward cap; the seed floor lets a stripped hex come back slowly
         if (f <= 0) continue;
         for (let j = 0; j < act.length; j++) {
@@ -323,10 +405,41 @@ var World = class World {
           st[i] = Math.min(level, st[i] + R.inflow * level);
         }
       }
-      // deposits never regrow
+      // deposits never regrow; a plant is its cover (coverDay)
     }
     this.fieldsDay();
     if (this.agents.length) this.agentDay();
+  }
+
+  // Plant cover (ODD §2 Plant kinds, Stage 5g): in the growing season each cover spreads into
+  // the hex's bare land at its own rate from a seed floor (scaled down together if they would
+  // more than fill it), trees take grass and root land as strongly as the hex's tree edge
+  // lets them, and grass and roots drift toward their natural mix. Fields hold their land while
+  // they stand.
+  coverDay(growth) {
+    if (!(growth > 0)) return;
+    const L = PARAMETERS.land, G = this.cover.grass, R = this.cover.roots, T = this.cover.trees, F = this.fieldLand;
+    const rg = L.grass.r * growth, rr = L.roots.r * growth, rt = L.trees.r * growth, sh = L.trees.shade * growth;
+    const fg = L.grass.floor, fr = L.roots.floor, ft = L.trees.floor;
+    const mix = L.mix * growth, rootShare = L.open.roots / (L.open.grass + L.open.roots);
+    for (let j = 0; j < this.landHexes.length; j++) {
+      const i = this.landHexes[j];
+      let g = G[i], r = R[i], t = T[i];
+      const free = Math.max(0, 1 - g - r - t - F[i]);
+      let dg = rg * Math.max(g, fg) * free, dr = rr * Math.max(r, fr) * free, dt = rt * Math.max(t, ft) * free;
+      const d = dg + dr + dt;
+      if (d > free) { const k = free / d; dg *= k; dr *= k; dt *= k; }
+      g += dg; r += dr; t += dt;
+      const e = this.edge[i];
+      if (e > 0 && g + r > 0) {
+        const take = Math.min(g + r, sh * e * Math.max(t, ft) * (g + r));
+        const kg = g / (g + r);
+        g -= take * kg; r -= take * (1 - kg); t += take;
+      }
+      const d2 = mix * (rootShare * (g + r) - r);   // + : grass land turns to roots
+      g -= d2; r += d2;
+      G[i] = g; R[i] = r; T[i] = t;
+    }
   }
 
   // ── farming (Stage 5d; ODD §2: anyone may harvest a planted field) ──────────────────────
@@ -343,6 +456,7 @@ var World = class World {
     else if (doy > G.ripeDay) for (const f of this.fields) f.grain *= 1 - G.fieldDecay;
     if (doy >= G.closeDay) {
       for (const f of this.fields) {
+        this.fieldLand[f.hex] = Math.max(0, this.fieldLand[f.hex] - f.land);   // bare again (Stage 5g)
         const back = (f.reaped.get(f.planter.id) || 0) + f.returned;
         if (f.planter.alive) f.planter.learnFarm(back / (f.seeds * f.fert));
         const k = f.planter.fields.indexOf(f);
@@ -353,26 +467,37 @@ var World = class World {
     this.grainHex.fill(0);
     for (const f of this.fields) if (f.ripe) this.grainHex[f.hex] += f.grain;
   }
-  // land that can be farmed: plains or hills with soil (forest needs clearing, not built yet)
-  canFarm(hex) {
-    const t = this.terrain[hex];
-    return (t === T_PLAINS || t === T_HILLS) && this.caps.soil[hex] > 0;
-  }
+  // land that can be farmed: soil, and room for a field (Stage 5g: bare, grass or root land;
+  // never where trees stand, so forest is cut first)
+  canFarm(hex) { return this.caps.soil[hex] > 0 && this.sowRoom(hex) >= PARAMETERS.land.landPerSeed; }
+  sowRoom(hex) { return this.land[hex] > 0 ? Math.max(0, 1 - this.cover.trees[hex] - this.fieldLand[hex]) : 0; }
   // sowing is in spring
   canSow(hex) { return this.season().phase < 0.25 && this.canFarm(hex); }
   fertility(hex) { return this.stock.soil[hex] / PARAMETERS.goods.grain.soilFull; }
+  // Sow up to `seeds` (as many as there is room for); returns the seeds sown. The field takes
+  // its land from bare land first, then from grass and roots alike (the hoeing clears it).
   sow(agent, hex, seeds) {
-    const G = PARAMETERS.goods.grain, fert = this.fertility(hex);
+    const G = PARAMETERS.goods.grain, fert = this.fertility(hex), lps = PARAMETERS.land.landPerSeed;
+    seeds = Math.min(seeds, this.sowRoom(hex) / lps);
+    if (!(seeds > 1e-6)) return 0;
+    let need = seeds * lps;
+    const gr = this.cover.grass, ro = this.cover.roots;
+    const bare = Math.max(0, 1 - gr[hex] - ro[hex] - this.cover.trees[hex] - this.fieldLand[hex]);
+    need -= Math.min(need, bare);
+    if (need > 0) { const k = Math.min(1, need / (gr[hex] + ro[hex])); gr[hex] *= 1 - k; ro[hex] *= 1 - k; }
+    this.fieldLand[hex] += seeds * lps;
     this.take('soil', hex, seeds * G.soilPerSeed);
     let f = agent.fields.find((x) => x.hex === hex);
     if (!f) {
-      f = { hex, planter: agent, seeds: 0, fert: 0, yield: 0, grain: 0, ripe: false, reaped: new Map(), credited: new Map(), returned: 0 };
+      f = { hex, planter: agent, seeds: 0, land: 0, fert: 0, yield: 0, grain: 0, ripe: false, reaped: new Map(), credited: new Map(), returned: 0 };
       agent.fields.push(f); this.fields.push(f);
     }
+    f.land += seeds * lps;
     f.fert = (f.fert * f.seeds + fert * seeds) / (f.seeds + seeds);
     f.seeds += seeds;
     f.yield += seeds * G.yieldPerSeed * fert;
     this.sown = (this.sown || 0) + seeds;
+    return seeds;
   }
   reap(agent, hex, want) {
     const here = this.fields.filter((f) => f.hex === hex && f.grain > 0);
@@ -417,9 +542,9 @@ var World = class World {
     for (const a of order) a.act(this);
     this.meet(live);                                                   //    meeting and chat
     this.giftsToday = 0;
-    for (const a of live) a.xnet = { food: -a.hold.food, wood: -a.hold.wood };
+    for (const a of live) { a.xnet = {}; for (const g of FLOW_GOODS) a.xnet[g] = -a.hold[g]; }
     exchangeDay(this, live);                                          // 3. Exchange
-    for (const a of live) { a.xnet.food += a.hold.food; a.xnet.wood += a.hold.wood; }   // net in exchange
+    for (const a of live) for (const g of FLOW_GOODS) a.xnet[g] += a.hold[g];   // net in exchange
     if (this.camps) this.bedDown(order);                              //    where to sleep
     for (const a of live) a.consume(this);                            // 4. Consume
     for (const a of live) a.learn();                                  // 5. Learn
@@ -468,20 +593,36 @@ var World = class World {
     return t;
   }
 
-  // Remove up to `amount` of resource `res` from hex `i`; returns what was taken.
+  // How much of resource `res` hex `i` holds: its stock, or for a plant its cover's share of
+  // the land under full cover.
+  amount(res, i) {
+    const R = PARAMETERS.resources[res];
+    return R.kind === 'plant' ? this.cover[R.cover][i] * this.caps[res][i] : this.stock[res][i];
+  }
+  // Remove up to `amount` of resource `res` from hex `i`; returns what was taken. Taking a
+  // plant shrinks its cover (ODD §2: cutting wood and digging roots take the plant).
   take(res, i, amount) {
-    const st = this.stock[res];
-    const got = Math.min(amount, st[i]);
-    st[i] -= got;
+    const R = PARAMETERS.resources[res];
+    const got = Math.min(amount, this.amount(res, i));
+    if (!(got > 0)) return 0;
+    if (R.kind === 'plant') this.cover[R.cover][i] = Math.max(0, this.cover[R.cover][i] - got / this.caps[res][i]);
+    else this.stock[res][i] -= got;
     return got;
   }
 
-  // Total stock of a resource as a fraction of its total cap (for measures and charts).
+  // Total amount of a resource as a fraction of its total cap (for measures and charts).
   stockFraction(res) {
-    const st = this.stock[res], cap = this.caps[res], act = this.active[res];
+    const cap = this.caps[res], act = this.active[res];
     let s = 0, c = 0;
-    for (let j = 0; j < act.length; j++) { s += st[act[j]]; c += cap[act[j]]; }
+    for (let j = 0; j < act.length; j++) { s += this.amount(res, act[j]); c += cap[act[j]]; }
     return c > 0 ? s / c : 0;
+  }
+  // Mean share of the land under a cover (fields: 'fields'), for measures and charts.
+  coverShare(c) {
+    const a = c === 'fields' ? this.fieldLand : this.cover[c];
+    let s = 0, l = 0;
+    for (let j = 0; j < this.landHexes.length; j++) { const i = this.landHexes[j]; s += a[i] * this.land[i]; l += this.land[i]; }
+    return l > 0 ? s / l : 0;
   }
 
   // ── travel ─────────────────────────────────────────────────────────────────────────────
@@ -510,14 +651,16 @@ var World = class World {
   }
 
   // ── fixed maps ─────────────────────────────────────────────────────────────────────────
-  // A plain-JSON copy of the map (terrain and caps, not stocks), for `new World({ map })`.
+  // A plain-JSON copy of the map (terrain, caps, land and the start cover; not stocks), for
+  // `new World({ map })`.
   exportMap() {
-    const caps = {};
+    const caps = {}, cover = {};
     for (const k in this.caps) caps[k] = Array.from(this.caps[k]);
+    for (const c in this.coverStart) cover[c] = Array.from(this.coverStart[c]);
     return {
       width: this.grid.W, height: this.grid.H,
       terrain: Array.from(this.terrain), spring: Array.from(this.spring),
-      caps, centres: this.centres,
+      caps, centres: this.centres, land: Array.from(this.land), edge: Array.from(this.edge), cover,
     };
   }
 };

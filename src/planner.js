@@ -70,6 +70,7 @@ function greedyRoute(agent, world, top, base, perHour, withTrade) {
     for (let k = 0; k < plan.length; k++) {
       const s = plan[k];
       if (s.act === A_DRINK || s.act === A_SCOUT || s.act === A_CRAFT || s.act === A_TINKER) continue;   // fixed-length stops
+      if (s.act === A_PROCESS && !(agent.hold[PROCESSES[s.process].from] > PROCESSES[s.process].perHour * s.hours)) continue;   // nothing more to process
       const p2 = plan.slice();
       p2[k] = Object.assign({}, s, { hours: s.hours + A.chunk });
       consider(p2);
@@ -117,19 +118,23 @@ function planHours(agent, world, plan) {
   return plan.length ? h + world.travel(at)[agent.home] : 0;
 }
 
-// Everything the agent could do today: gather or drink at known hexes within reach, build
-// or make what it knows at home, tinker, or walk to an unseen hex to look.
+// Everything the agent could do today: gather (wild food in its season, Stage 5g) or drink at
+// known hexes within reach, build, make or process what it knows at home, tinker, or walk to
+// an unseen hex to look.
 function planCandidates(agent, world) {
   const A = PARAMETERS.agents;
   const reach = agent.capacity() / 2;
   const fromHome = world.travel(agent.home);
   const out = [], unseen = [], tinkerAt = [], fields = [];
   const sowing = agent.knows.has('farm') && agent.hold.grain > 0 && world.season().phase < 0.25;
+  const forage = FORAGE.filter((k) => world.inSeason(ACT_RES[k]));
   for (let h = 0; h < world.grid.n; h++) {
     if (!(fromHome[h] <= reach)) continue;
     if (!agent.known[h]) { unseen.push(h); continue; }
-    if (world.caps.plants[h] > 0) out.push({ hex: h, act: A_FORAGE, hours: A.chunk, unknown: 0 });
-    if (world.caps.wood[h] > 0) out.push({ hex: h, act: A_WOOD, hours: A.chunk, unknown: 0 });
+    if (world.land[h] > 0) {
+      for (const k of forage) out.push({ hex: h, act: k, hours: A.chunk, unknown: 0 });
+      out.push({ hex: h, act: A_WOOD, hours: A.chunk, unknown: 0 });
+    }
     if (world.waterAt[h] >= 0) out.push({ hex: h, act: A_DRINK, hours: A.drinkHours, unknown: 0 });
     if (world.caps.flint[h] > 0) out.push({ hex: h, act: A_QUARRY, hours: A.chunk, unknown: 0 });
     if (world.caps.clay[h] > 0) out.push({ hex: h, act: A_DIG, hours: A.chunk, unknown: 0 });
@@ -146,6 +151,10 @@ function planCandidates(agent, world) {
   // make a good at home, for each recipe it knows (ODD §5, §7.3)
   for (const r in RECIPES) {
     if (agent.knows.has(r)) out.push({ hex: agent.home, act: A_CRAFT, recipe: r, hours: RECIPES[r].hours, unknown: 0 });
+  }
+  // process a food it holds, for each process it knows (Stage 5g)
+  for (const p in PROCESSES) {
+    if (agent.knows.has(p) && agent.hold[PROCESSES[p].from] > 0) out.push({ hex: agent.home, act: A_PROCESS, process: p, hours: 1, unknown: 0 });
   }
   // sow on the most fertile land within reach, nearer first among equals
   fields.sort((a, b) => world.fertility(b) / (1 + fromHome[b]) - world.fertility(a) / (1 + fromHome[a]));
@@ -193,6 +202,9 @@ function planCost(agent, world, plan, withTrade) {
       if (tool && hold[tool] > 0) hold[tool] = Math.max(0, hold[tool] - s.hours / TOOLS[tool].life);
       hold[GOOD_OF[s.act]] += est * s.hours;
     } else if (s.act === A_DRINK) { drank = true; hold.water = Math.max(hold.water, waterCarried(hold)); }
+    else if (s.act === A_PROCESS) {
+      if (!(processFood(hold, s.process, s.hours) > 0)) return Infinity;   // nothing to process
+    }
     else if (s.act === A_BUILD) {
       if (!(buildWork(shelter, hold, s.build, s.hours) > 0)) return Infinity;   // nothing to work with
     } else if (s.act === A_CRAFT) {
@@ -202,7 +214,8 @@ function planCost(agent, world, plan, withTrade) {
       hold[s.recipe] += 1;
     } else if (s.act === A_SOW) {
       // what it sows comes back at harvest at its learned return (projected in keepCost)
-      const seeds = Math.min(hold.grain, s.hours * G.grain.sowPerHour * (hold.hoe > 0 ? TOOLS.hoe.mult : 1));
+      const seeds = Math.min(hold.grain, s.hours * G.grain.sowPerHour * (hold.hoe > 0 ? TOOLS.hoe.mult : 1),
+        world.sowRoom(s.hex) / PARAMETERS.land.landPerSeed);
       if (!(seeds > 1e-6)) return Infinity;
       hold.grain -= seeds;
       hold.sown = (hold.sown || 0) + seeds * world.fertility(s.hex) * agent.farmReturn;
@@ -220,23 +233,27 @@ function planCost(agent, world, plan, withTrade) {
 // The cost of ending the day with `hold`: tonight's evening plus the Keep projection. With
 // `withTrade`, the Trade arm too (ODD §7.6 best of keep / trade / give; trade enters the
 // plan): part of one good may be swapped for the other at the going rate, discounted by how
-// reliably the agent's trades have come off, and the cheaper outcome counts. (Give is decided
-// in the exchange phase, where the recipient's need is known; exchange.js.)
+// reliably the agent's trades have come off, and the cheaper outcome counts. The pair is its
+// main food (the most food in hand) and wood (Stage 5g: one pair keeps the arm cheap). (Give
+// is decided in the exchange phase, where the recipient's need is known; exchange.js.)
 function holdingsCost(agent, world, hold, shelter, busy, drank, belonging, withTrade) {
   const keep = (h) => keepCost(agent, world, h, shelter, busy, drank, belonging) - projectValue(agent, world, h, shelter);
   let best = keep(hold);
-  const P = agent.price['food|wood'];
-  if (!withTrade || !P || !(agent.tradeRel > 0.01)) return best;
-  const p = Math.exp(P.logp), rel = agent.tradeRel;   // p: food per unit of wood
+  if (!withTrade || !(agent.tradeRel > 0.01)) return best;
+  let fd = null, most = 0;
+  for (const k of FOODS) { const v = hold[k] * PARAMETERS.goods[k].restores; if (v > most) { most = v; fd = k; } }
+  const P = agent.price[(fd || FOODS[0]) + '|wood'];
+  if (!P) return best;
+  const p = Math.exp(P.logp), rel = agent.tradeRel;   // p: units of its main food per unit of wood
   for (const f of [0.25, 0.5]) {
-    if (hold.food > 0) {
-      const give = f * hold.food;
-      const c = keep(Object.assign({}, hold, { food: hold.food - rel * give, wood: hold.wood + rel * give / p }));
+    if (fd) {
+      const give = f * hold[fd];
+      const c = keep(Object.assign({}, hold, { [fd]: hold[fd] - rel * give, wood: hold.wood + rel * give / p }));
       if (c < best) best = c;
     }
-    if (hold.wood > 0) {
+    if (hold.wood > 0 && fd) {
       const give = f * hold.wood;
-      const c = keep(Object.assign({}, hold, { food: hold.food + rel * give * p, wood: hold.wood - rel * give }));
+      const c = keep(Object.assign({}, hold, { [fd]: hold[fd] + rel * give * p, wood: hold.wood - rel * give }));
       if (c < best) best = c;
     }
   }
@@ -283,8 +300,11 @@ function keepCost(agent, world, hold, shelter, busy, drank, belonging) {
   const rateWood = Math.max(0.1, agent.rate(A_WOOD));
   const keeps = KEEP_RECIPES.filter(([r]) => agent.knows.has(r));
   const capAhead = cap + agent.walked;   // a walk moving camp shortens today only
-  const belongCost = sq(belonging), RF = needReserve('food');
+  const belongCost = sq(belonging), RF = needReserve('food'), NF = FOODS.length;
   let waterDays = (h.water || 0) / N.waterDecay;   // days of drinking the water held covers
+  // the foods as plain numbers (Stage 5g): amounts, and each season's daily inflow
+  const fq = FQ_SCRATCH, inflow = foodInflows(agent, world);
+  for (let q = 0; q < NF; q++) fq[q] = h[FOODS[q]];
   for (let k = 0; k < tab.length; k++) {
     const T = tab[k], S = T.len, si = T.si;
     for (const [r, ins] of keeps) {
@@ -300,10 +320,11 @@ function keepCost(agent, world, hold, shelter, busy, drank, belonging) {
     // exchange (ODD §7.6: expected future need from seasonal norms)
     const F = agent.flow[si];
     if (h.axe > 0) h.axe = Math.max(0, h.axe - S * F.wood.v / rateWood / TOOLS.axe.life);
-    h.food = Math.max(0, h.food * T.rot + S * (F.food.v + F.xfood.v));
+    // each food rots at its own rate, and what the season brings in is added (Stage 5g)
+    const rot = T.rot, inf = inflow[si];
+    for (let q = 0; q < NF; q++) { const x = fq[q] * rot[q] + S * inf[q]; fq[q] = x > 0 ? x : 0; }
     h.wood = Math.max(0, h.wood + S * (F.wood.v * wMult + F.xwood.v));
     if (h.pot > 0) h.pot = Math.max(0, h.pot - G.pot.wear * S);
-    h.grain = (h.grain || 0) * T.grot;
     const covered = Math.min(S, waterDays);
     waterDays -= covered;
     let work = agent.busyHabit[si].v + agent.drinkTrip * Math.min(1, N.waterDecay / waterCarried(h)) * (1 - covered / S) + carryWork / S;
@@ -313,7 +334,7 @@ function keepCost(agent, world, hold, shelter, busy, drank, belonging) {
     if (T.ripe) {
       const add = projSown + (ripened ? 0 : arriving);
       ripened = true; projSown = 0;
-      if (add > 0) { h.grain += add; work += add / G.grain.reapPerHour / S; }
+      if (add > 0) { fq[FOOD_GRAIN] += add; work += add / G.grain.reapPerHour / S; }
     }
     // weather (as wearShelter)
     lean = Math.max(0, lean - G.leanTo.wear * S);
@@ -330,10 +351,13 @@ function keepCost(agent, world, hold, shelter, busy, drank, belonging) {
     let food = Lf + T.persist * (nf - Lf) - S * (N.foodDecay + N.workBurn * work);
     const fire = Math.min(1, h.wood / (G.fireWood * S));
     h.wood -= fire * G.fireWood * S;
-    const per = G.food.restores * (1 + fire * (G.food.cookedBonus - 1));
-    if (food < 1 && h.food > 0) { const eat = Math.min(h.food, (1 - food) / per); food += eat * per; h.food -= eat; }
-    const perG = G.grain.restores * (h.pot > 0 ? 1 + fire * (G.grain.cookedBonus - 1) : 1);
-    if (food < 1 && h.grain > 0) { const eat = Math.min(h.grain, (1 - food) / perG); food += eat * perG; h.grain -= eat; }
+    const pot = h.pot > 0;
+    for (let q = 0; q < NF && food < 1; q++) {
+      const have = fq[q];
+      if (!(have > 0)) continue;
+      const per = FOOD_REST[q] * (FOOD_POT[q] && !pot ? 1 : 1 + fire * FOOD_COOK[q]), eat = Math.min(have, (1 - food) / per);
+      food += eat * per; fq[q] = have - eat;
+    }
     food = Math.min(food, 1);
     const warmth = clamp(1 - cold(T) * (1 - ins) + fire * G.fireHeat, 0, 1);
     const rest = clamp((capAhead - work) / N.restSet, 0, 1);
@@ -342,13 +366,28 @@ function keepCost(agent, world, hold, shelter, busy, drank, belonging) {
     nf = food;
     // spring sowing (Stage 5d): grain still held is sown, as with the axe and the pot (made
     // when the inputs are in hand), on the best land near home; its hours fall in the next step
-    if (T.sow && farming && h.grain > 0) {
-      projSown += h.grain * agent.farmFert * agent.farmReturn;
-      carryWork = h.grain / G.grain.sowPerHour;
-      h.grain = 0;
+    if (T.sow && farming && fq[FOOD_GRAIN] > 0) {
+      projSown += fq[FOOD_GRAIN] * agent.farmFert * agent.farmReturn;
+      carryWork = fq[FOOD_GRAIN] / G.grain.sowPerHour;
+      fq[FOOD_GRAIN] = 0;
     }
   }
   return cost;
+}
+
+// The foods as arrays in FOODS order, for the projection's loop: food per unit, cooking's
+// extra share, whether cooking needs a pot; and the index of grain (sown and harvested)
+var FOOD_REST = FOODS.map((k) => PARAMETERS.goods[k].restores);
+var FOOD_COOK = FOODS.map((k) => PARAMETERS.goods[k].cookedBonus - 1);
+var FOOD_POT = FOODS.map((k) => !!PARAMETERS.goods[k].potCook);
+var FOOD_GRAIN = FOODS.indexOf('grain');
+var FQ_SCRATCH = new Float64Array(FOODS.length);
+// Each season's daily inflow of each food, gathered and netted in exchange (0 for foods that
+// are only made): worked out once a day per agent, since the flows are learned in the evening.
+function foodInflows(agent, world) {
+  if (agent._inflowDay === world.day && agent._inflow) return agent._inflow;
+  agent._inflowDay = world.day;
+  return (agent._inflow = agent.flow.map((F) => Float64Array.from(FOODS, (k) => F[k] ? F[k].v + F['x' + k].v : 0)));
 }
 
 // The curiosity term for tinkering (ODD §7.3, §4.4): the discoveries the agent expects, from
@@ -404,7 +443,7 @@ function projectionTable(world) {
     const len = d - prev, a = world.day + prev, b = world.day + d;
     tab.push({
       len, beta: Math.pow(A.discount, d), si: Math.floor(((world.day + d) % Y) / Y * 4), cold: world.season(world.day + d).cold,
-      rot: Math.pow(1 - PARAMETERS.goods.food.rot, len), grot: Math.pow(1 - Gr.rot, len),
+      rot: FOODS.map((k) => Math.pow(1 - PARAMETERS.goods[k].rot, len)),   // each food's keeping over the step
       persist: Math.pow(A.keepPersist, len / 7),
       ripe: crosses(a, b, Gr.ripeDay),          // this step holds a harvest (Stage 5d)
       sow: crosses(a, b, Gr.sowDay),            // this step holds the spring sowing

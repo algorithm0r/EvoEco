@@ -4,6 +4,46 @@
 
 <!-- append new entries above this line -->
 
+## 2026-11-06 — Stage 5g closed: plant kinds, shared land, processing; Stage 6 next
+
+**Done:** Built 5g from the ODD §2 decisions of 2026-11-05.
+- *Shared land.* A hex's land is shared by grass, roots and trees (plus fields while they
+  stand). Each cover spreads into bare land in the growing season; trees take grass and root
+  land slowly, only where moisture is above the forest line; open land drifts to its natural
+  mix. Cleared wet land is grass after a summer and forest within 7 years; dry land stays open.
+- *Food kinds.* Greens (spring), seeds, the wild grain (summer), nuts (autumn) are crops: the
+  season's whole crop is ripe when its window opens, and a hex picked bare is empty until next
+  year (Chris's Decided rule; a first in-season refill broke it and was removed). Roots
+  (autumn, winter) and wood are the cover itself: taking shrinks it. Foods are eaten
+  fastest-rotting first. Agents know the seasons; the winter-growth floor is gone.
+- *Fields* take bare, then grass and root land, never under trees; the land goes bare when the
+  field closes.
+- *Processing* as know-how: drying greens, roasting nuts (wood), grinding seeds (flint).
+- *Starting know-how* is a setting (`agents.knowhow`), default no tech level; hunting,
+  gathering, fire, stone tools and the gourd are assumed (Chris, 2026-11-05).
+- *Rebalance against bands.* Food per land raised; planning priors set to about the old
+  prior's food in every season (optimistic priors stopped winter storing: ~30% died).
+- *Speed.* The Keep projection loop rewritten on typed arrays with per-day inflow caches
+  (cleared on chat and learning): 6 → 2.5 ms per agent-day, identical results.
+**Changed:** `src/params.js` (`land`, resource kinds, foods, `knowhow`, `priorPerHour`),
+`src/tree.js` (PROCESSES, foods by rot), `src/mapgen.js`, `src/world.js`, `src/agent.js`,
+`src/planner.js`, `src/exchange.js`, `src/datamanager.js`, `src/observer.js`, `src/ui.js`,
+`index.html` (cover and held charts, food layers), `smoketest.mjs` (section 4 rewritten, new
+tests). ODD §2 gained the 5g as-built block; §5 the know-how and gourd decisions; superseded
+as-built notes (Stage 1 placement, 5d wild grain) are marked. DEVPLAN: 5g closed, remaining
+processing to 5f.
+**State:** smoke PASS @ v0.8.0-dirty (pre-commit; tagged v0.9.0 on commit). Bands year:
+92/100 alive (8 hunger), 41 discoveries incl. drying, roasting, grinding, lean-to; 2,440
+trades, 2,427 gifts, 381 trusted ties; winter 7.4 h/day vs summer 4.6; planner 0.63 ms per
+agent-day (smoke). Three years, seed 1: 82/100 alive (deaths 8, 1, 9, all late winter);
+processing batches yr 2 drying 128 / grinding 155 / roasting 52, yr 3 1,052 / 949 / 78; 30
+farm discoveries; 2.53 ms per agent-day. Roots cover 0.21 → 0.165, trees 0.354 → 0.302 over
+three years (firewood). Browser page loads clean. Ledger: covers and succession are
+landscape; season knowledge is a §5 assumption; eating order and processing are individual
+rules; nothing imposes ties, prices, specialization or inequality.
+**Next:** Stage 6 build: trust, spin-up, sexes and childhood, conception, planning together,
+cheaper camp weighing, the fix 2 check.
+
 ## 2026-11-04 — Stage 5d closed: moving camp, shared huts, habit and norm; Stage 6 next
 
 **Done:** Five pieces, each decided by Chris and recorded in the ODD before coding:

@@ -18,7 +18,7 @@ function buildControls(onReset, onPause) {
       { label: 'Reset', primary: true, onClick: onReset },
     ],
   });
-  const layers = ['terrain', 'plants', 'wood', 'soil', 'water'];
+  const layers = ['terrain', 'greens', 'seeds', 'nuts', 'roots', 'wood', 'soil', 'water'];
   CB.sim.controls($('view'), [{ key: 'layer', label: 'Map layer', options: layers }], VIEW, {
     onChange: (k, v) => { if (observer) observer.layer = v; showLegend(); },
   });
@@ -72,7 +72,12 @@ function wireCharts(dm) {
   line('farmers', [['planters', 'planters'], ['fields', 'fields']]);
   line('farmReturn', [['grain back per seed', 'farmReturn']]);
   line('know', [['discoveries', 'discoveries'], ['learned by seeing', 'learnedBySeeing']]);
-  line('knowers', [['pot', 'know_pot'], ['hut', 'know_hut'], ['farm', 'know_farm']]);
+  line('knowers', [['lean-to', 'know_leanTo'], ['pot', 'know_pot'], ['hut', 'know_hut'], ['farm', 'know_farm'],
+    ['drying', 'know_drying'], ['roasting', 'know_roasting'], ['grinding', 'know_grinding']]);
+  line('cover', [['grass', 'cover_grass'], ['roots', 'cover_roots'], ['trees', 'cover_trees'], ['fields', 'cover_fields']]);
+  line('held', [['fresh (rots in days)', 'held_raw'], ['keeps', 'held_kept']]);
+  line('ties', [['density', 'tieDensity'], ['clustering', 'tieClustering'], ['largest group', 'tieLargest'],
+    ['strong ties inside camp', 'tieInside']]);
   for (const k in DataManager.DISTS) {
     $(k).setAttribute('window', win);
     $(k).data = { dx, columns: r[k] };

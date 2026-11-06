@@ -21,7 +21,7 @@ for (const f of ['util.js', 'params.js', 'engine.js', 'hex.js', 'mapgen.js', 'ag
   src = src.replace(/^\s*(['"])use strict\1;?/, ''); // strip directive so declarations leak to global
   indirectEval(src);
 }
-const { PARAMETERS: P, World, TERRAIN, T_LAKE, T_RIVER, T_PLAINS } = globalThis;
+const { PARAMETERS: P, World, TERRAIN, T_LAKE, T_RIVER, T_PLAINS, T_FOREST } = globalThis;
 
 let failed = 0;
 function check(name, ok, detail) {
@@ -36,6 +36,7 @@ function mapHash(w) {
   for (const t of w.terrain) mix(t);
   for (const s of w.spring) mix(s);
   for (const k of Object.keys(w.caps).sort()) for (const c of w.caps[k]) mix(Math.round(c * 10));
+  for (const k of Object.keys(w.cover).sort()) for (const c of w.cover[k]) mix(Math.round(c * 1000));
   return h.toString(16);
 }
 
@@ -78,33 +79,54 @@ function stepDays(k) {
     w.update();
     waterBySeason[w.season().name].push(w.stockFraction('water'));
     for (const r in w.caps) {
-      const cap = w.caps[r], st = w.stock[r], amp = P.resources[r].kind === 'flow' ? 1 + P.year.rainAmplitude : 1;
-      for (const i of w.active[r]) if (st[i] < -1e-6 || st[i] > cap[i] * amp + 1e-3) inBounds = false;
+      const cap = w.caps[r], amp = P.resources[r].kind === 'flow' ? 1 + P.year.rainAmplitude : 1;
+      for (const i of w.active[r]) { const x = w.amount(r, i); if (x < -1e-6 || x > cap[i] * amp + 1e-3) inBounds = false; }
+    }
+    for (const i of w.landHexes) {
+      const tot = w.cover.grass[i] + w.cover.roots[i] + w.cover.trees[i] + w.fieldLand[i];
+      if (tot > 1 + 1e-4 || w.cover.grass[i] < -1e-6 || w.cover.roots[i] < -1e-6 || w.cover.trees[i] < -1e-6) inBounds = false;
     }
   }
 }
-// run to the first day of autumn, then strip plants on 50 hexes and all copper
-stepDays(Y / 2 - w.day);
-const plantHexes = Array.from(w.active.plants).filter((i) => w.terrain[i] === T_PLAINS).slice(0, 50);
-for (const i of plantHexes) w.take('plants', i, Infinity);
+const sum = (res, cells) => cells.reduce((a, i) => a + w.amount(res, i), 0);
+const coverOf = (c, cells) => cells.reduce((a, i) => a + w.cover[c][i], 0) / cells.length;
+// spring: pick the greens bare on 50 open hexes; cut the trees on 20 wet hexes; dig out the
+// roots on 20 open hexes; take all the copper
+stepDays(Math.round(0.1 * Y));
+const open = Array.from(w.landHexes).filter((i) => w.terrain[i] === T_PLAINS && w.edge[i] === 0);
+const picked = open.slice(0, 50), dug = open.slice(50, 70);
+const cleared = Array.from(w.landHexes).filter((i) => w.edge[i] > 0.3).slice(0, 20);
+const grassBefore = coverOf('grass', picked), rootsBefore = coverOf('roots', dug);
+for (const i of picked) w.take('greens', i, Infinity);
+for (const i of cleared) w.take('wood', i, Infinity);
+for (const i of dug) w.take('roots', i, Infinity);
 for (const i of w.active.copper) w.take('copper', i, Infinity);
-const sum = (res, cells) => cells.reduce((a, i) => a + w.stock[res][i], 0);
-const capSum = (res, cells) => cells.reduce((a, i) => a + w.caps[res][i], 0);
-stepDays(Y / 2);  // autumn + winter: no growth
-const afterWinter = sum('plants', plantHexes);
-stepDays(Y / 2);  // spring + summer
-const afterSummer = sum('plants', plantHexes) / capSum('plants', plantHexes);
-stepDays(Y / 2);
-stepDays(Y / 2);  // a second growing season
-const afterTwo = sum('plants', plantHexes) / capSum('plants', plantHexes);
+const greensPicked = sum('greens', picked);
+check('picking takes the crop, not the plant', greensPicked === 0 && Math.abs(coverOf('grass', picked) - grassBefore) < 1e-9,
+  'greens left on 50 picked hexes ' + greensPicked + '; their grass ' + grassBefore.toFixed(3) + ' → ' + coverOf('grass', picked).toFixed(3));
+check('cutting wood takes the trees, digging roots takes the roots', coverOf('trees', cleared) === 0 && coverOf('roots', dug) === 0);
+stepDays(Math.round(0.4 * Y) - w.day);   // summer
+const allLand = Array.from(w.landHexes);
+const summerGreens = sum('greens', allLand), summerSeeds = sum('seeds', allLand), summerNuts = sum('nuts', allLand);
+stepDays(Math.round(0.6 * Y) - w.day);   // autumn
+const autumnSeeds = sum('seeds', allLand), autumnNuts = sum('nuts', allLand);
+check('each crop is there only in its season', summerGreens === 0 && summerSeeds > 0 && summerNuts === 0 && autumnSeeds === 0 && autumnNuts > 0,
+  'summer: greens ' + summerGreens.toFixed(0) + ', seeds ' + summerSeeds.toFixed(0) + ', nuts ' + summerNuts.toFixed(0) +
+  '; autumn: seeds ' + autumnSeeds.toFixed(0) + ', nuts ' + autumnNuts.toFixed(0));
+const grassCleared1 = coverOf('grass', cleared), treesCleared1 = coverOf('trees', cleared);
+stepDays(Math.round(1.1 * Y) - w.day);   // the next spring
+const greensBack = sum('greens', picked) / picked.reduce((a, i) => a + w.caps.greens[i] * w.cover.grass[i], 0);
+check('picked greens are back the next spring', greensBack > 0.99, 'share of a full crop ' + greensBack.toFixed(3));
+stepDays(8 * Y - w.day);   // seven years on from the clearing
+const treesOpen = Math.max(...open.map((i) => w.cover.trees[i]));
+check('cleared wet land goes to grass, then back to forest', grassCleared1 > 0.5 && treesCleared1 < 0.1 && coverOf('trees', cleared) > 0.5,
+  'cleared hexes: first summer grass ' + grassCleared1.toFixed(2) + ', trees ' + treesCleared1.toFixed(2) + '; trees after 7 years ' + coverOf('trees', cleared).toFixed(2));
+check('dry open land stays open', treesOpen <= P.land.open.trees + 0.01, 'most trees on an open hex after 7 years ' + treesOpen.toFixed(3) + ' (start ' + P.land.open.trees + ')');
+check('dug-out roots come back over years', coverOf('roots', dug) > 0.5 * rootsBefore,
+  'roots on dug hexes: ' + rootsBefore.toFixed(2) + ' → 0 → ' + coverOf('roots', dug).toFixed(2) + ' after 7 years');
 const ms = (Date.now() - t0) / w.day;
-const winterFrac = afterWinter / capSum('plants', plantHexes);
-check('autumn/winter regrowth only at the winter floor', P.year.winterGrowth === 0 ? afterWinter === 0 : winterFrac < afterSummer,
-  'stripped plants, fraction of cap: after autumn+winter ' + winterFrac.toFixed(3) + ' (floor ' + P.year.winterGrowth + ')');
-check('stripped plants regrow in spring/summer', afterSummer > 0.05 && afterTwo > afterSummer,
-  'fraction of cap after 1 season ' + afterSummer.toFixed(3) + ', after 2 ' + afterTwo.toFixed(3));
 check('deposits never regrow', sum('copper', Array.from(w.active.copper)) === 0);
-check('every stock stays within [0, cap]', inBounds, 'over ' + w.day + ' days');
+check('every stock stays within [0, cap], every hex\'s covers within its land', inBounds, 'over ' + w.day + ' days');
 const mean = (a) => a.reduce((x, y) => x + y, 0) / a.length;
 check('water higher in spring than autumn', mean(waterBySeason.spring) > mean(waterBySeason.autumn),
   'mean water fraction spring ' + mean(waterBySeason.spring).toFixed(2) + ', autumn ' + mean(waterBySeason.autumn).toFixed(2));
@@ -132,11 +154,13 @@ console.log('hexes within 4 hours of a plains hex: ' + reach + ' (open plain wou
 console.log('world.update: ' + ms.toFixed(3) + ' ms/day (' + n + ' hexes, includes bounds checks)');
 
 // ── 6. agents (Stage 2) ───────────────────────────────────────────────────────────────
-// A world with its plant caps scaled, then `nAgents` placed (same rng as the map).
-function agentWorld(plantScale, nAgents) {
+// A world with its wild food scaled, then `nAgents` placed (same rng as the map).
+function agentWorld(foodScale, nAgents) {
   const aw = new World({ agents: 0 });
-  for (const i of aw.active.plants) { aw.caps.plants[i] *= plantScale; aw.stock.plants[i] = aw.caps.plants[i]; }
-  if (plantScale === 0) aw.active.plants = new Int32Array(0);
+  for (const r of ['greens', 'seeds', 'nuts', 'roots']) {
+    for (const i of aw.active[r]) { aw.caps[r][i] *= foodScale; if (aw.stock[r]) aw.stock[r][i] *= foodScale; }
+    if (foodScale === 0) aw.active[r] = new Int32Array(0);
+  }
   aw.placeAgents(nAgents);
   return aw;
 }
@@ -145,7 +169,7 @@ const da = agentWorld(1, 8), db = agentWorld(1, 8);
 for (let d = 0; d < 120; d++) { da.update(); db.update(); }
 check('same seed → same agent histories', snapshot(da) === snapshot(db));
 
-// rich map: plants ×3; 8 agents for a year. Solitary survival is NOT a goal (humans are not
+// rich map: wild food ×3; 8 agents for a year. Solitary survival is NOT a goal (humans are not
 // solitary; Chris, 2026-11-02): this checks the mechanics — needs held near set points by
 // those living, work rising in winter — and only reports how many lived.
 const rich = agentWorld(3, 8);
@@ -164,7 +188,7 @@ check('more hours worked in winter than summer', mean(bySeason.winter) > mean(by
   'mean hours: spring ' + mean(bySeason.spring).toFixed(1) + ', summer ' + mean(bySeason.summer).toFixed(1) +
   ', autumn ' + mean(bySeason.autumn).toFixed(1) + ', winter ' + mean(bySeason.winter).toFixed(1));
 
-// barren map: no wild plants at all
+// barren map: no wild food at all
 const barren = agentWorld(0, 8);
 for (let d = 0; d < 90 && barren.agents.length; d++) barren.update();
 check('barren map: all starve', barren.agents.length === 0 && barren.dead.every((a) => a.cause === 'hunger'),
@@ -174,11 +198,11 @@ check('barren map: all starve', barren.agents.length === 0 && barren.dead.every(
 // once and stop going there
 const solo = agentWorld(3, 1), ag = solo.agents[0];
 const visits = new Map();
-for (let d = 0; d < 40; d++) { solo.update(); for (const st of ag.plan) if (st.act === A_FORAGE) visits.set(st.hex, (visits.get(st.hex) || 0) + 1); }
+for (let d = 0; d < 40; d++) { solo.update(); for (const st of ag.plan) if (st.act === A_GREENS) visits.set(st.hex, (visits.get(st.hex) || 0) + 1); }
 const fav = [...visits.entries()].sort((a, b) => b[1] - a[1])[0][0];
-solo.stock.plants[fav] = 0;
+solo.stock.greens[fav] = 0;
 let after = 0;
-for (let d = 0; d < 20; d++) { solo.update(); for (const st of ag.plan) if (st.act === A_FORAGE && st.hex === fav) after++; }
+for (let d = 0; d < 20; d++) { solo.update(); for (const st of ag.plan) if (st.act === A_GREENS && st.hex === fav) after++; }
 check('stops foraging a hex it finds stripped', after <= 1, 'favourite hex used ' + visits.get(fav) + 'x in 40 days; ' + after + 'x in the 20 days after stripping');
 
 // ── 7. meeting, chat and norms (Stage 3) ──────────────────────────────────────────────
@@ -195,18 +219,18 @@ for (let d = 0; d < 60; d++) {
   for (const a of bw.agents) { if (a.chatted > P.agents.chatK) chatCap = false; metSum += a.met.length; md++; }
 }
 check('chat never exceeds k a day', chatCap, 'mean met per agent-day ' + (metSum / md).toFixed(1) + ', k = ' + P.agents.chatK);
-const withNorm = bw.agents.filter((a) => a.yld[A_FORAGE].nn > 0);
-const normErr = mean(withNorm.map((a) => Math.abs(a.yld[A_FORAGE].n - P.goods.plants.perHour) / P.goods.plants.perHour));
+const withNorm = bw.agents.filter((a) => a.yld[A_GREENS].nn > 0);
+const normErr = mean(withNorm.map((a) => Math.abs(a.yld[A_GREENS].n - P.resources.greens.perHour) / P.resources.greens.perHour));
 check('forage norms converge on the true rate where agents meet', withNorm.length > 0.8 * bw.agents.length && normErr < 0.1,
   withNorm.length + '/' + bw.agents.length + ' hold a norm; mean error ' + (100 * normErr).toFixed(1) + '%');
-check('no norm without a meeting', bw.agents.concat(bw.dead).every((a) => a.yld[A_FORAGE].nn === 0 || a.metTotal > 0));
+check('no norm without a meeting', bw.agents.concat(bw.dead).every((a) => a.yld[A_GREENS].nn === 0 || a.metTotal > 0));
 const heard = bw.agents.filter((a) => a.heard > 0).length;
 check('sightings spread by chat', heard > 0, heard + '/' + bw.agents.length + ' know hexes only from others (mean ' + mean(bw.agents.map((a) => a.heard)).toFixed(1) + ')');
 console.log('bands after 60 days: ' + bw.agents.length + '/' + (B.n * B.size) + ' alive');
 
 // ── 8. exchange and ties (Stage 4) ────────────────────────────────────────────────────
 // Controlled market, one hex in winter: n wood sellers short of food, m food sellers short
-// of wood, holdings drawn at random; mean deal price over 20 draws.
+// of wood, holdings drawn at random; mean deal price over 20 draws. The food is roots.
 function market(nWood, nFood, seed) {
   const mw = new World({ agents: 0 }); mw.day = 270; mw.rng = makeRng(seed);
   const home = [...Array(mw.grid.n).keys()].find((i) => mw.terrain[i] === T_PLAINS);
@@ -214,11 +238,11 @@ function market(nWood, nFood, seed) {
   for (let k = 0; k < nWood + nFood; k++) {
     const a = new Agent(k, home, mw);
     a.need.food = 0.3 + 0.4 * r(); a.busy = 6; a.drank = true; a.places = [home];
-    Object.assign(a.hold, k < nWood ? { food: 5 * r(), wood: 20 + 60 * r() } : { food: 20 + 60 * r(), wood: 2 * r() });
+    Object.assign(a.hold, k < nWood ? { roots: 5 * r(), wood: 20 + 60 * r() } : { roots: 20 + 60 * r(), wood: 2 * r() });
     mw.agents.push(a);
   }
   exchangeDay(mw, mw.agents);
-  return mw.tradesToday.filter((t) => t.key === 'food|wood').map((t) => Math.log(t.p));
+  return mw.tradesToday.filter((t) => t.key === 'roots|wood').map((t) => Math.log(t.p));
 }
 const sdPrice = [[2, 8], [5, 5], [8, 2]].map(([nw, nf]) => {
   let all = [];
@@ -226,7 +250,7 @@ const sdPrice = [[2, 8], [5, 5], [8, 2]].map(([nw, nf]) => {
   return Math.exp(mean(all));
 });
 check('price of wood falls as wood sellers outnumber buyers', sdPrice[0] > sdPrice[1] && sdPrice[1] > sdPrice[2],
-  'food per wood: 2 sellers vs 8 buyers ' + sdPrice[0].toFixed(3) + ', 5 vs 5 ' + sdPrice[1].toFixed(3) + ', 8 vs 2 ' + sdPrice[2].toFixed(3));
+  'roots per wood: 2 sellers vs 8 buyers ' + sdPrice[0].toFixed(3) + ', 5 vs 5 ' + sdPrice[1].toFixed(3) + ', 8 vs 2 ' + sdPrice[2].toFixed(3));
 
 // bands for a year from no ties at all
 const xw = new World();
@@ -249,13 +273,18 @@ const owedLater = tieA.owedBy(1, 100);
 check('grudges appear and fade', maxOwed >= P.exchange.owedLimit && owedLater < 3 && owedLater > 0,
   'largest unreturned balance seen ' + maxOwed.toFixed(2) + ' (limit ' + P.exchange.owedLimit + '); a balance of 3 is ' + owedLater.toFixed(2) + ' after 100 days');
 console.log('bands after a year with exchange: ' + xw.agents.length + '/' + (B.n * B.size) + ' alive, mean belonging ' + mean(xw.agents.map((a) => a.need.belonging)).toFixed(2));
+// Stage 5g: no winter floor; winter food is roots and stores
+const causes = {};
+for (const a of xw.dead) causes[a.cause] = (causes[a.cause] || 0) + 1;
+check('bands come through their first winter without the winter floor', xw.agents.length >= 0.6 * B.n * B.size,
+  xw.agents.length + '/' + (B.n * B.size) + ' alive after a year; deaths ' + JSON.stringify(causes));
 
 // ── 9. stone tools (Stage 5a) ─────────────────────────────────────────────────────────
 // one agent cuts wood for 2 hours on the same hex, with and without an axe
 const tw = new World({ agents: 0 });
 const woodHex = tw.active.wood.find((i) => tw.terrain[i] === T_FOREST);
 const cut = (withAxe) => {
-  tw.stock.wood[woodHex] = tw.caps.wood[woodHex];
+  tw.cover.trees[woodHex] = 1;
   const a = new Agent(0, woodHex, tw);
   a.hold.axe = withAxe ? 1 : 0;
   a.plan = [{ hex: woodHex, act: A_WOOD, hours: 2 }];
@@ -277,12 +306,12 @@ check('stone tools are made and flint or tools change hands', (xw.crafted || 0) 
 const kw = new World({ agents: 0 });
 const clayHex = kw.active.clay[0];
 const bareHex = [...Array(kw.grid.n).keys()].find((i) => kw.hours[i] >= 0 && kw.grid.within(i, 0).every((m) =>
-  ['plants', 'wood', 'clay', 'flint'].every((r) => !(kw.caps[r][m] > 0))));
+  ['greens', 'seeds', 'nuts', 'roots', 'wood', 'clay', 'flint'].every((r) => !(kw.caps[r][m] > 0))));
 const dp = P.agents.discoverPerHour;
 P.agents.discoverPerHour = 0.1;
 const tinkerer = (hex, wood) => {
   const a = new Agent(0, hex, kw);
-  a.hold.food = 0; a.hold.wood = wood;
+  a.hold.roots = 0; a.hold.wood = wood;
   for (let k = 0; k < 50 && !a.knows.has('pot'); k++) a.tinkerAt(kw, hex, 2);
   return a;
 };
@@ -356,9 +385,11 @@ const planter = new Agent(0, fh, fw), friend = new Agent(1, fh, fw);
 planter.knows.add('farm');
 while (fw.day < 10) fw.update();
 planter.hold.grain = 10;
+const openBefore = fw.cover.grass[fh] + fw.cover.roots[fh];
 planter.plan = [{ hex: fh, act: A_SOW, hours: 2 }];
 planter.act(fw);
 const field = fw.fields[0];
+const landTaken = fw.fieldLand[fh], openAfter = fw.cover.grass[fh] + fw.cover.roots[fh];
 while (fw.day < P.goods.grain.ripeDay) fw.update();
 const ripeAt = field.ripe ? fw.day : -1, yielded = field.grain;
 friend.plan = [{ hex: fh, act: A_REAP, hours: 2 }]; friend.act(fw);
@@ -369,6 +400,12 @@ fw.creditReturn(friend, planter, gift);
 const ownReaped = field.reaped.get(planter.id) || 0, seeds = field.seeds, fert = field.fert;
 while (fw.day < P.goods.grain.closeDay) fw.update();
 const expected = P.goods.grain.prior + P.agents.learnRate * ((ownReaped + gift) / (seeds * fert) - P.goods.grain.prior);
+check('a field takes its land from grass and roots and gives it back when it closes',
+  Math.abs(landTaken - seeds * P.land.landPerSeed) < 1e-9 && Math.abs(openBefore - openAfter - landTaken) < 1e-6 && fw.fieldLand[fh] < 1e-6,
+  seeds.toFixed(0) + ' seeds took ' + landTaken.toFixed(4) + ' of the land (grass and roots ' + openBefore.toFixed(4) + ' → ' + openAfter.toFixed(4) + '); after the close ' + fw.fieldLand[fh].toFixed(6));
+const forestHex = [...Array(fw.grid.n).keys()].find((i) => fw.caps.soil[i] > 0 && fw.cover.trees[i] > 0.85);
+check('no field where trees stand', !fw.canFarm(forestHex) || fw.sowRoom(forestHex) < 0.15,
+  'room to sow under forest ' + fw.sowRoom(forestHex).toFixed(3));
 check('a field sown in spring ripens on its day and anyone may reap it', ripeAt === P.goods.grain.ripeDay && friend.hold.grain + gift > 0 && Math.abs(yielded - seeds * P.goods.grain.yieldPerSeed * fert) < 1e-6,
   seeds.toFixed(0) + ' seeds at fertility ' + fert.toFixed(2) + ' → ' + yielded.toFixed(1) + ' grain on day ' + ripeAt + '; the friend reaped ' + (friend.hold.grain + gift).toFixed(1) + ', the planter ' + ownReaped.toFixed(1));
 check("grain given back by the reaper counts in the planter's learned return", field.returned === gift && Math.abs(planter.farmL.h - expected) < 1e-9 && fw.fields.length === 0,
@@ -377,6 +414,23 @@ check("grain given back by the reaper counts in the planter's learned return", f
 const farmFound = xw.discoveries.filter((d) => d.what === 'farm');
 check('farming is discovered by tinkering in the bands year (wild grain in hand)', farmFound.length > 0,
   farmFound.length + ' discoveries of farming, first on day ' + (farmFound[0] ? farmFound[0].day : '-'));
+
+// ── 12. food kinds and processing (Stage 5g) ─────────────────────────────────────────
+// eating goes fastest-rotting first; drying makes greens keep; the bands year processes food
+const ew = new World({ agents: 0 }), ea = new Agent(0, fh, ew);
+const ev = Agent.evening({ food: 0.9, water: 1 }, Object.assign({}, ea.hold, { greens: 3, roots: 3, grain: 3, wood: 0, water: 0 }), 0, 0, true, 0, 14);
+check('the fastest-rotting food is eaten first', ev.hold.greens === 0 && ev.hold.roots < 3 && ev.hold.grain > 2.5,
+  'left after an evening: greens ' + ev.hold.greens.toFixed(2) + ', roots ' + ev.hold.roots.toFixed(2) + ', grain ' + ev.hold.grain.toFixed(2));
+ea.knows.add('drying');
+Object.assign(ea.hold, { greens: 12, roots: 0 });
+ea.plan = [{ hex: ea.home, act: A_PROCESS, process: 'drying', hours: 1 }];
+ea.act(ew);
+check('drying turns greens into food that keeps', ea.hold.greens === 0 && Math.abs(ea.hold.driedGreens - 12 * PROCESSES.drying.ratio) < 1e-9 && P.goods.driedGreens.rot < P.goods.greens.rot / 10,
+  '12 greens → ' + ea.hold.driedGreens.toFixed(1) + ' dried greens (rot ' + P.goods.greens.rot + ' → ' + P.goods.driedGreens.rot + ' a day)');
+const processed = Object.keys(PROCESSES).reduce((s, p) => s + (xw.made[p] || 0), 0);
+const procFound = xw.discoveries.filter((d) => PROCESSES[d.what]).length;
+check('food processing is discovered in the bands year', procFound > 0,
+  procFound + ' discoveries of processing; batches made ' + JSON.stringify(Object.fromEntries(Object.keys(PROCESSES).map((p) => [p, xw.made[p] || 0]))) + ' (practice comes with stores to keep; reported, not required)');
 
 const proj = msAgentDay * 300 * 9000 / 1000;
 console.log('planner cost: ' + msAgentDay.toFixed(3) + ' ms per agent-day → ~' + proj.toFixed(0) + ' s per generation for 300 agents × 9,000 days');

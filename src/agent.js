@@ -13,13 +13,32 @@
 // the level below zero measured as the way to death (needLevel). Death comes when the reserve
 // is gone, or after too many evenings at zero warmth.
 
-var A_FORAGE = 0, A_WOOD = 1, A_DRINK = 2, A_BUILD = 3, A_SCOUT = 4, A_QUARRY = 5, A_CRAFT = 6,
-  A_DIG = 7, A_TINKER = 8, A_SOW = 9, A_REAP = 10;
-var ACT_NAMES = ['forage', 'wood', 'drink', 'build', 'scout', 'quarry', 'craft', 'dig', 'tinker', 'sow', 'reap'];
-var ACT_RES = ['plants', 'wood', 'water', null, null, 'flint', null, 'clay', null, 'soil', null];   // resource each activity draws on
-var GATHER = [A_FORAGE, A_WOOD, A_QUARRY, A_DIG];                                     // activities that take from a hex
-var GOOD_OF = ['food', 'wood', null, null, null, 'flint', null, 'clay', null, null, 'grain'];   // the good each gathering yields
+var A_GREENS = 0, A_WOOD = 1, A_DRINK = 2, A_BUILD = 3, A_SCOUT = 4, A_QUARRY = 5, A_CRAFT = 6,
+  A_DIG = 7, A_TINKER = 8, A_SOW = 9, A_REAP = 10, A_SEEDS = 11, A_ROOTS = 12, A_NUTS = 13, A_PROCESS = 14;
+var ACT_NAMES = ['greens', 'wood', 'drink', 'build', 'scout', 'quarry', 'craft', 'dig', 'tinker', 'sow', 'reap',
+  'seeds', 'roots', 'nuts', 'process'];
+var ACT_RES = ['greens', 'wood', 'water', null, null, 'flint', null, 'clay', null, 'soil', null,
+  'seeds', 'roots', 'nuts', null];                                                     // resource each activity draws on
+var FORAGE = [A_GREENS, A_SEEDS, A_ROOTS, A_NUTS];                                    // gathering wild food (Stage 5g)
+var GATHER = FORAGE.concat([A_WOOD, A_QUARRY, A_DIG]);                                // activities that take from a hex
+var GOOD_OF = ['greens', 'wood', null, null, null, 'flint', null, 'clay', null, null, 'grain',
+  'grain', 'roots', 'nuts', null];                                                    // the good each gathering yields
 var IS_GATHER = ACT_NAMES.map((n, k) => GATHER.indexOf(k) >= 0);
+var IS_FORAGE = ACT_NAMES.map((n, k) => FORAGE.indexOf(k) >= 0);
+// goods a day brings in by gathering, whose seasonal flows the Keep projection lives on
+var FLOW_GOODS = ['greens', 'grain', 'roots', 'nuts', 'wood'];
+// units an hour of gathering resource `res` takes from a full hex, bare-handed
+function gatherRate(res) { const R = PARAMETERS.resources[res]; return R.perHour || PARAMETERS.goods[res].perHour; }
+// is resource `res` in its season at year phase `ph` (from–to shares of the year; none: always)?
+function resInSeason(res, ph) {
+  const S = PARAMETERS.resources[res].season;
+  return !Array.isArray(S) || (ph >= S[0] && ph < S[1]);
+}
+// food one unit of `k` gives tonight: more cooked on a fire (`fire`, a share), grain only in a pot
+function foodPer(k, fire, pot) {
+  const F = PARAMETERS.goods[k];
+  return F.restores * (F.potCook && !pot ? 1 : 1 + fire * (F.cookedBonus - 1));
+}
 
 // ── need levels (ODD §2 Needs: below zero, the scale runs to death; Chris, 2026-11-03) ──
 // A need on the cost scale: above zero the level itself; below zero the share of the way to
@@ -103,8 +122,9 @@ function blendLearned(L) {
   if (w > X) w = 1; else if (w < 1 - X) w = 0;
   L.v = w * L.h + (1 - w) * L.n;
 }
-// the seasonal values a speaker tells in chat (what a day has brought it, by season)
-var FLOW_KEYS = ['food', 'wood', 'xfood', 'xwood'];
+// the seasonal values a speaker tells in chat (what a day has brought it, by season: gathered,
+// and netted in exchange)
+var FLOW_KEYS = FLOW_GOODS.concat(FLOW_GOODS.map((g) => 'x' + g));
 
 var Agent = class Agent {
   constructor(id, home, world) {
@@ -114,13 +134,15 @@ var Agent = class Agent {
     this.alive = true;
     this.ageDays = A.startAgeYears * PARAMETERS.year.days;
     this.need = { food: 1, water: 1, warmth: 1, rest: 1, belonging: 1 };
-    // holdings: food (raw wild plants), wood, water carried in a gourd
-    this.hold = { food: A.starterFood, wood: 0, water: 0, flint: 0, axe: 0, pick: 0, clay: 0, pot: 0, grain: 0, hoe: 0, sickle: 0 };   // starterFood is a burn-in scaffold (ODD §5)
+    // holdings: every good at zero (water is carried in a gourd), and roots to start on
+    this.hold = {};
+    for (const g of GOODS) this.hold[g] = 0;
+    this.hold.roots = A.starterFood;   // a burn-in scaffold (ODD §5)
     this.shelter = world.dwellings ? world.newDwelling(home, id) : newShelter(home);   // structures at home
-    // know-how (ODD §7.3): recipes and builds it can make. Starts with stone and fire (ODD §5);
+    // know-how (ODD §7.3): recipes and builds it can make. Starts with PARAMETERS.agents.knowhow (ODD §5);
     // grows by tinkering and by seeing others practise; kept for life, so a craft is lost
     // when everyone who knows it dies without anyone having seen them practise it
-    this.knows = new Set(START_KNOWHOW);
+    this.knows = new Set(A.knowhow);
     this.practised = [];       // what it made or built today, and where (others can see it)
     // tinkering, learned (ODD §4.4): discoveries per hour per material at hand, as counts
     this.tinker = { found: 0, mh: 0 };
@@ -139,16 +161,21 @@ var Agent = class Agent {
     // (indexed by activity; only the gathering activities are used)
     this.yld = ACT_NAMES.map((nm) => newLearned(A.priorPerHour[nm] || 0));
     // what a day actually brings in, by season (spring..winter): what the Keep projection
-    // lives on (ODD §7.6: expected future need from seasonal norms). Food and wood gathered
-    // (wood bare-handed, so a tool's share is known from the recipe), and the net gained or
-    // lost in exchange. The prior is the old assumption: a few hours of gathering at the
-    // prior rates.
-    this.flow = [0, 1, 2, 3].map(() => ({
-      food: newLearned(A.projHours.forage * A.priorPerHour.forage), wood: newLearned(A.projHours.wood * A.priorPerHour.wood),
-      xfood: newLearned(0), xwood: newLearned(0),
-    }));
-    this.got = { food: 0, wood: 0 };
-    this.xnet = { food: 0, wood: 0 };
+    // lives on (ODD §7.6: expected future need from seasonal norms). Each food and wood
+    // gathered (wood bare-handed, so a tool's share is known from the recipe), and the net
+    // gained or lost in exchange. The prior is the old assumption: a few hours of gathering at
+    // the prior rates, the foraging hours split among the foods in season.
+    this.flow = [0, 1, 2, 3].map((si) => {
+      const ph = (si + 0.5) / 4, on = FORAGE.filter((k) => resInSeason(ACT_RES[k], ph));
+      const F = {};
+      for (const g of FLOW_GOODS) { F[g] = newLearned(0); F['x' + g] = newLearned(0); }
+      for (const k of on) F[GOOD_OF[k]] = newLearned(A.projHours.forage / on.length * A.priorPerHour[ACT_NAMES[k]]);
+      F.wood = newLearned(A.projHours.wood * A.priorPerHour.wood);
+      return F;
+    });
+    this.got = {};
+    this.xnet = {};
+    for (const g of FLOW_GOODS) this.got[g] = this.xnet[g] = 0;
     this.livedFood = [1, 1, 1, 1].map(newLearned);   // its usual evening food level, by season
     this.si = 0;               // season of its day, for learning
     this.met = [];             // agents met today
@@ -223,7 +250,7 @@ var Agent = class Agent {
     this.places = [this.home];   // where it was today (home in the evening too)
     this.log.forageHours = 0; this.log.forageTravel = 0;
     this.practised = [];
-    this.got = { food: 0, wood: 0 };
+    for (const g of FLOW_GOODS) this.got[g] = 0;
     this.si = world.seasonIndex;
     let made = 0;              // hours at home making, building or tinkering
     for (const s of this.plan) {
@@ -234,22 +261,18 @@ var Agent = class Agent {
       this.see(world, s.hex);
       if (IS_GATHER[s.act]) {
         const res = ACT_RES[s.act], cap = world.caps[res][s.hex];
-        const frac = cap > 0 ? world.stock[res][s.hex] / cap : 0;
+        const frac = cap > 0 && world.inSeason(res) ? world.amount(res, s.hex) / cap : 0;
         // a tool for the task multiplies the yield and wears by the hour (ODD §2 Tools)
         const tool = TOOL_FOR[s.act], mult = tool && this.hold[tool] > 0 ? TOOLS[tool].mult : 1;
-        const got = world.take(res, s.hex, G[res].perHour * frac * mult * s.hours);
+        const got = frac > 0 ? world.take(res, s.hex, gatherRate(res) * frac * mult * s.hours) : 0;
         if (mult > 1) this.hold[tool] = Math.max(0, this.hold[tool] - s.hours / TOOLS[tool].life);
-        this.hold[GOOD_OF[s.act]] += got;
-        if (s.act === A_FORAGE) {
-          // wild cereals on the plains in summer: part of what is gathered there is grain (5d)
-          const wg = world.terrain[s.hex] === T_PLAINS && world.seasonIndex === 1 ? got * G.grain.wildShare : 0;
-          this.hold.food -= wg; this.hold.grain += wg;
-          this.got.food += got - wg;
-        } else if (s.act === A_WOOD) this.got.wood += got / mult;
+        const good = GOOD_OF[s.act];
+        this.hold[good] += got;
+        if (this.got[good] != null) this.got[good] += got / mult;
         // what it learns is the bare-handed rate (the tool's share is known from the recipe)
         this.obs.push({ act: s.act, hex: s.hex, perHour: got / s.hours / mult, frac, season: world.seasonIndex });
         this.look(world, s.hex);   // sees what it left behind
-        if (s.act === A_FORAGE) { this.log.forageHours += s.hours; this.log.forageTravel = Math.max(this.log.forageTravel, world.travel(this.home)[s.hex]); }
+        if (IS_FORAGE[s.act]) { this.log.forageHours += s.hours; this.log.forageTravel = Math.max(this.log.forageTravel, world.travel(this.home)[s.hex]); }
       } else if (s.act === A_DRINK) {
         const src = world.waterAt[s.hex];   // the hex itself, or the river or lake beside it
         if (src >= 0 && world.stock.water[src] > 0) {
@@ -282,14 +305,20 @@ var Agent = class Agent {
       } else if (s.act === A_TINKER) {
         this.tinkerAt(world, s.hex, s.hours);
         made += s.hours;
+      } else if (s.act === A_PROCESS) {
+        // process a food at home (ODD §2 Plant kinds, Stage 5g: drying, roasting, grinding)
+        if (this.knows.has(s.process) && processFood(this.hold, s.process, s.hours) > 0) {
+          this.practised.push({ hex: s.hex, what: s.process });
+          world.made[s.process] = (world.made[s.process] || 0) + 1;
+        }
+        made += s.hours;
       } else if (s.act === A_SOW) {
         // sow grain in a field (ODD §7.6 v0 food level 2); the hoe multiplies the work
         const mult = this.hold.hoe > 0 ? TOOLS.hoe.mult : 1;
         const seeds = Math.min(this.hold.grain, s.hours * G.grain.sowPerHour * mult);
         if (this.knows.has('farm') && seeds > 1e-6 && world.canSow(s.hex)) {
-          this.hold.grain -= seeds;
+          this.hold.grain -= world.sow(this, s.hex, seeds);   // as many as the field has room for
           if (mult > 1) this.hold.hoe = Math.max(0, this.hold.hoe - s.hours / TOOLS.hoe.life);
-          world.sow(this, s.hex, seeds);
           this.practised.push({ hex: s.hex, what: 'farm' });
         }
       } else if (s.act === A_REAP) {
@@ -364,8 +393,9 @@ var Agent = class Agent {
     this.known[h] = 1;
     this.seenDay[h] = world.day;
     for (const k of GATHER) {
-      const res = ACT_RES[k], cap = world.caps[res][h];
-      this.seenFrac[k][h] = cap > 0 ? world.stock[res][h] / cap : 0;
+      const res = ACT_RES[k], cap = world.caps[res][h], R = PARAMETERS.resources[res];
+      // out of its season a crop is seen in its plants: the crop they will bear (Stage 5g)
+      this.seenFrac[k][h] = !(cap > 0) ? 0 : R.kind === 'crop' && !world.inSeason(res) ? world.cover[R.cover][h] : world.amount(res, h) / cap;
     }
     this.seenGrain[h] = world.grainHex[h];
   }
@@ -377,10 +407,9 @@ var Agent = class Agent {
     this.need.food = Math.max(-needReserve('food'), out.food);
     this.need.water = Math.max(-needReserve('water'), out.water);
     this.need.warmth = out.warmth; this.need.rest = out.rest;
-    this.hold.food = out.hold.food * (1 - PARAMETERS.goods.food.rot);   // raw plants rot
+    for (const k of FOODS) this.hold[k] = out.hold[k] * (1 - PARAMETERS.goods[k].rot);   // each food rots at its own rate
     this.hold.wood = out.hold.wood;
     this.hold.water = out.hold.water;
-    this.hold.grain = out.hold.grain * (1 - PARAMETERS.goods.grain.rot);   // grain keeps
     if (this.hold.pot > 0) this.hold.pot = Math.max(0, this.hold.pot - PARAMETERS.goods.pot.wear);   // pots break
     // a dwelling weathers once a day however many sleep in it (the first sleeper's evening);
     // a part-built hut that falls is an abandoned project for each of them
@@ -456,9 +485,10 @@ var Agent = class Agent {
 
   // One evening, as a pure function (the planner calls it too). Needs run down by the
   // day's decay and the work done, then the agent drinks, lights a fire if it has the wood,
-  // eats (cooked food restores more, ODD §4.5) and warms itself (shelter base + fire,
-  // ODD §2 Warmth; `ins` is the shelter's insulation). Returns the new levels and what is left. Food and water are NOT floored
-  // here; consume() floors the stored levels at the reserve (death).
+  // eats (cooked food restores more, ODD §4.5; the fastest-rotting food first, Stage 5g) and
+  // warms itself (shelter base + fire, ODD §2 Warmth; `ins` is the shelter's insulation).
+  // Returns the new levels and what is left. Food and water are NOT floored here; consume()
+  // floors the stored levels at the reserve (death).
   // `days` > 1 lumps several days into one step (the planner's long Keep projection): the
   // needs run down and the fire burns for that many days, and eating can make it all up.
   static evening(need, hold, ins, busy, drank, cold, capacity, days) {
@@ -466,25 +496,25 @@ var Agent = class Agent {
     days = days || 1;
     let food = need.food - days * (N.foodDecay + N.workBurn * busy);
     let water = drank ? 1 : need.water - days * N.waterDecay;
-    let hf = hold.food, hw = hold.wood, hwat = hold.water, hg = hold.grain || 0;
+    const h = Object.assign({}, hold);
     // drink from the gourd
-    if (water < 1 && hwat > 0) { const d = Math.min(hwat, 1 - water); water += d; hwat -= d; }
+    if (water < 1 && h.water > 0) { const d = Math.min(h.water, 1 - water); water += d; h.water -= d; }
     // fire: lit whenever there is the wood (cooking and warmth); over several days, on as many
     // of them as the wood allows (a share, so the projection has no all-or-nothing week)
-    const fire = days > 1 ? Math.min(1, hw / (G.fireWood * days)) : (hw >= G.fireWood ? 1 : 0);
-    hw -= fire * G.fireWood * days;
-    const per = G.food.restores * (1 + fire * (G.food.cookedBonus - 1));
-    if (food < 1 && hf > 0) { const eat = Math.min(hf, (1 - food) / per); food += eat * per; hf -= eat; }
-    // then grain, which keeps (Stage 5d): better food, and better still cooked in a pot
-    const perG = G.grain.restores * (hold.pot > 0 ? 1 + fire * (G.grain.cookedBonus - 1) : 1);
-    if (food < 1 && hg > 0) { const eat = Math.min(hg, (1 - food) / perG); food += eat * perG; hg -= eat; }
+    const fire = days > 1 ? Math.min(1, h.wood / (G.fireWood * days)) : (h.wood >= G.fireWood ? 1 : 0);
+    h.wood -= fire * G.fireWood * days;
+    const pot = h.pot > 0;
+    for (const k of FOODS) {
+      if (!(food < 1)) break;
+      const q = h[k];
+      if (!(q > 0)) continue;
+      const per = foodPer(k, fire, pot), eat = Math.min(q, (1 - food) / per);
+      food += eat * per; h[k] = q - eat;
+    }
     let warmth = 1 - cold * (1 - ins) + fire * G.fireHeat;
     const free = capacity - busy;
     const rest = clamp(free / N.restSet, 0, 1);
-    return {
-      food: Math.min(food, 1), water: Math.min(water, 1), warmth: clamp(warmth, 0, 1), rest,
-      hold: Object.assign({}, hold, { food: hf, wood: hw, water: hwat, grain: hg }),
-    };
+    return { food: Math.min(food, 1), water: Math.min(water, 1), warmth: clamp(warmth, 0, 1), rest, hold: h };
   }
 
   // ── Learn: habits from its own day (ODD §4.4, one error-driven update) ─────────────────
@@ -493,10 +523,8 @@ var Agent = class Agent {
   // slower one of what the day brought in, for the season
   learn() {
     const A = PARAMETERS.agents, F = this.flow[this.si], r = A.flowRate;
-    learnOwn(F.food, this.got.food, r);
-    learnOwn(F.wood, this.got.wood, r);
-    learnOwn(F.xfood, this.xnet.food, r);
-    learnOwn(F.xwood, this.xnet.wood, r);
+    this._inflow = null;
+    for (const g of FLOW_GOODS) { learnOwn(F[g], this.got[g], r); learnOwn(F['x' + g], this.xnet[g] || 0, r); }
     learnOwn(this.livedFood[this.si], this.need.food, r);
     for (const o of this.obs) if (o.frac > 0.05) learnOwn(this.yld[o.act], o.perHour / o.frac, A.learnRate);
     this.obs = [];
@@ -513,6 +541,7 @@ var Agent = class Agent {
   // not just the last few speakers.
   hear(b) {
     const r = PARAMETERS.agents.flowRate;
+    this._inflow = null;   // the projection's cached inflows (planner.js foodInflows)
     for (let si = 0; si < 4; si++) {
       const F = this.flow[si], G = b.flow[si];
       for (const k of FLOW_KEYS) if (G[k].nh > 0) learnNorm(F[k], G[k].h, r);
@@ -570,6 +599,20 @@ var Agent = class Agent {
   }
 };
 
+// Process food in `hold` for `hours` (ODD §2 Plant kinds, Stage 5g): as much of the input as
+// the hours, the wood for the fire and the tool allow. Returns the units of input processed.
+function processFood(hold, name, hours) {
+  const P = PROCESSES[name];
+  if (P.tool && !(hold[P.tool] > 0)) return 0;
+  let q = Math.min(hold[P.from], P.perHour * hours);
+  if (P.wood) q = Math.min(q, hold.wood / P.wood);
+  if (!(q > 1e-6)) return 0;
+  hold[P.from] -= q;
+  if (P.wood) hold.wood -= q * P.wood;
+  hold[P.to] = (hold[P.to] || 0) + q * P.ratio;
+  return q;
+}
+
 // Water it can carry home and store (ODD §2 v0 water ladder): a gourd, and a pot if it has one.
 function waterCarried(hold) {
   const G = PARAMETERS.goods;
@@ -578,14 +621,14 @@ function waterCarried(hold) {
 
 // The materials at hand at a hex (ODD §7.3): goods held, and the resources there, as the agent
 // last saw them (`real` false: the planner's view) or as they are (`real` true).
-var RES_GOOD = { plants: 'food', wood: 'wood', clay: 'clay', flint: 'flint' };
+var RES_GOOD = { greens: 'greens', seeds: 'grain', roots: 'roots', nuts: 'nuts', wood: 'wood', clay: 'clay', flint: 'flint' };
 function materialsAt(agent, world, hex, hold, real) {
   const at = new Set();
   for (const g of GOODS) if (hold[g] > 0) at.add(g);
   if (world.canFarm(hex)) at.add('soil');   // fertile land (Stage 5d)
   for (const act of GATHER) {
     const res = ACT_RES[act];
-    const there = real ? world.stock[res][hex] > 0 : agent.seenFrac[act][hex] > 0.02;
+    const there = real ? world.amount(res, hex) > 0 : agent.seenFrac[act][hex] > 0.02;
     if (there && RES_GOOD[res]) at.add(RES_GOOD[res]);
   }
   return at;

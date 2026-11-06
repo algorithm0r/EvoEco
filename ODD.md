@@ -68,12 +68,113 @@ Chris's reading (median stagnates only once hoarding arrives).
 - **Life cycle:** born, age, die.
   - **Childhood is dependent:** children must be fed and cared for until maturity.
   - **Old age declines:** old agents can work less and eventually need care.
+    - *Care in old age — Default (Claude, 2026-11-05):* no separate care need. An old agent
+      who cannot work enough is an agent in need, and is kept by gifts from its ties, weighted
+      by how much of each giver's belonging it supplies (§2 Ties); its grown children are
+      usually its deepest ties. Old agents may tend children, so a grandmother pattern can
+      come out of the planner, not a rule.
   - **Care is labor drawn from rest:** it produces no goods, costs the carer's hours, and flows through ties.
+  - **Three stages of a child's life (Decided — Chris, 2026-11-04):** "a child can work on
+    tasks the mother is doing while she's caring for the child after an age. perhaps after a
+    certain age the child can be tended by any adult. then once mature they work on their own."
+    1. *Infant:* nursing, with its mother (§2 sexes).
+    2. *Child:* goes with a carer and works at the carer's task, at a child's rate, while the
+       carer cares for it. At first the carer is the mother; past a set age any adult may tend
+       it. The child does not plan its own day. It sees what its carer practises, so know-how
+       passes this way (§7.3).
+    3. *Mature:* plans and works on its own.
+    Chris: "i very much intended that benefit. that is the core mechanism of social learning":
+    a child learning by seeing what its carer practises.
+  - **Ages (Decided — Chris, 2026-11-04):** "maybe 6 is when we can expect actual
+    productivity and not just learning. i was thinking more like 10 for when the child can
+    apprentice out." So: nursing to about 2; with the mother, learning but not producing, to
+    6; working at a child's rate with the mother from 6; tended by another adult possible
+    from 10 (apprenticing out); mature at about 15 (Default). Numbers are `PARAMETERS`.
+  - **The mother passes the child on (Decided — Chris, 2026-11-04):** "your mechanism for care
+    ... will end with a positive feedback on the mother. i think we need a way for the child
+    to be passed off by the mother. i kind of weaning. but i think the folks she would trust
+    with her child are her closest ties. so the care of the child could work as a kind of
+    offer, but maybe an offer to the mother instead of the child?" (Replaces Claude's
+    proposal that the child choose among willing adults by its own ties, which would keep the
+    child with its mother for good.)
+    - *Mechanism — Default (Claude, 2026-11-04):* from 10, each morning the mother may hand
+      the child to a willing adult. She picks the one she trusts most among those willing.
+      An adult is willing when its plan values the day with the child (the child's help at
+      its task, and the belonging a kind offer to the mother brings, §7.6 Give) above the
+      care hours. Tending her child counts as a kind offer to the mother: it adds to her
+      tally of the carer and to what she owes the carer (§2 Ties), so alloparenting runs on
+      reciprocity among close ties.
+  - **A child builds its own ties through the normal channels (Decided — Chris, 2026-11-04):**
+    "yes, through normal channels." Care and gifts received count as kindness in the child's
+    own tally, from whoever gives them.
+  - **Others treat a child as an extension of its mother (Decided — Chris, 2026-11-04):**
+    "i kind of want the peers to treat teh child as an extension of the mother. so those who
+    might gift to the mother might also gift to her child in need. (using the mothers trust as
+    the childs) but the gift might need to work as the mothers to child and not incur a grudge
+    still."
+    - *As to build — Default (Claude, 2026-11-04):* until it matures, whether someone gives
+      to a child in need is judged by the giver's tie to the mother (trust, and her owing
+      balance with the giver), not to the child. The gift never enters an owing balance with
+      the child, so no grudge against a child. It counts as a kind offer to the mother (her
+      tally of the giver and what she owes rise, as with tending), and as kindness received in
+      the child's own tally.
+  - **When the mother dies (Decided — Chris, 2026-11-04, on Claude's proposal):** "yes, the
+    child should pass to a trusted tie and yes to nursing. in the case of a non-tied mother
+    without a generous samaratin the child probably perishes or survives on their own if old
+    enough."
+    - Her place (whose trust stands for the child's, who hands it on, whose account its
+      gifts go on) passes to the adult the child is most strongly tied to, if that adult is
+      willing.
+    - A nursing infant lives only if a woman nursing her own child takes it on, by the same
+      willingness rule.
+    - With no one willing, nothing written kills the child: it lives on what it is given.
+      *Default (Claude):* from 6, when a child can produce, an untended child plans its own
+      day at a child's work rate; younger, it lives only on gifts, and dies of hunger without
+      them.
+  - **Two sexes (Decided — Chris, 2026-11-04):** "i think we kind of need sexes. division of
+    labor did branch in this way for humans. and it opens another dimension of human resource
+    trade between groups which was also relevant." A child needs a female and a male. Neither
+    a division of labor by sex nor the movement of partners between bands is written in: the
+    ledger (§4.2) holds them as results.
+  - **The sexes differ only in reproduction (Decided — Chris, 2026-11-04, on Claude's
+    proposal):** pregnancy (about nine months, more food needed and fewer working hours late in
+    it) and nursing (the infant lives on its mother's milk for about two years, which costs her
+    food and ties the infant to her: she carries it or comes back to it). No difference in
+    strength, speed or skill; a strength difference may come later as a robustness setting,
+    like talent. Rationale: Brown (1970, unchecked) argued the division of labor by sex follows
+    from which work fits with infant care (near home, interruptible, safe); written this way,
+    any division of labor that appears grew from those constraints through the planner.
+    Numbers are `PARAMETERS`. Claude's caution, recorded: in bands of 20 an uneven sex ratio
+    can stop births for reasons unrelated to the economy, which makes partners from other
+    bands matter.
 
 ### Households (Decided)
-- A **light formal unit**: a pair with a strong mutual tie forms a household, shares shelter,
+- ~~A **light formal unit**: a pair with a strong mutual tie forms a household, shares shelter,
   decides on children together and pools labor (by planning together, §7.6). Membership comes from ties, so households
-  form and dissolve as ties do.
+  form and dissolve as ties do.~~ (Superseded 2026-11-04 by the entries below: an emergent,
+  loose coalition of any size, defined by planning together.)
+- **Households can be anyone (Decided — Chris, 2026-11-04):** "households can be anyone.
+  family structure then becomes a result." No condition of sex on who forms a household; a
+  child still needs a female and a male (§2 Agents).
+- **Households are loose coalitions, larger than pairs (Decided — Chris, 2026-11-04):** "i
+  think households should be larger than pairs. pairs will have kids that will be part of the
+  household. those kids might make new households, but htey might carry on that household.
+  and over time we would expect a household to maybe consist of multi gens. ... households
+  should be like loose coalitions that are held together by convenience and custom."
+  Children are born into a household and may stay or leave; households spanning generations
+  are possible, not written in. This replaces "a pair with a strong mutual tie" above.
+- **What matters is planning together, among strong ties (Decided — Chris, 2026-11-04):**
+  "the only part that seems important is the planning together. my guess is that all folks
+  with strong ties will roughly plan together. not low level maybe but high level. like 'i'll
+  get food, you get wood, and you get water' then they all return from their own planned days
+  and swap. then a planning group might extend to the whole band if the band is tightly
+  bound." Sharing a roof is not what defines it (a Claude proposal to define the household
+  as a dwelling's sleepers was set aside).
+- **Households are emergent, not a formal unit (Decided — Chris, 2026-11-04):** "until we
+  need a more formal household let's go with emergent ones." There is no household entity: a
+  household is a cluster seen in who plans around whom, like a tribe. Planning together is
+  graded by trust in ties (§7.6). Replaces the "light formal unit" above and its exception
+  in §4.2; a formal household may return later, on the ladder or when a rule needs one.
 - Larger groups (tribes) are **not** entities. They emerge as clusters of strong ties.
 
 ### Ties (Decided)
@@ -109,6 +210,51 @@ Chris's reading (median stagnates only once hoarding arrives).
       forgotten, and that chance is the agent's own. Forgetting is random day to day; how
       forgiving a person is differs between people. The per-agent chance is a heterogeneity
       setting (§2 Agents): uniform in some runs, varied in others.
+- **Levels of trust are descriptive, with no discrete boundaries (Decided — Chris,
+  2026-11-05):** "if you think you can make this work mathematically i agree. i want no
+  discrete boundaries if we can make that work. ... at the highest trust the block will just
+  not trigger and we can make 'family' descriptive, not a part of the model." Chris's
+  brainstorm: two axes, how well known (familiarity) and the balance of good done each way
+  (valence); stranger, grudge, neutral, tie, trusted and family are names for regions of one
+  continuous record, used in measures and talk, never states with rules of their own. Close
+  to Sahlins' (1972, unchecked) spectrum of generalized, balanced and negative reciprocity,
+  except that here history, not kin distance, places a person on it.
+  - **The goals (Decided — Chris, 2026-11-05):** "1) have mothers (and maybe fathers) bond to
+    children at the highest level and 2) have elder parent not cut-off because of grudges."
+  - *Mechanism — Default (Claude, 2026-11-05):*
+    1. *Familiarity slows forgetting.* A tie's memory grows with the number of dealings in it
+       (the "weighted by number of interactions" of the entry above, unbuilt until now): a
+       few trades fade in about two months, fifteen years of daily care and help over
+       decades. Without this the childhood bond is gone within a year of the child leaving.
+    2. *Tolerance of owing grows with trust.* The unreturned gifts a giver carries before a
+       grudge rise smoothly with its kindness received from the other: about 3 for a new tie,
+       as now; never reached for a parent. "Family" is that region, not a rule.
+    3. *The bond builds through the normal channels.* Care received counts as kindness in the
+       child's tally (above); a child's help at its carer's task counts as a kind offer to the
+       carer. Both directions are high by maturity; a father bonds as far as he deals.
+  - ~~**Open (2026-11-05): belonging saturates.**~~ (Resolved below.) A gift paid the giver
+    only through the belonging it adds, and belonging is capped (5 units meet the need), so a
+    grown child whose belonging was already full gained nothing by giving to a parent in need
+    and would not give: cut off by saturation, not by a grudge.
+  - **A tie's need weighs in the giver's own cost (Decided — Chris, 2026-11-05, on Claude's
+    proposal):** "yes i think so. i don't like that giving is purely instrumental. i think we
+    are trying to build a ladder from instrumental to intrinsic." The ladder: barter is
+    instrumental (mutual gain), the belonging a gift brings is reciprocal, and care weighted
+    by the tie is intrinsic. Each rung grows out of the one below through history, not kin.
+    - *As to build — Default (Claude, 2026-11-05):* when i weighs a gift to j, its cost counts
+      the drop in j's cost the gift brings, times i's weight on j: the share of i's belonging
+      that the tie to j supplies, (smaller of kindness received and given) ÷ (the larger of i's
+      total over all ties and the 5 that meet the need). The weight is at most 1, so no one
+      values another above themselves. A weak tie barely registers; a deep tie in need weighs
+      almost like one's own need. The grudge and the belonging gain stay as they are.
+    - *Consequence, recorded:* the weight uses the smaller of the two directions, so a
+      mother's intrinsic weight on her infant is zero until the child gives (help from 6).
+      Infant care rests on her valuation of the child (§7.4); intrinsic care grows over
+      the child's life. The ladder runs within one bond too.
+    - **No bond written in at birth, for now (Decided — Chris, 2026-11-05):** "let's see how
+      it goes." Asked whether infant care should rest on the mother's valuation until the
+      child gives back, or start from a bond at birth (a §4.2 exception). Watch for mothers
+      dropping infants once built.
 - **Power is not a primitive.** It emerges as asymmetric dependence (Emerson 1962): the agent
   many need and who needs few. Intimacy likewise emerges, as tie strength from frequent mutual giving.
 
@@ -227,6 +373,86 @@ Deliberately small; it grows later.
 - **Implementation — Default:** one resource mechanism with parameters (starting stock,
   regrowth rate, inflow), so all three classes are the same code with different numbers.
   Start with one instance of each.
+- **Plant kinds share a hex's land (Decided — Chris, 2026-11-05):** "how about a dimension
+  that allows for different plants. We have different ores. This could add a dimension to the
+  food side of the equation. Then in a cell there's a fixed amount of plant life that can live
+  there and forest becomes an extension of this." On Claude's follow-up, "Yes I like this
+  plan." A hex holds a fixed amount of plant life; wild food plants of several kinds, trees
+  and planted fields all take from it. A field takes land because everything that grows
+  does, with no special rule. Replaces the separate plants, wood and soil caps, and settles
+  the Open entry on fields taking land (§7.6).
+  - **Kinds differ in what agents care about (Decided — Chris, 2026-11-05, on Claude's
+    proposal):** season (greens in spring, seeds in summer, nuts and fruit in autumn, roots
+    dug in winter), keeping (greens rot in days; seeds, nuts and roots keep), hours (greens
+    quick to pick, roots slow to dig) and terrain (grasses on plains, nuts in forest).
+    Without differences the kinds would be decoration. Winter roots and stored nuts are the
+    real winter food that the flat winter-growth floor stands in for, so the floor retires.
+  - **Forest is cover, not terrain (Decided — Chris, 2026-11-05, on Claude's proposal):** "yes
+    i like this since that features heavily in certain tests we could do with this model."
+    Ground (plains, hills, river, lake) is fixed by elevation; cover is what grows on it and
+    changes. Moisture sets how strongly trees win on a hex, so wet ground starts forested and
+    the generated map looks as before; cleared land stops being forest and grows back toward
+    it if left. *Default (Claude):* a hex keeps the crossing time it started with when its
+    cover changes, because travel times are cached on a fixed map; travel that follows cover
+    comes later.
+  - **The covers and their products (Decided — Chris, 2026-11-05, on Claude's proposal):**
+    "yes we can add more later as we want." Three wild covers and fields:
+    - *Grassland and herbs:* greens in spring (quick to pick, rot in days) and seeds in summer
+      (slower, keep well). The seeds are the wild grain that summer foraging already yields
+      and farming starts from; sowing turns them into a crop.
+    - *Root plants:* roots dug in autumn and winter (slow; they keep). The real winter food.
+    - *Trees:* wood all year and nuts in autumn (quick; they keep), so clearing costs both.
+    - *Fields:* grain, as built.
+    Four wild foods (greens, seeds, roots, nuts) replace the one, each its own stock in the
+    Keep projection; more kinds can come later.
+  - **Taking the crop versus taking the plant (Decided — Chris, 2026-11-05, on Claude's
+    proposal):** "yes i like this." Each cover holds a share of the hex's land and spreads
+    into bare ground at its own rate; trees also slowly shade out grass and roots, as strongly
+    as the hex's moisture lets them; a field takes its share while it stands. Picking greens
+    and gathering seeds and nuts take only the season's crop: the plants stay, and next year's
+    crop comes from the same cover, so picking a hex bare empties it for the season but never
+    wears it down. Cutting wood and digging roots take the plants and shrink the cover:
+    clearing is cutting a hex's trees, and over-digging thins roots for years.
+    - *Defaults (Claude, 2026-11-05):* a field is sown on grass and root land, taking its
+      share from them (the hoeing clears it), never where trees stand, so forest must be cut
+      before it is sown. Soil stays a separate stock (fertility, drawn by sowing), not a
+      cover. Ground sets the land's size: hills hold less than plains.
+  - **Trees are a slow competitor for the same land (Decided, same):** each kind grows toward
+    the room the others leave; trees grow slowly and crowd out the rest over time. A cleared
+    field left alone goes back to grass, then forest, so clearing is work that recurs.
+    Succession is landscape, not economy, so the ledger (§4.2) is untouched.
+  - **Processing makes products with other properties (Decided — Chris, 2026-11-05):** "Also
+    different processed and products maybe. Like picking etc that affect those properties."
+    (Read by Claude as pickling; unconfirmed.) Processing changes a food's keeping, its value
+    and its hours. *Default (Claude):* each process is a recipe in the tree (§2 Goods,
+    `tree.js`), found by tinkering and learned by seeing, with the tools it needs: drying
+    (sun and hours) and smoking (fire) for keeping; parching and roasting (fire) for seeds and
+    nuts; grinding seeds to meal (a stone); leaching bitter nuts to make them edible (water,
+    hours); pickling later (a pot, salt).
+  - *Cost, recorded:* this rebuilds the resource layer; every forage yield, the forest's wood
+    and the farming numbers are rebalanced, so it is its own stage (DEVPLAN).
+  - **As built, Stage 5g — Default (Claude, 2026-11-05; numbers in `params.js`):**
+    - *Covers* are shares of a hex's land (plains 1, hills ½; forest stands on plains ground).
+      Each spreads into bare land in the growing season from a seed floor; trees also take
+      grass and root land at a rate set by the hex's *tree edge*, how far its moisture lies
+      above the forest threshold (0 on drier land, so open land stays open). Wet land starts
+      under trees, the rest open.
+    - *Crops* (greens, seeds, nuts): the season's whole crop is ripe when its season opens,
+      in proportion to the cover; picked bare, a hex is empty until next year, and what is left
+      at the season's end is gone. *Plants* (wood, roots) are the cover itself: taking them
+      shrinks it. Roots are dug in autumn and winter only.
+    - *Planning priors* are set so that a few hours of foraging at them give about the old
+      prior's food in every season; agents learn the true flows, including a lean first winter.
+    - *Agents know the seasons:* they plan to gather a food only in its season (the gathering
+      knowledge that ODD §5 assumes).
+    - *Eating* goes from the food that rots fastest to the one that keeps best. Grain is better
+      cooked only in a pot, as before; the other foods are better cooked on the fire.
+    - *Processing*, the first three of the recipes above: drying greens (keeps), roasting nuts
+      over a fire (keeps, a little more food), grinding seeds to meal with a stone (more food,
+      cooked without a pot). Each is a know-how found by tinkering or seeing; work at home,
+      by the hour. Smoking, parching, leaching and pickling are left for later.
+    - *Fields take land* from bare land first, then grass and roots; the land is bare again
+      when the field closes.
 - **Maps are generated (Decided — Chris, 2026-11-02).** Parameters set how clustered each
   resource is and how far apart key pairs sit (copper and tin); each seed gives a different
   map, so no result rests on one map, and the parameters are dials (tin near vs far). **Some
@@ -244,12 +470,15 @@ Deliberately small; it grows later.
       22% hills, wettest 35% of the rest forest. Rivers run downhill from 6 springs in the
       hills to a lake, another river or the map edge.
     - Default size 64 × 48 hexes; a year of 360 days.
+    - *Plants, wood and the winter-growth floor below are superseded by Stage 5g's covers and
+      food kinds (As built, Stage 5g, above).*
     - Placement: wild plants on plains (most), forest and hills; wood in forest; soil on
       land, doubled within a hex of water (floodplain); water in rivers, lakes and springs;
       clay on banks; flint, copper and tin in hills; iron in hills and forest; tin placed
       ~25 hexes from the nearest copper.
     - The one resource mechanism: renewables regrow logistically toward cap with a seed floor
-      (a stripped hex comes back slowly), only in spring and summer for plants and wood;
+      (a stripped hex comes back slowly), mostly in spring and summer for plants and wood
+      (at a winter-growth floor in autumn and winter, a stand-in for winter food);
       water refills daily to a level that swings ±50% with the rains (wettest in spring);
       deposits never regrow. Seasons also give a cold factor (autumn and winter) for warmth.
   - **What "place" means on the grid — Default:** a place is one hex. Meeting is being in the
@@ -307,9 +536,12 @@ Known cost: "same place, same day" is coarse; it ignores whether two agents were
 ### 4.2 Emergence — the emergent-vs-imposed ledger
 These must **emerge** and never be written into a rule:
 - households and tribes (clusters of ties); power (asymmetric dependence); intimacy.
-  Exception, stated: the household is a **formal unit by rule** (§2); only its membership
-  emerges (audit, Chris agreed)
-- specialization and the supply chain
+  ~~Exception, stated: the household is a **formal unit by rule** (§2); only its membership
+  emerges (audit, Chris agreed)~~ (withdrawn 2026-11-04: households are emergent, §2; no
+  exception remains)
+- specialization and the supply chain; any division of labor by sex (2026-11-04)
+- partners moving between bands, and any pattern in who moves (2026-11-04)
+- family structure: who lives, plans and raises children together (2026-11-04)
 - prices and their response to supply and demand
 - inequality of goods, rest and belonging; concentration of ownership (later technologies)
 - the growth of needs' quality; collapse and dark ages
@@ -493,11 +725,12 @@ To be extended as rules are written: every new rule gets checked against this li
 ### 4.8 Stochasticity
 - Discovery of new quality levels is stochastic (§7.3). Resource yields vary by season.
 - Random orders, reshuffled daily: draws on contested resources (§3), ties among equally
-  scarce holders in matching (§4.7), who plans first in a household (§7.6), and whom an
+  scarce holders in matching (§4.7), who plans first at a camp (§7.6), and whom an
   agent chats with beyond its ties (§4.6). Noise on others' reports (§4.6). Others: Open.
 
 ### 4.9 Collectives
-- Households (light formal unit); tribes as emergent tie clusters.
+- Households and tribes, both as emergent tie clusters (households: who plans around whom;
+  formal unit withdrawn 2026-11-04, §2).
 
 ### 4.10 Observation (what we measure)
 - Per category, the 10th, 50th, 90th and 99th percentiles of quality consumed, over time.
@@ -510,7 +743,27 @@ To be extended as rules are written: every new rule gets checked against this li
     free-market case were correct, extraction would be zero, which it demonstrably is not.
     The dogma is answered in the paper with the model's evidence, not in the model's design.
 - Productivity scaling runs (1×, 10×, 100×) for the "no matter the scale" claim.
-- Further output measures: Open.
+- **Tie structure within bands (Chris, 2026-11-04: "are tehre local cliques in bands or are
+  bands a secure clique?"; tracked from before births, to see what children change).**
+  - *As built — Default (Claude; `world.tieStructure`, sampled each period):* a strong tie is
+    mutual, each having had at least `measures.strongTie` (2) kind offers from the other,
+    faded over 60 days. Over camps of 2 or more, the means of density (share of pairs
+    strongly tied), clustering (of a member's strong ties, the share tied to each other) and
+    the largest group joined by strong ties (share of the camp); and the share of all strong
+    ties that lie within a camp.
+  - *Baseline, before births (bands, seeds 1–3, three years, read every 180 days at
+    thresholds 1, 2 and 4):*
+    - **No strong tie ever crossed between camps,** at any threshold, on any seed. Bands are
+      closed social worlds; a partner from another band has nothing to build on yet.
+    - **Large camps are loose webs, not cliques.** At threshold 1 a camp of about 20 is one
+      connected group, with density 0.2–0.6. At threshold 2 it breaks into one main cluster
+      plus pairs and loners (density 0.03–0.3). At threshold 4 only pairs remain. Clustering
+      runs near density or a little above, so there are no marked local cliques inside a band.
+    - **Small splinter camps are the real cliques:** density 0.8–1.0 at threshold 1 for camps
+      of 2–12 (for example seed 3, a camp of 12 at 0.95).
+    - **Ties are seasonal:** strong ties peak at the end of each winter and fall by half or
+      more through summer, because gifts and barter peak in the lean seasons and tallies fade.
+      The band tightens in hardship and loosens in plenty.
 
 ---
 
@@ -522,6 +775,27 @@ trade places and price norms must all form.
 - **Starting know-how: stone and fire (Decided — Chris, 2026-11-02).** Agents start knowing
   fire and the stone tools (axe, hoe/sickle, pick), as Homo sapiens had both long before any
   economy.
+- **By default no tech level is known; what is known at the start is a setting (Decided —
+  Chris, 2026-11-05):** "nothing known means no known tech levels. things like hunting and
+  gathering and fire and tools are pre-known assumptions." Gathering, fire (and cooking with
+  it) and the stone tools are assumptions of the model, known to all. Every level on a ladder
+  (lean-to, pot, hut, farming, processing) starts unknown and must be discovered. *Default:*
+  the start set is a list in `PARAMETERS` (`agents.knowhow`), recorded in every packet, so a
+  variant that starts some levels known is one setting. This replaces the level-1 Default below.
+  - **The gourd is assumed, for now (Decided — Chris, 2026-11-05):** "let's leave it as a
+    starter tech for now." Everyone can carry water home in a gourd from the start; the water
+    ladder's first discovered level is the pot.
+- **Starting ages: adults of mixed age, no children (Decided — Chris, 2026-11-05, on Claude's
+  proposal):** "yes i suppose we need some way to establish realistic initial colonies."
+  Agents start between about 15 and 45, both sexes in about equal numbers, with no children
+  and no kin: starting with children would mean writing in mother–child links (§4.2, no
+  prebuilt ties). Families form only from births; a real age structure (children, parents,
+  elders) builds over the first generation.
+  - *Spin-up — Default (Claude, 2026-11-05):* the first generation is a burn-in, not read for
+    results. A colony run past it can be saved and reloaded as the starting state for
+    experiments, as climate models spin up, so each experiment does not repeat the decades.
+    Its cost is recorded too: three-year runs no longer show anything about generations, so
+    runs grow to decades and camp weighing must get cheaper (DEVPLAN Stage 6).
 - **Moving camp (Open — Chris, 2026-11-03).** A band camped in one hex strips the ground
   around it when it cannot move (§7.6 Stage 3 note). Chris: moving camp "is starting to sound
   better. this creates a tradeoff for hunter gatherer vs agriculture": mobility keeps the
@@ -644,9 +918,9 @@ trade places and price norms must all form.
     Bandmates may or may not be trusted ties. One can be a tie without being trusted (the
     early end of the trust spectrum, §2 Ties). Where gifts are given and not all can be
     returned, grudges arise; some agents end up in no trusted pair but still barter.
-- **Starting know-how, continued — Default:** level 1 of each ladder is known too (cooked wild food, gourds, lean-tos), as
+- ~~**Starting know-how, continued — Default:** level 1 of each ladder is known too (cooked wild food, gourds, lean-tos), as
     stone-and-fire foragers had them. Level 2 on (farming, pottery, huts, metals) must be
-    discovered by tinkering.
+    discovered by tinkering.~~ Replaced 2026-11-05 by "By default no tech level is known" above.
 
 **Scaffolding (Decided — Chris; rules Default).** Some scaffolding may be needed to get the
 first economy going (candidates: starter stores so nobody starves before learning anything;
@@ -765,7 +1039,60 @@ directions when gifts come back and fades when they don't.
   know-how is lost and must be rediscovered. Dark ages are possible.
 
 ### 7.4 Births (Decided)
-- A household decides whether a child is worth the investment, by **ROI**: a few years of
+- **Both parents consent, each by their own ROI (Decided — Chris, 2026-11-04, on Claude's
+  proposal):** "i like your model that need both to consent, but that there is an imbalance
+  and that might lead to female choice." A child happens only when a female and a male who
+  are strongly tied both judge it worth it. Her costs are pregnancy, nursing and care hours;
+  his are whatever he expects to give. Nothing obliges the father, so his ROI is nearly always
+  positive, and the mother's choice is likely the binding one. Female choice, and whether
+  fathers invest, are results.
+- **Conception: weighed each month, the partner graded by the tie (Decided — Chris,
+  2026-11-05, on Claude's proposal):** "yes, do they decide and try each month? that way she
+  can decide a new father next month if they fail?" Yes: each month a woman free to conceive
+  (fertile, not pregnant, not nursing) weighs a child afresh with each fertile man she has a
+  tie to. Her expected return counts what she expects him to give her and the child, graded
+  by his kindness to her, so "strongly tied" above is a gradient, not a threshold. She picks
+  the man with the best return; if he also judges it worth it, they try, and conceive with a
+  monthly chance of about 1 in 5 (the human rate; a `PARAMETER`). A failed month binds no
+  one: next month she may choose again. Whether lasting pairs form, and whether fathers
+  invest, are results.
+  - *Noted (Claude):* paternity is known once a child is conceived. Uncertain paternity
+    (shared among several men, as in some Amazonian societies) is a later robustness setting.
+- **Fertility limits (Decided — Chris, 2026-11-05, on Claude's proposal):** "sure." A woman
+  can conceive from about 16 to about 45; pregnancy lasts about nine months; no conception
+  while nursing. Births are then at least about three years apart, near what foragers show,
+  without the spacing written in. Numbers are `PARAMETERS`. *Default (Claude, not asked):*
+  a man is fertile from about 16, with no upper limit but death.
+- **Care for a child is an investment, not a gift (Decided — Chris, 2026-11-04, on Claude's
+  proposal):** care given to a child stays out of the owing balance (§2 Ties), so a carer never
+  holds a grudge against an infant. The carer values the child like a long build (§7.6 partial
+  projects): what a grown child is worth to it, times its learned chance the child lives to
+  grow up. The child's side builds as usual: care received counts as kindness, so its ties to
+  whoever raised it grow from nothing (no prebuilt tie). Grown, what it gives back is the
+  return, and that teaches the next parents what children are worth. Chris: "in a way it works
+  through the ties, just longer term. by investing in her child the child's strongest bonds
+  will be to her. so when the child grows and can work. the child will reliably gift to the
+  mother. so raising children is the way to get secure bonds." Rejected: a written bond
+  (parents give to children without keeping count), which would write in who invests and why.
+  - **Chris's expectation, to test, not to write in:** "once we have households with children
+    we might find bands have weaker bonds outside of households." Measure: tie structure
+    within bands (§4.10), tracked from before births so the change is visible.
+- ~~A household decides~~ (2026-11-04: the parents decide, above; the ROI terms stand)
+  **The return counts belonging too (Decided — Chris, 2026-11-04):** "yes count belonging
+  too." What a child gives back is its gifts, its help at tasks, care in old age, and the
+  belonging its bond meets (a grown child is a strong tie, §2 Needs). Each parent's value of a
+  child is a learned value (habit from its own children, norm from what others tell, §4.4),
+  from a prior until anyone has grown children. Noted (Claude): belonging
+  gives children a value that does not depend on material flows, so fertility has a floor
+  under any economy; this softens, without removing, the test of Chris's Caldwell hypothesis.
+  - **The prior is built from the agent's own experience, not set as a number (Decided —
+    Chris, 2026-11-05, on Claude's proposal):** "yes." Until it has habit or norm, a parent
+    values a child by what it can already see: the bond (what its strongest ties give it now,
+    in gifts and belonging, since a grown child is a strong tie), the help (a child's hours
+    from 6 at its own work rates), discounted by the deaths it has seen. Rich ties and good
+    yields expect more from a child than isolation or hunger; expectations differ by history.
+    A set number would either end the colony (too low) or write in the birth rate (too high).
+  Whether a child is worth the investment is judged by **ROI**: a few years of
   dependence (care hours, food) against labor contributed until the child leaves to found a
   household, plus old-age care.
 - Children are insurance for the household. Chris's hypothesis: this breaks down when labor
@@ -830,13 +1157,24 @@ least cost: a shortest path for energy minimizing.
 
 - **Households plan together (Decided — Chris).** This is how they pool labor: the plan
   can split the work so that the swap at home benefits both.
-  - **Mechanism — Default:** sequential best response. One member plans; the next plans
-    knowing that route; order random each day. Cost: about one individual plan per member,
-    where a truly joint search would multiply the route spaces (thousands × thousands).
+  - ~~**Mechanism — Default:** sequential best response. One member plans; the next plans
+    knowing that route; order random each day.~~ (Replaced 2026-11-04, below.) Cost: about
+    one individual plan per member, where a truly joint search would multiply the route
+    spaces (thousands × thousands).
+  - **Planning together among strong ties — Default (Claude, 2026-11-04; Chris decided the
+    emergent household it serves, not this mechanism in detail):** at camp each morning, in a random order, each agent plans its day and
+    announces what it expects to bring home. Those planning after count their ties'
+    announced hauls as goods coming in tonight, weighted by a learned value per tie (habit,
+    norm and arbitration, §4.4): how much of that tie's announced hauls has actually come back
+    to them as gifts or swaps. The swap is the evening's existing exchange at camp. No
+    threshold and no household entity: the planning group is as wide as trust reaches, up to
+    the whole band. Division of work ("you get food, I'll get wood") is a result.
   - **Ties outside the household (Decided — Chris):** an agent anticipates a tie's route
     from its model of that particular other (yesterday's habit), and values gifts to that tie
     accordingly. The difference between household and tie is information: a household shares
-    today's plan, a tie is predicted from the past.
+    today's plan, a tie is predicted from the past. (2026-11-04: with planning together graded
+    by trust, ties at the same camp share today's announced hauls; ties elsewhere are still
+    predicted from habit.)
   - Chris's summary: planning is **noisy pathfinding**, a shortest path through a world partly
     known (norms, chat) and partly predicted (ties' habits).
 
@@ -1066,6 +1404,8 @@ Chris asked for calibration before farming. What was found and changed:
 #### Farming as built in Stage 5d — Default (Claude, 2026-11-03; `tree.js`, `agent.js`, `world.js`)
 Decided by Chris: anyone may harvest a planted field, and what comes back to the planter
 through others counts (§2). The rest are Claude's proposals:
+- *Superseded in Stage 5g (§2, As built, Stage 5g): wild grain is now the seeds crop of grass
+  land in summer, plants are greens, roots and nuts, and fields take land.*
 - **Wild grain first.** Foraging on plains in summer brings in some wild cereal along with the
   plants (15% of what is gathered there). That is where the first seed comes from.
 - **Farming is a level found by tinkering**, with grain in hand at a hex with fertile land.
@@ -1104,7 +1444,8 @@ through others counts (§2). The rest are Claude's proposals:
   at 0.98–0.99 through that autumn and winter, against about 0.8 before farming. Grain changed
   hands about 3,000 times. The return through others is small so far (a few grain).
 - **Not yet:** bread (quern, clay oven), wells, clearing forest for fields, tending.
-- **Do fields take land from wild plants? (Open — raised 2026-11-04.)** As built, plants and
+- ~~**Do fields take land from wild plants? (Open — raised 2026-11-04.)**~~ (Settled
+  2026-11-05 by plant kinds sharing a hex's land, §2 Landscape and resources.) As built, plants and
   soil are separate stocks in a hex: sowing draws soil only, foraging draws plants only, and
   there is no land area, so farming is pure addition to the wild harvest. Proposed (Claude): a
   hex has a fixed amount of land; a field takes land in proportion to its seeds out of the
@@ -1139,17 +1480,20 @@ Status after Chris's responses the same day:
    their life; partial projects carry partial value (Chris, 2026-11-02); discount swept.
 9. "Population grows" → **resolved** (reworded: endogenous).
 10. Open-access land → **resolved** (§2: open access in the foundation; land rights a ladder entry).
-11. Household as formal unit → **resolved** (stated in §4.2).
+11. Household as formal unit → **resolved** (stated in §4.2); reversed 2026-11-04: households
+    are emergent (§2).
 12. Currency's difference from durable goods → **resolved** (§1: general purchasing power).
 
 ---
 
 ## References
+- Brown, J. K. (1970). A note on the division of labor by sex. *American Anthropologist* 72(5). (compatibility with child care)
 - Caldwell, J. C. (1976). Toward a restatement of demographic transition theory. *Population and Development Review* 2(3–4). (wealth-flows theory)
 - Cline, E. H. (2014). *1177 B.C.: The Year Civilization Collapsed.*
 - Daw, N. D., Niv, Y., & Dayan, P. (2005). Uncertainty-based competition between prefrontal and dorsolateral striatal systems for behavioral control. *Nature Neuroscience* 8.
 - de Waal, F. — reciprocity in chimpanzee grooming and food sharing.
 - Emerson, R. M. (1962). Power-dependence relations. *American Sociological Review* 27(1).
+- Sahlins, M. (1972). *Stone Age Economics.* (the spectrum of reciprocity by social distance)
 - Gesell, S. (1916). *The Natural Economic Order.* (demurrage)
 - Graeber, D. (2011). *Debt: The First 5,000 Years.* (citing Humphrey, C. 1985, "Barter and economic disintegration," *Man* 20)
 - Grimm, V. et al. (2006; 2020). The ODD protocol for describing agent-based models.

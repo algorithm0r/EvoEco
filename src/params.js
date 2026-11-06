@@ -26,18 +26,43 @@ var PARAMETERS = {
   year: {
     days: 360,
     rainAmplitude: 0.5, // water flow swings ±50% over the year, wettest in spring
-    winterGrowth: 0.2,  // least plant growth factor (autumn and winter)
+  },
+
+  // --- land and plant cover (ODD §2 Plant kinds share a hex's land; Stage 5g) ---
+  // Each cover is a share of the hex's land. In the growing season each spreads into bare land
+  // at `r` a day (from a seed floor, so a stripped cover comes back), and trees take grass and
+  // root land at `shade` a day times the hex's tree edge (wet land only). Open land drifts back
+  // toward its natural mix of grass and roots (`open`) at `mix` a day, so dug roots come back
+  // over years.
+  land: {
+    size: { plains: 1, forest: 1, hills: 0.5 },   // land per hex by ground (forest stands on plains ground)
+    grass: { r: 0.1, floor: 0.02 },
+    roots: { r: 0.03, floor: 0.02 },
+    trees: { r: 0.01, floor: 0.02, shade: 0.02 },
+    open:   { grass: 0.65, roots: 0.3, trees: 0.05 },   // start cover on land without a tree edge
+    forest: { grass: 0.05, roots: 0.05, trees: 0.9 },   // start cover on wet land
+    mix: 0.01,
+    landPerSeed: 0.001,   // share of a hex's land a seed of grain takes when sown
   },
 
   // --- resources (ODD §2: one mechanism — cap, regrowth, inflow — for every class) ---
-  // kind: 'renewable' regrows logistically toward cap (seed floor so a stripped hex recovers
+  // kind: 'crop' is the season's whole crop, ripe on its cover when its season opens
+  //       (`season`: from–to as shares of the year), the cover's share of `perLand`; picking a
+  //       hex bare empties it for the season, what is left at the season's end is gone, and
+  //       taking it leaves the plants (ODD §2, Stage 5g, Decided).
+  //       'plant' is the cover itself, `perLand` units on a hex's land under full cover: taking
+  //       it shrinks the cover. Gathered only in `season`, if given.
+  //       'renewable' regrows logistically toward cap (seed floor so a stripped hex recovers
   //       slowly); 'flow' refills each day by inflow × the seasonal rain factor; 'deposit'
   //       never regrows (non-renewables).
-  // season: 'growth' (regrows spring–summer only), 'rain', or 'none'.
-  // capBy: units per hex by terrain.
+  // perHour: units gathered per hour from a full hex (falls with fullness).
+  // season (renewable and flow): 'rain' or 'none'. capBy: units per hex by terrain.
   resources: {
-    plants: { kind: 'renewable', r: 0.1, floor: 0.05, season: 'growth', capBy: { plains: 400, forest: 160, hills: 120 } },
-    wood:   { kind: 'renewable', r: 0.004, floor: 0.1, season: 'growth', capBy: { forest: 200, plains: 10, hills: 20 } },
+    greens: { kind: 'crop', cover: 'grass', perLand: 1200, season: [0, 0.25], perHour: 14 },   // quick to pick; rot in days
+    seeds:  { kind: 'crop', cover: 'grass', perLand: 900, season: [0.25, 0.5], perHour: 6 },  // the wild grain
+    nuts:   { kind: 'crop', cover: 'trees', perLand: 1200, season: [0.5, 0.75], perHour: 6 },
+    roots:  { kind: 'plant', cover: 'roots', perLand: 1000, season: [0.5, 1], perHour: 12 },   // slow to dig; the winter food
+    wood:   { kind: 'plant', cover: 'trees', perLand: 200, perHour: 4 },
     soil:   { kind: 'renewable', r: 0.01, floor: 0.2, season: 'none', capBy: { plains: 6, forest: 6, hills: 2 },
               floodplainBonus: 2, floodplainRange: 1 },  // fertile land near water
     water:  { kind: 'flow', inflow: 1.0, season: 'rain', capBy: { river: 60, lake: 100 }, spring: 30 },
@@ -59,11 +84,16 @@ var PARAMETERS = {
 
   // --- goods (ODD §2 First tree v0, levels 0–1 only in Stage 2) ---
   goods: {
-    plants: { perHour: 6 },   // units gathered per hour from a full hex (falls with stock)
-    wood:   { perHour: 4 },
     flint:  { perHour: 1 },   // by hand; a pick doubles it
     clay:   { perHour: 3 },   // dug by hand from a bank
-    food:   { restores: 0.08, cookedBonus: 1.5, rot: 0.01 },  // per unit of wild plants (nuts and roots keep, berries don't); rots daily
+    // foods (Stage 5g): food per unit, the factor cooking on the fire adds, daily rot. Eaten
+    // fastest-rotting first. Processed foods are made at home (tree.js PROCESSES)
+    greens:      { restores: 0.05, cookedBonus: 1.2, rot: 0.15 },
+    roots:       { restores: 0.08, cookedBonus: 1.5, rot: 0.005 },
+    nuts:        { restores: 0.12, cookedBonus: 1.2, rot: 0.003 },
+    driedGreens: { restores: 0.15, cookedBonus: 1.2, rot: 0.004 },   // three units of greens dried
+    roastedNuts: { restores: 0.14, cookedBonus: 1, rot: 0.001 },
+    meal:        { restores: 0.12, cookedBonus: 1.5, rot: 0.003 },   // ground seeds: cooked on the fire, no pot
     gourd: 0.5,               // water carried home (in need units)
     drinkDraw: 1,             // water units taken from the source per drink
     fireWood: 2,              // wood burned per evening fire
@@ -74,12 +104,12 @@ var PARAMETERS = {
     leanTo: { insulation: 0.45, wear: 0.01, sleepers: 2 },
     hut:    { insulation: 0.8, wear: 0.002, partWear: 0.003, sleepers: 5 },
     pot:    { cap: 2, wear: 1 / 300 },
-    // grain and fields (Stage 5d): food per unit; cooked with fire in a pot; daily rot; grain
-    // per seed at full fertility (soil stock ÷ soilFull); soil drawn per seed; work rates by
-    // hand; ripening and closing day of the year; decay in the field once ripe; wild share of
-    // plains foraging in summer; the hopeful prior of grain back per seed at full fertility
-    grain:  { restores: 0.1, cookedBonus: 1.5, rot: 0.002, yieldPerSeed: 10, soilFull: 12, soilPerSeed: 0.02,
-              sowPerHour: 4, reapPerHour: 8, sowDay: 30, ripeDay: 150, closeDay: 240, fieldDecay: 0.01, wildShare: 0.15, prior: 8 },   // water stored (need units, beside the gourd); breakage a day
+    // grain and fields (Stage 5d): food per unit; cooked with fire in a pot (`potCook`); daily
+    // rot; grain per seed at full fertility (soil stock ÷ soilFull); soil drawn per seed; work
+    // rates by hand; ripening and closing day of the year; decay in the field once ripe; the
+    // hopeful prior of grain back per seed at full fertility. Wild grain is the grass's seeds.
+    grain:  { restores: 0.1, cookedBonus: 1.5, potCook: true, rot: 0.002, yieldPerSeed: 10, soilFull: 12, soilPerSeed: 0.02,
+              sowPerHour: 4, reapPerHour: 8, sowDay: 30, ripeDay: 150, closeDay: 240, fieldDecay: 0.01, prior: 8 },
   },
 
   // --- agents (Stage 2: solitary; ODD §2 Agents, §4.4, §7.6) ---
@@ -90,7 +120,10 @@ var PARAMETERS = {
     // households are pre-built, only nearness (ODD §5)
     bands: { n: 5, size: 20, spacing: 14, radius: 2 },
     startAgeYears: 20,
-    starterFood: 15,      // burn-in scaffold (ODD §5): food in hand on day 1
+    // know-how at the start (ODD §5, Decided: no tech level known by default; gathering, fire
+    // and the stone tools are assumptions). A variant adds levels: 'leanTo', 'pot', 'hut', 'farm'
+    knowhow: ['axe', 'pick', 'hoe', 'sickle'],
+    starterFood: 15,      // burn-in scaffold (ODD §5): roots in hand on day 1
     wakingHours: 14,      // hours for travel, work and rest each day
     sight: 2,             // hexes known around home at the start
     // death: days at zero before it kills (food and water: the body's reserve below zero is
@@ -105,7 +138,7 @@ var PARAMETERS = {
     horizonFar: 360,      // the projection then runs on to a year (farming's cycle, Stage 5d)
     keepLongStep: 30,     // in steps of this many days
     // the prior for what a day brings in (hours of foraging and wood-cutting at the prior
-    // rates)
+    // rates, the foraging hours split among the foods in season)
     projHours: { forage: 3, wood: 1 },
     discount: 0.99,       // per day; swept (ODD §7.6)
     // learning and curiosity (ODD §4.4)
@@ -117,7 +150,7 @@ var PARAMETERS = {
     normRate: 0.2,        // error-driven update of norms from others' reported experience
     arbRate: 0.1,         // update of how far habit and norm each miss its own experience (ODD §4.4)
     arbExtreme: 0.9,      // a weight beyond this becomes 1: one source alone
-    priorPerHour: { forage: 3, wood: 3, quarry: 1, dig: 3 },  // starting guess of the yield per hour from a full hex
+    priorPerHour: { greens: 5, seeds: 2.5, roots: 3, nuts: 2, wood: 3, quarry: 1, dig: 3 },  // starting guess of the yield per hour from a full hex (below the truth: a few hours of foraging at it give ~0.7 food a day in any season)
     sightSd: 0.5,         // uncertainty (in fullness) of a sighting once it is old
     sightMemory: 30,      // days for a sighting to grow most of that uncertainty
     curiosity: 1.0,       // optimism per sd of uncertainty
@@ -162,6 +195,9 @@ var PARAMETERS = {
   // --- data collection ---
   reportingPeriod: 10,  // sample every N days
   epoch: 1080,          // a run ends (and ships a packet) after N days (3 years)
+  measures: {
+    strongTie: 2,       // a strong tie: each has had this many kind offers (faded) from the other
+  },
 
   // --- database (the standard vendored client, src/db.js) ---
   db: {
