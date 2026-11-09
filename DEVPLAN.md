@@ -254,12 +254,14 @@ Raised by Chris, 2026-11-03 (ODD §2, Open). Design first.
 ODD §2 (Households, Agents life cycle), §7.4, §7.5, §7.6 (household planning). Brought forward
 ahead of 5c/5e/5f (Chris, 2026-11-04): population turnover, culture passed to the next
 generation, and growth that brings bands into competition. Design first, one question at a time.
-- [ ] Camps weighing made cheaper before generation runs (45% of run time) (From Backlog.)
+- [x] Camps weighing made cheaper before generation runs (45% of run time) (From Backlog.):
+      dominated stops dropped before scoring, ~3× faster overall (2026-11-06)
 - ~~Fields take land from wild plants while they stand (raised 2026-11-04; growth is what
       makes it bind) (From Backlog.)~~ → **5g**
-- [ ] Trust: familiarity slows forgetting; grudge tolerance grows with trust; a tie's need
+- [x] Trust: familiarity slows forgetting; grudge tolerance grows with trust; a tie's need
       weighs in the giver's cost by its share of the giver's belonging (ODD §2 Ties, 2026-11-05)
-- [ ] Spin-up: adults 15–45, no kin; burn-in a generation, save and reload the colony (ODD §5)
+- [x] Spin-up: adults 15–45, both sexes, no kin; save and reload the colony (ODD §5); the
+      burn-in itself waits on births
 - [ ] Check fix 2's point once ages overlap: the young know winter before living one (From Backlog.)
 - [x] Track tie structure within camps from before births (density, clustering, largest group,
       share of strong ties inside camp; Chris, 2026-11-04). Baseline in ODD §4.10: no strong
@@ -272,14 +274,18 @@ generation, and growth that brings bands into competition. Design first, one que
       (2026-11-04: households are emergent, no entity) → measured, not built
 - ~~Household planning by sequential best response; ties anticipated from habit~~ → planning
       together among strong ties (ODD §7.6)
-- [ ] Planning together: morning announcements; later planners count ties' hauls by a
+- [x] Planning together: morning announcements; later planners count ties' hauls by a
       learned reliability; the evening exchange is the swap (ODD §7.6)
-- [ ] Sexes, pregnancy, nursing; childhood stages (nursing, learning, helping, apprenticing
-      out, mature); the mother passes the child on; a child as its mother's extension
-- [ ] Care from rest hours; old-age decline, kept by gifts from ties
-- [ ] Births: monthly conception, both parents' ROI with the prior from experience;
-      population endogenous
-- [ ] Death: holdings stay where they lie (open access)
+- [x] Sexes, pregnancy, nursing; childhood stages (nursing, learning, helping, mature); a
+      child passed on when its carer dies; a child as its mother's extension (life.js)
+- [ ] Apprenticing out: from 10 the mother hands the child each morning to a willing adult
+      she trusts (ODD §2, Default 2026-11-04)
+- [x] Care from rest hours; old-age decline, kept by gifts from ties (decline existed; care
+      and the tie weight in gifts built)
+- [x] Births: monthly conception, both parents' ROI with the prior from experience;
+      population endogenous (the care weight decided 2026-11-06)
+- [x] Death: holdings stay where they lie (open access): goods stay in the dead agent's
+      dwelling and whoever sleeps there takes them (2026-11-06)
 **Done when:** households form and dissolve on their own, and a population persists across
 several generations without scaffolding.
 
@@ -406,11 +412,42 @@ How runs are compared is a research question to settle then (ODD §4.10).
 - [ ] fix: carrying has no limit when a camp moves; ties to containers (5e)
 - [ ] idea: the initial state may need work (Chris, 2026-11-03: "we can leave it for now"):
       with no ties at the start, bands scatter in the first spring and re-form by day 180
-- [ ] fix: late-winter squeeze: the three-year deaths (8, 1, 9) all come at winter's end, when
-      roots near camp are dug down and stores run out; check after Stage 6 changes the mix
+- [x] fix: late-winter squeeze: the three-year deaths (8, 1, 9) all come at winter's end, when
+      roots near camp are dug down and stores run out; check after Stage 6 changes the mix.
+      Done 2026-11-07: roots 1000 → 2000 per land. 4 years, seeds 1–3: 127 / 135 / 118 alive
+      (was 66 / 75 / 45); ×1.5 mixed, nuts ×2 no help. 20 years: 124 / 96 / 128 (was 18 / 25 / 41)
+- [ ] check: the second generation starts having children only from about year 17, so the
+      Done-when needs runs of 40+ years; births fall to 1–6 a year in years 13–20 as the
+      starting women pass 45
+- [ ] check: members joining another camp total ~150–165 in 4 years and the same in 20, so
+      joins (moving or staying camps) nearly stop after the first years; see whether leaving a
+      camp that stays ever fires later
+- [ ] idea: famines still come in years 9–10 (22–28 children dead) when children nearly match
+      adults, before any child has grown up; a spin-up age structure
 - [ ] idea: roots and tree cover decline under use (0.21 → 0.165, 0.354 → 0.302 over three
       years, mostly firewood); watch in longer runs, emergent not imposed
 - [ ] feat: the trade arm in `holdingsCost` weighs one main food against wood; generalize to
       the food kinds
 - [ ] idea: `priorPerHour` per food is a hand choice (about the old prior's food each season);
       replace with the prior from experience when Stage 6 builds it
+- [ ] perf: barter is a third to a half of run time in winter (every partner × every pair of
+      16 goods, lotGain projecting both sides); trim before long generation runs
+- [ ] fix: a camp that strips the greens around it in spring starves rather than moving
+      (seed 1, band 5: 5–10 dead by day 62; greens are spring's only wild food and picked-bare
+      hexes stay empty until next year); see why camp weighing does not move it. Same in
+      autumn (seed 2, year 4, 2026-11-06): a camp of 28 stored ~20 days a head against 50–125
+      in the others, moved once late, stripped the new site in five weeks and starved beside a
+      camp of 9 holding ~75 days a head. A member's own choice to join another camp is weighed
+      only once its camp has decided to move (`campsDay`), so it never comes up
+- [ ] idea: the spin-up synchronizes the first birth cohort (35 of ~50 women pregnant or
+      nursing in seed 3's year-2 autumn). Removing care hours there cut adult deaths 40 → 2,
+      and removing nursing food cut them 40 → 16 (one run each)
+- [ ] idea: women die in late winter while pregnant (15 of 24 deaths in one run); the return
+      on a child is in hours and does not see the risk to her. 40 years, seeds 1–3: women are
+      37 / 34 / 21 of 94 / 77 / 73 adults, and seed 3 is flat with 1–6 births a year
+- [ ] check: the 40-year runs (2026-11-07, seeds 1–3) persist: 193 / 162 / 115 alive, second
+      generation matured and bearing. "Several generations" needs 60+ years
+- [ ] check: the static server on :8000 did not answer on 2026-11-06, so the new charts are
+      unchecked in the browser
+- [ ] idea: camp joins (`world.campJoins`) are counted but not charted (moves are); add a
+      series if leaving a camp that stays needs watching

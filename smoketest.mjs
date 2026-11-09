@@ -16,7 +16,7 @@ import path from 'path';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const indirectEval = eval; // aliased → runs in the global (sloppy) realm, so `var` leaks to globalThis
-for (const f of ['util.js', 'params.js', 'engine.js', 'hex.js', 'mapgen.js', 'agent.js', 'tree.js', 'planner.js', 'exchange.js', 'world.js']) {
+for (const f of ['util.js', 'params.js', 'engine.js', 'hex.js', 'mapgen.js', 'agent.js', 'tree.js', 'planner.js', 'exchange.js', 'life.js', 'world.js']) {
   let src = readFileSync(path.join(__dirname, 'src', f), 'utf8');
   src = src.replace(/^\s*(['"])use strict\1;?/, ''); // strip directive so declarations leak to global
   indirectEval(src);
@@ -431,6 +431,86 @@ const processed = Object.keys(PROCESSES).reduce((s, p) => s + (xw.made[p] || 0),
 const procFound = xw.discoveries.filter((d) => PROCESSES[d.what]).length;
 check('food processing is discovered in the bands year', procFound > 0,
   procFound + ' discoveries of processing; batches made ' + JSON.stringify(Object.fromEntries(Object.keys(PROCESSES).map((p) => [p, xw.made[p] || 0]))) + ' (practice comes with stores to keep; reported, not required)');
+
+// ── 13. the life cycle (Stage 6) ─────────────────────────────────────────────────────
+// a birth, an infant on milk, care from the carer's hours, a child along and helping, a
+// parent feeding its child, a child passed on when its carer dies, growing up, conception
+{
+  const lw = new World({ agents: 0 }), Y = P.year.days, L = P.life, day = () => lw.day;
+  const m = new Agent(0, fh, lw), f = new Agent(1, fh, lw);
+  lw.agents.push(m, f); lw.nextId = 2;
+  m.female = true; f.female = false; m.ageDays = 25 * Y; f.ageDays = 30 * Y;
+  for (const [a, b] of [[m, f], [f, m]]) { const t = a.tie(b.id, 0); t.kind = 3; t.given = 3; t.n = 6; t.food = 1; }
+  const cap0 = m.capacity();
+  m.pregnant = { father: f, due: 0, today: 0 };
+  lifeDay(lw, []);
+  const c = lw.agents[2];
+  check('a birth: the newborn is its mother\'s charge, its father known', !!c && c.child && c.carer === m && c.mother === m && c.father === f && m.charges[0] === c && f.kids[0] === c,
+    'id ' + (c && c.id) + ', age ' + (c && c.ageDays) + ' days');
+  check('an infant takes hours from its carer and food as milk', Math.abs(cap0 - m.capacity() - L.careHours[0]) < 1e-9 && Math.abs(foodScale(m) - 1 - L.milkFood) < 1e-9,
+    'capacity ' + cap0 + ' → ' + m.capacity() + '; mother\'s food need ×' + foodScale(m));
+  m.need.food = 0.6;
+  dependentEvening(c, lw);
+  check('a nursing infant\'s food is its mother\'s', c.need.food === 0.6);
+  // a child of 8 goes along and helps at its carer's task
+  c.ageDays = 8 * Y;
+  const hx = [...Array(lw.grid.n).keys()].find((i) => lw.land[i] > 0 && lw.inSeason('greens') && lw.amount('greens', i) > 10);
+  m.plan = [{ hex: hx, act: A_GREENS, hours: 2 }];
+  m.act(lw); const withChild = m.hold.greens;
+  followCarer(c, lw);
+  check('a child goes with its carer and its help adds to the carer\'s haul', c.places.join() === m.places.join() && withChild > 0 &&
+    m.tie(c.id, day()).kind > 0 && c.tie(m.id, day()).kind > 0,
+    'mother picked ' + withChild.toFixed(1) + ' greens with a child of 8 (rate ×' + workRate(c).toFixed(2) + '); mother\'s tally of the child ' + m.tie(c.id, day()).kind.toFixed(1));
+  // a parent feeds its hungry child, out of the owing balance
+  Object.assign(m.hold, { greens: 0, roots: 10 }); c.need.food = 0.1; for (const k of FOODS) c.hold[k] = 0;
+  m.need.food = 1; c.busy = 0; m.busy = 2;
+  const owedBefore = m.tie(c.id, day()).owed;
+  giftsAt(lw, [m, c]);
+  check('a parent feeds its hungry child, without a debt', c.hold.roots > 0 && m.tie(c.id, day()).owed === owedBefore,
+    'gave ' + c.hold.roots.toFixed(2) + ' roots; weight on the child ' + weightOn(m, c, day()).toFixed(3) + ' (expected ' + expectedChildWeight(m, day()).toFixed(3) + ')');
+  // the mother dies: the child (8) passes to its father, who values it as a parent
+  m.alive = false; lw.agents = lw.agents.filter((a) => a.alive);
+  lifeDay(lw, [m]);
+  check('a child whose carer dies passes to a willing adult', c.carer === f && f.charges.includes(c) && c.keeper === f, 'carer now ' + (c.carer ? c.carer.id : 'none'));
+  // grown at matureAge: on its own
+  c.ageDays = L.matureAge * Y;
+  lifeDay(lw, []);
+  check('at matureAge a child plans on its own', !c.child && !c.carer && !f.charges.includes(c) && c.shelter && f.childSeen.grown === 1);
+  // conception: both returns weighed; with a certain month, she conceives exactly when both are positive
+  const w2 = new Agent(3, fh, lw), m2 = new Agent(4, fh, lw);
+  lw.agents.push(w2, m2); w2.female = true; m2.female = false; w2.ageDays = 22 * Y; m2.ageDays = 24 * Y;
+  for (const [a, b] of [[w2, m2], [m2, w2]]) { const t = a.tie(b.id, day()); t.kind = 3; t.given = 3; t.n = 6; t.food = 2; }
+  const rw = childReturn(w2, lw, m2), rm = childReturn(m2, lw, w2);
+  const conceive0 = L.conceive; L.conceive = 1;
+  while (lw.day % L.month) lw.day++;
+  // a starting woman's wait before her first conception (ODD §5, Decided 2026-11-07)
+  w2.fertileFrom = lw.day + 1;
+  conceptionDay(lw);
+  const waited = !w2.pregnant;
+  w2.fertileFrom = 0;
+  conceptionDay(lw);
+  L.conceive = conceive0;
+  const sw = new World(), Ws = sw.agents.filter((a) => a.female), waits = Ws.map((a) => a.fertileFrom / Y);
+  check('starting women wait a spread of times before they can first conceive; men and the born do not', waited &&
+    sw.agents.every((a) => a.female || a.fertileFrom === 0) && Math.max(...waits) <= L.startWait && Math.max(...waits) - Math.min(...waits) > L.startWait / 2,
+    Ws.length + ' women, waits ' + Math.min(...waits).toFixed(2) + '–' + Math.max(...waits).toFixed(2) + ' years (mean ' + (waits.reduce((x, y) => x + y, 0) / Ws.length).toFixed(2) + ')');
+  check('a woman tries for a child only when both returns are positive', !!w2.pregnant === (rw > 0 && rm > 0) && (!w2.pregnant || w2.pregnant.father === m2),
+    'her return ' + rw.toFixed(0) + ' h, his ' + rm.toFixed(0) + ' h → ' + (w2.pregnant ? 'conceived' : 'no'));
+}
+// planning together (ODD §7.6): a tie's announced haul counts as coming in, by the learned
+// share of its hauls that came back; what comes back moves that share
+{
+  const pw = new World({ agents: 0 }), a = new Agent(0, fh, pw), b = new Agent(1, fh, pw);
+  pw.agents.push(a, b);
+  const t = a.tie(b.id, 0); t.kind = 2; t.given = 2; t.n = 4; t.rel = newLearned(0.5); t.rel.nh = 1;
+  b.announced = { greens: 10 };
+  const inc = expectedIncoming(a, pw);
+  a.recv = new Map([[b.id, 10]]);
+  learnReliability(pw);
+  check("a tie's announced haul counts as coming in, by the share that came back", inc && Math.abs(inc.greens - 5) < 1e-9 && t.rel.h > 0.5,
+    'counted ' + (inc ? inc.greens : 0) + ' of 10 greens; all 10 came back, so the share moved 0.5 → ' + t.rel.h.toFixed(3));
+}
+console.log('bands year: ' + (xw.weighed || 0) + ' monthly weighings, ' + (xw.tries || 0) + ' tries, ' + (xw.conceptions || 0) + ' conceptions, ' + (xw.births || 0) + ' births; camps: ' + (xw.campMoves || 0) + ' moves, ' + (xw.campJoins || 0) + ' members joined another camp (reported, not required)');
 
 const proj = msAgentDay * 300 * 9000 / 1000;
 console.log('planner cost: ' + msAgentDay.toFixed(3) + ' ms per agent-day → ~' + proj.toFixed(0) + ' s per generation for 300 agents × 9,000 days');

@@ -255,6 +255,20 @@ Chris's reading (median stagnates only once hoarding arrives).
       it goes." Asked whether infant care should rest on the mother's valuation until the
       child gives back, or start from a bond at birth (a §4.2 exception). Watch for mothers
       dropping infants once built.
+  - *As built, Stage 6 — Default (Claude, 2026-11-06; `agent.js`, `exchange.js`):* a tie
+    fades with memory `tallyMemory` × (1 + dealings ÷ 40): 3 trades fade in about 64 days,
+    5,000 dealings (fifteen years of daily care) in about 21 years. The grudge limit is
+    `owedLimit` × (1 + kindness received ÷ 5). Grudges stop gifts and drop the other from
+    the barter shortlist, as before. The weight on a tie's need is the formula above: the
+    giver counts the drop in the receiver's own cost (the receiver's evening and projection)
+    times its weight.
+    - *Result, bands, seed 1, one year, no births:* familiarity and tolerance alone change
+      little (89/100 alive against 87; gifts 2,827 against 2,268). The weight on a tie's
+      need roughly triples gifts (6,973) and moves the deaths: none until day 330, then 24
+      in the last month of winter (76/100 alive), where without it 11 die early in winter.
+      Every variant is short of food by midwinter (mean food 0.25–0.30), so sharing spreads
+      a common shortage across ties until stores are gone. A receiver near death tonight
+      weighs heavily (the lethal-night cost, a flagged Default), so ties pour food into it.
 - **Power is not a primitive.** It emerges as asymmetric dependence (Emerson 1962): the agent
   many need and who needs few. Intimacy likewise emerges, as tie strength from frequent mutual giving.
 
@@ -796,6 +810,32 @@ trade places and price norms must all form.
     experiments, as climate models spin up, so each experiment does not repeat the decades.
     Its cost is recorded too: three-year runs no longer show anything about generations, so
     runs grow to decades and camp weighing must get cheaper (DEVPLAN Stage 6).
+  - *As built, Stage 6 — Default (Claude, 2026-11-06):* ages are uniform over
+    `agents.startAge` (15–45), each agent female with chance one half. `colony.mjs` saves a
+    world with its `PARAMETERS` and the generator's state, and reloads it to carry on the same
+    draws (checked: a reloaded copy runs identically); `runner.mjs --save FILE` and
+    `--from FILE`. Headless only. About 13 MB per 100 agents.
+  - *Staggered first conceptions — Decided (Chris, 2026-11-07: "let's go with your plan for
+    a staggered start on the initial state"; "we might need to adjust this"):* every woman
+    starting together childless conceived in year one (0.2 a month), so the first births came
+    as one cohort, nursed together, and in seed 3 their care hours and milk in the year-two
+    autumn tipped every camp into famine (40 adults dead; 2 with care hours off). Each woman
+    of the starting population now waits a time drawn uniformly over `life.startWait` years
+    (3) before she can first conceive, as if she had weaned a child before the run began. A
+    start state only: no child or tie is made, and women born in the run have no such wait.
+    To watch: a famine that kills many mothers may bring the survivors back into step.
+    Result (20 years, seeds 1–3, one run each): first births spread over years 2–4 (10–16 a
+    year, was 30–39 in year 2), but famines go on (seed 1 lost 60 adults in years 2–3 with
+    few infants), and year 20 holds 18 / 25 / 41 alive (was 68 / 26 / 37). The cohort was one
+    trigger, not the cause.
+  - *Speed, Stage 6 (2026-11-06):* most planning time went to scoring every candidate stop
+    by a full one-stop day, and a camp's weighing repeats that for every member at every
+    site. For one gathering or drinking activity, a stop's one-stop day differs only in what
+    it brings in and the round trip, so a stop that two others match or beat on both cannot
+    make the shortlist and is dropped unscored. About 3× faster (bands: 6 → 2 ms per
+    agent-day on this machine). Among stops of equal cost, ties now fall to the nearer stop
+    rather than to hex order, so agents walk a little less; seeds 2–4 kept 100/100 to day
+    180 either way.
 - **Moving camp (Open — Chris, 2026-11-03).** A band camped in one hex strips the ground
   around it when it cannot move (§7.6 Stage 3 note). Chris: moving camp "is starting to sound
   better. this creates a tradeoff for hunter gatherer vs agriculture": mobility keeps the
@@ -815,6 +855,12 @@ trade places and price norms must all form.
     them least, with ties left behind costed through belonging. A band is whoever camps
     together, so bands can split and merge. Chris expects everyone to go: belonging should
     outweigh a field.
+  - **Leaving a camp that stays (Decided — Chris, 2026-11-07, on Claude's proposal):** asked
+    whether a member may leave for another camp when its own camp stays put: "yes". On the
+    days the camp weighs moving and does not move, each member still weighs joining another
+    camp within reach against staying, by the same costs. Found 2026-11-06: in seed 2, year 4,
+    a camp of 28 starved beside a camp of 9 holding about 75 days of food a head, because
+    the choice to join came up only after the whole camp had decided to move.
   - **As built (Default, 2026-11-03):**
     - **Weighing.** Each camp weighs moving every 7 days, and a move is weighed over those 7
       days. Its summed cost is the walk-day at the site plus 6 ordinary days, against 7 days
@@ -1074,6 +1120,16 @@ directions when gifts come back and fades when they don't.
   will be to her. so when the child grows and can work. the child will reliably gift to the
   mother. so raising children is the way to get secure bonds." Rejected: a written bond
   (parents give to children without keeping count), which would write in who invests and why.
+  - **How the valuation becomes daily care (Decided — Chris, 2026-11-06, on Claude's
+    proposal):** "Let's go with your model. It looks good. I'm not sure what would be
+    perfect or right, so let's go with your model." A parent counts its child's needs in its
+    own cost, as with a tie (§2 Ties), at a weight: the share of its belonging it expects a
+    grown child to supply (judged from its strongest ties now, until it has grown children of
+    its own to learn from), times its learned chance that the child lives to grow up. Once
+    the child gives back enough that the real tie weight is larger, the real one takes over.
+    The same expected value is the return side of the conception decision. (The alternative
+    set aside: a literal long build, where feeding raises the child's chance of surviving
+    and the parent values that chance.)
   - **Chris's expectation, to test, not to write in:** "once we have households with children
     we might find bands have weaker bonds outside of households." Measure: tie structure
     within bands (§4.10), tracked from before births so the change is visible.
@@ -1102,11 +1158,86 @@ directions when gifts come back and fades when they don't.
   audit, which read it as an imposed outcome). The Malthus-vs-hoarding comparison in §1 depends on births
   responding to the ROI rule, not to a fixed rate.
 
+#### The life cycle as built in Stage 6 — Default (Claude, 2026-11-06; `life.js`, numbers in `PARAMETERS.life`)
+Chris decided the stages, ages, consent, conception, fertility, care as investment and the
+weight (§2, above); the rest are Claude's proposals:
+- **A child with a carer does not plan.** Each day it is where its carer was, drinks where
+  its carer drank, shares its fire and bed (its warmth is the carer's; it takes no bed of its
+  own), and eats what it holds, which is what it is given. It does not barter. It meets and
+  hears chat, so it learns norms before it lives a season (fix 2's point); adults do not
+  spend chat on it, since it has lived nothing to tell.
+- **Infants live on milk.** An infant's food is its nursing carer's food level; she eats a
+  quarter more per infant. Late in pregnancy (the last 90 days) she eats 15% more and has 2
+  hours a day fewer. An infant with no nursing carer has no milk and starves.
+- **Care is hours from the carer's rest:** 2 a day for an infant, 1 for a child under 6,
+  0.5 for an older child, taken off the carer's capacity.
+- **A child's food need** rises from 0.4 of an adult's at 2 to all of it at 15. **Its work
+  rate** rises from 0.25 at 6 to 1 at 15: from 6, when its carer gathers, it gathers beside
+  it bare-handed at that rate, and the haul is the carer's.
+- **The bond through the normal channels:** each day of care is a kind offer in the child's
+  tally and kindness given in the carer's; each day of help is a kind offer in the carer's
+  tally and kindness given in the child's. Familiarity (§2) keeps both for decades.
+- **Gifts to children.** A parent gives to its child by its weight on the child (the
+  Decided rule above); it stays out of the owing balance. Anyone else gives to a child as to
+  its keeper (its mother, or whoever took her place): by the tie to the keeper, booked as a
+  gift to the keeper. A child's need, to a giver, is its evening alone (it does not plan),
+  and a night that kills it costs what anyone's does (the worst cost on every day it takes
+  away, as in the projection). A gift is the receiver's whole shortfall or, if that does not
+  pay the giver, a day's food. (Both added 2026-11-06: without them, weaned children of 2 to
+  3 starved in autumn beside fed mothers holding food. A child deep in hunger's debt needed
+  more at once than was worth giving, and its death weighed no more than a hungry evening.
+  Reloading the same year-3 colony, the fixes cut year 4's child deaths from 33 to 2.)
+- **What a woman expects of a father** is the food his gifts have brought her and her child
+  (a new per-tie record, fading with the tally).
+- **The chance a child grows up** is learned from the children seen: one's own, and those of
+  anyone one has a tie to. It is learned as a death rate per year of childhood watched (each
+  child seen counts each year it lives), from a prior of 1 death in 52 child-years (3 in 4
+  grow up), and read as the chance of living 15 years at that rate. (First built as grown ÷
+  (grown + died): in the first 15 years no child can have grown, so the estimate counted only
+  deaths, fell to 0.15–0.23, and births stopped after year 5 in all three 15-year runs. A
+  child still growing counted for nothing. Fixed 2026-11-06.) **What a grown child is worth**
+  is learned at each of one's own children's maturity, as one's tie weight on it.
+- **The return on a child, in hours** (§4.3: costs are in hours). For either parent: the
+  bond, judged by the strongest tie now (the food its gifts bring a day, at the parent's hours
+  per unit of food, plus the belonging it meets, at the steepest hour value of rest), over the
+  years the parent expects to live once the child is grown (the old-age hazard), times the
+  chance the child grows up. For the mother, also the child's help from 6 at her usual working
+  day, times that chance; and her costs: late pregnancy, nursing, care hours and the child's
+  food to 15, less what she expects the father to give over those years (capped at the
+  costs). The father carries no costs, so his return is positive whenever he has a bond.
+- **Conception** is weighed on the first day of each month by every woman free to conceive,
+  with every fertile man at her camp she trusts.
+- **A child passed on** (when its carer dies) goes to the adult it is most strongly tied to
+  among the willing: an adult whose weight on the child is above zero, by its own tie, as a
+  parent, or through its tie to the child's keeper. An infant goes only to a woman nursing an
+  infant of her own. A child of 6 or more with no one willing joins the camp and plans its own
+  day at a child's rate; a younger one stays where it was and lives on gifts.
+- **At 15** it takes a bed at its carer's camp and plans its own days.
+- *Not yet built:* the mother handing a child from 10 to another adult each morning
+  (apprenticing out).
+
+#### Planning together as built in Stage 6 — Default (Claude, 2026-11-06; `planner.js`)
+The Default above (§7.6 Households plan together), as built: each morning the adults plan in
+a random order. Before planning, each counts what each tie at its camp has already announced,
+times its learned value for that tie, as goods held tonight; after planning, it announces
+what its route expects to gather. The value per tie is learned each evening, by one
+error-driven update from a prior of 0, as the share of the tie's announced haul that came
+back to it that evening as gifts or in barter (units, capped at all of it). It is a habit
+only; nothing is told about it yet. A prior of 0 means no one counts on anyone until a tie
+has brought something back.
+- *Result, bands, seed 1, 150 days:* about a quarter of planners count some tie's haul; the
+  shares are small (median under 0.01, the top tenth about 0.02, the largest 0.2), since most
+  of a haul is the gatherer's own food. Whether it becomes the division of work Chris
+  described ("i'll get food, you get wood") is for the generation runs to show.
+
 ### 7.5 Death and inheritance (Decided)
 - **Foundation: everything stays where it lies (Decided — Chris, 2026-11-02).** A dead
   agent's holdings stay at the place they are, under open access: whoever finds them may use
   them. Anything beyond that is a **tradition**. So goods stored at a household's shelter
   pass to the people who live there by location, not by a rule naming heirs.
+  - *As built, Stage 6 — Default (Claude, 2026-11-06; `world.js`):* a dead agent's goods
+    stay in the dwelling it slept in (a child's, in its carer's), and the first to sleep
+    there after takes them all. A dwelling no one sleeps in keeps them until someone does.
 - **Inheritance traditions belong on the technology ladder (Chris, 2026-11-01 audit).**
   Candidates: return to the commons; to trusted peers in proportion to trust; kin-only
   property. (The audit flagged that commons-by-default equalizes by rule and that a

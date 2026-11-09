@@ -4,6 +4,50 @@
 
 <!-- append new entries above this line -->
 
+## 2026-11-09 — Stage 6 built but apprenticing; famines traced; roots doubled; 40-year runs
+
+**Done:** Stage 6, all but apprenticing out, each piece recorded in the ODD first.
+- *Camps weighing* is ~3× faster: dominated stops are dropped before scoring.
+- *Trust* (§2 Ties): familiarity slows forgetting, grudge tolerance grows with trust, and a
+  tie's need weighs in the giver's cost.
+- *Spin-up* (§5): adults aged 15–45, both sexes, no kin. The colony saves and reloads
+  (`colony.mjs`, v8 serialize).
+- *Life cycle* (`life.js`): sexes, pregnancy, nursing, childhood stages, a child passed on
+  when its carer dies, care from rest hours, old-age care as gifts. Monthly conception on
+  both parents' return, with the prior from experience. Goods stay where the dead left them.
+- *Planning together* (§7.6): morning announcements, ties' hauls counted by learned
+  reliability.
+- *Famine diagnosis* (counterfactuals from saved colonies, one run each). There were two
+  triggers: a synchronized first birth cohort's care hours (seed 3), and camps stranded on
+  stripped land (seeds 1, 2). Mothers feeding dying children and the return on a child were
+  ruled out.
+- *Staggered start* (§5, Decided 2026-11-07): each starting woman's first chance to conceive
+  is spread over `life.startWait` = 3 years.
+- *Leaving a camp that stays* (§5, Decided 2026-11-07): members weigh joining another camp
+  in reach even when theirs does not move.
+- *Roots 1000 → 2000 per land.* Alive at 4 years, seeds 1–3: 127 / 135 / 118, was
+  66 / 75 / 45. ×1.5 was mixed and nuts ×2 did not help. At 20 years: 124 / 96 / 128, was
+  18 / 25 / 41.
+
+**Changed:** `src/life.js` (new), `colony.mjs` (new), `src/agent.js`, `planner.js`,
+`exchange.js`, `world.js`, `params.js`, `util.js`, `datamanager.js`, `ui.js`, `index.html`,
+`runner.mjs`, `smoketest.mjs`. ODD §2, §5 and §7.6 gained Stage 6 as-built and Decided
+entries. Stage 6 boxes are ticked in DEVPLAN, and the new findings are Backlog lines.
+
+**State:** smoke PASS @ v0.9.0-dirty (pre-commit).
+- Bands year: 101/100 alive, 1,626 trades, 9,044 gifts, 599 trusted ties, 76 discoveries,
+  10 conceptions, 156 camp moves, 165 joins. Solitary: 8/8.
+- Planner: 0.413 ms per agent-day.
+- 40 years, seeds 1–3 (scratchpad g40_*): 193 / 162 / 115 alive. The second generation
+  matured (90 / 84 / 92) and is having children (8–10 births a year by year 40 in seeds 1–2).
+- Famines at years 9–10 killed 22–27 children in each seed, plus smaller ones later.
+- Women fall behind men in every seed: 37 / 34 / 21 women of 94 / 77 / 73 adults.
+- Seed 3 sits flat at ~115 with 1–6 births a year. Seed 2 dipped to 96 at year 20.
+
+**Next:** Chris's idea of a balanced starting demographic tree (ages, parent–child ties,
+maybe pairs), against the §4.2 ledger. Then apprenticing out, and whether a woman's return
+on a child should count the risk to her.
+
 ## 2026-11-06 — Stage 5g closed: plant kinds, shared land, processing; Stage 6 next
 
 **Done:** Built 5g from the ODD §2 decisions of 2026-11-05.

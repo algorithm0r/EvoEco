@@ -1,40 +1,49 @@
 # EvoEco sim — STATUS
 
-**Updated:** 2026-11-06 (5g closed, v0.9.0; Stage 6 build starting)
+**Updated:** 2026-11-09 (Stage 6 built except apprenticing; 40-year runs persist)
 **Verified:** never (the 2026-11-01 cold ledger audit checked ODD v0.2, not the code or v0.3)
 
-**Stage:** Stages 1–4, 5a, 5b, 5b-cal, 5d, 5g `[ DONE ]` (tags v0.1.0–v0.9.0). Stage 6
-(households and generations) `[ ACTIVE ]`, design walked, build starting. 5c (metals), 5e
-(containers) and 5f (clearing, bread, wells, the rest of processing) `[ PLANNED ]`.
+**Stage:** Stages 1–4, 5a, 5b, 5b-cal, 5d, 5g `[ DONE ]` (tags v0.1.0–v0.9.0).
+- Stage 6 (households and generations) `[ ACTIVE ]`. Everything is built except apprenticing
+  out.
+- `[ PLANNED ]`: 5c (metals), 5e (containers), 5f (clearing, bread, wells, the rest of
+  processing).
 
 **State:**
-- World, agents, bands, chat, norms, barter over any goods, gifts, ties, belonging, stone
-  tools, pots, huts, tinkering, know-how by seeing, farming, moving camp, shared huts, habit
-  and norm. Since 5g: a hex's land is shared by grass, roots, trees and fields, with
-  succession; four wild foods by season (greens, seeds, nuts, roots); drying, roasting and
-  grinding as know-how; starting know-how is a setting, default no tech level.
-- Smoke PASS, all checks @ v0.9.0, 2026-11-06. The bands year kept 92/100 alive with no
-  winter floor.
-- The view at http://localhost:8000/research/EvoEco/sim/ loads with no console errors and
-  the cover and held charts (checked 2026-11-06).
-- `ODD.md` is v0.3 plus Default blocks for Stages 1–5g (not reviewed by Chris).
+- *Since v0.9.0:*
+  - Sexes, pregnancy, nursing, childhood stages, care from rest hours, old-age care as gifts.
+  - Monthly conception on both parents' return.
+  - Trust; planning together.
+  - Spin-up with colony save and reload.
+  - Staggered first conceptions; leaving a camp that stays.
+  - Roots at 2000 per land.
+- Smoke PASS @ v0.9.0-dirty (pre-commit), 2026-11-07. The bands year keeps 101/100 alive.
+- The browser view is unchecked since 2026-11-06 (the :8000 server did not answer).
+- `ODD.md`: v0.3 plus Default blocks for Stages 1–6, not reviewed by Chris.
 
-**Metrics** (bands, seed 1):
-- Three years: 82/100 alive; deaths 8, 1, 9, all at winter's end.
-- Processing batches: year 2 drying 128, grinding 155, roasting 52; year 3 1,052 / 949 / 78.
-- Roots cover 0.21 → 0.165 and trees 0.354 → 0.302 over three years.
-- 2.53 ms per agent-day. Camp weighing was 45% of run time at 5d (not re-measured).
+**Metrics** (bands; scratchpad runs, one per seed):
+- 40 years, seeds 1–3: 193 / 162 / 115 alive.
+  - The second generation matured (90 / 84 / 92) and bears.
+  - Famines at years 9–10 killed 22–27 children in each seed.
+  - Women are 37 / 34 / 21 of 94 / 77 / 73 adults.
+- 20 years: 124 / 96 / 128 (was 18 / 25 / 41 before roots ×2).
+- Smoke planner: 0.413 ms per agent-day. Bands runs: 1.3–2.4 ms.
 
 **Branches:** `main` only, local; no remote.
 
 **Open:**
-- Late-winter deaths; roots and trees declining under use (Backlog, watch).
-- Run-to-run variation limits reading results; no multi-seed measure yet.
-- ODD Open: does a norm include its own observations (§4.4)?
+- Stage 6 Done-when is half met. A population persists 40 years, two generations, without
+  scaffolding. "Several generations" needs 60+ years. Whether households form and dissolve
+  is not yet measured.
+- The all-adult start drives the year 9–10 famines. Chris proposed a balanced demographic
+  start (2026-11-09).
+- Women die more than men, and seed 3 has 1–6 births a year. Open question to Chris: should
+  a woman's return on a child count the risk to her?
+- Run-to-run variation; no multi-seed measure yet.
 - Flagged Defaults: the lethal-night cost; the food-gap fade; the per-food planning priors.
-  The Stage 1–5g Defaults await Chris's review. Citations unchecked.
+  The Stage 1–6 Defaults await Chris's review. Citations unchecked.
 
-**Next action:** Stage 6 build, in DEVPLAN order: cheaper camp weighing, trust, spin-up,
-sexes and childhood, care, conception, planning together.
+**Next action:** Design the balanced starting demographic, against the §4.2 ledger. Then
+build apprenticing out.
 
 **Blockers:** none.

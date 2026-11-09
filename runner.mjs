@@ -2,7 +2,9 @@
 // eval (NOT vm — conventions §4: vm adds a ~7-10x hot-loop tax on per-tick global reads, and a
 // one-config-per-process runner never needs vm's sandbox isolation). Runs reps and writes
 // self-describing packets via the standard DB client (direct transport).
-//   node runner.mjs [--reps N] [--ticks N] [--db NAME] [--collection NAME]
+//   node runner.mjs [--reps N] [--ticks N] [--db NAME] [--collection NAME] [--from FILE] [--save FILE]
+// --from starts each rep from a saved colony (ODD §5 Spin-up); --save writes the colony at the end
+// (with several reps, the rep number is added to the file name).
 import { readFileSync } from 'fs';
 import { fileURLToPath } from 'url';
 import path from 'path';
@@ -16,17 +18,19 @@ const argv = process.argv.slice(2);
 const flag = (n, d) => { const i = argv.indexOf('--' + n); return i >= 0 ? argv[i + 1] : d; };
 const reps = parseInt(flag('reps', '1'), 10);
 const ticksOverride = parseInt(flag('ticks', '0'), 10);
+const fromFile = flag('from', null), saveFile = flag('save', null);
 
 // load the DOM-free sim core into the main V8 realm. Everything is `var`/`function`/`var X =
 // class X`, so once the leading 'use strict' directive is stripped the top-level names attach
 // to globalThis and read as fast native globals (no vm proxy → no inlining penalty).
 const indirectEval = eval; // aliased → indirect eval runs in the global (sloppy) realm
-for (const f of ['util.js', 'params.js', 'engine.js', 'hex.js', 'mapgen.js', 'agent.js', 'tree.js', 'planner.js', 'exchange.js', 'world.js', 'datamanager.js']) {
+for (const f of ['util.js', 'params.js', 'engine.js', 'hex.js', 'mapgen.js', 'agent.js', 'tree.js', 'planner.js', 'exchange.js', 'life.js', 'world.js', 'datamanager.js']) {
   let src = readFileSync(path.join(__dirname, 'src', f), 'utf8');
   src = src.replace(/^\s*(['"])use strict\1;?/, '');
   indirectEval(src);
 }
 
+const { saveColony, loadColony } = await import('./colony.mjs');
 const P = globalThis.PARAMETERS;
 const { World, DataManager } = globalThis;
 const dbName = flag('db', P.db.db);
@@ -38,12 +42,13 @@ for (let r = 0; r < reps; r++) {
   const run = 'run_' + String(r).padStart(3, '0');
   db.config.run = run;
   P.seed = r + 1;  // one map per rep
-  const world = new World();
+  const world = fromFile ? loadColony(fromFile) : new World();
   const dm = new DataManager(world, null, null);
   for (let t = 1; t <= limit; t++) {
     world.update();
     if (world.day % P.reportingPeriod === 0) dm.samples.push(dm.sample());
   }
+  if (saveFile) saveColony(world, reps > 1 ? saveFile.replace(/(\.[^.]*)?$/, '_' + r + '$1') : saveFile);
   const pkt = db.packet(P, { run, samples: dm.samples });
   const res = await db.insert(collection || run, pkt);
   console.log(run + ': seed ' + P.seed + ', ' + dm.samples.length + ' samples  saved=' + JSON.stringify(res));

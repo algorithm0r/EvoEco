@@ -127,18 +127,38 @@ function blendLearned(L) {
 var FLOW_KEYS = FLOW_GOODS.concat(FLOW_GOODS.map((g) => 'x' + g));
 
 var Agent = class Agent {
-  constructor(id, home, world) {
-    const A = PARAMETERS.agents;
+  // `opts.born`: a newborn (Stage 6), with nothing held and no shelter of its own
+  constructor(id, home, world, opts) {
+    const A = PARAMETERS.agents, born = !!(opts && opts.born);
     this.id = id;
     this.home = home;
     this.alive = true;
-    this.ageDays = A.startAgeYears * PARAMETERS.year.days;
+    // adults of mixed age and both sexes, no kin (ODD §5 Starting ages, Decided 2026-11-05);
+    // the sexes differ only in reproduction (ODD §2 Agents, Decided 2026-11-04)
+    const [a0, a1] = A.startAge;
+    this.ageDays = born ? 0 : Math.floor((a0 + world.rng() * (a1 - a0)) * PARAMETERS.year.days);
+    this.female = world.rng() < 0.5;
+    // the life cycle (ODD §2, §7.4; life.js): a child until matureAge, with a carer who takes
+    // it along (its mother, or whoever took her place) and a keeper whose ties stand for its
+    // own; the charges an adult cares for; its children; a pregnancy; the children it has
+    // seen grow up or die; and what it has learned a grown child is worth (as a tie weight)
+    this.child = born;
+    this.mother = null; this.father = null; this.carer = null; this.keeper = null;
+    this.charges = []; this.kids = [];
+    this.pregnant = null;
+    // a starting woman first conceives after a wait, as if she had weaned a child before the
+    // run began, so the first births are not one cohort (ODD §5, Decided 2026-11-07)
+    this.fertileFrom = born || !this.female ? 0 : Math.floor(world.rng() * PARAMETERS.life.startWait * PARAMETERS.year.days);
+    this.helped = false;
+    this.childSeen = { grown: 0, died: 0, years: 0 };
+    this.childL = newLearned(0);
     this.need = { food: 1, water: 1, warmth: 1, rest: 1, belonging: 1 };
     // holdings: every good at zero (water is carried in a gourd), and roots to start on
     this.hold = {};
     for (const g of GOODS) this.hold[g] = 0;
-    this.hold.roots = A.starterFood;   // a burn-in scaffold (ODD §5)
-    this.shelter = world.dwellings ? world.newDwelling(home, id) : newShelter(home);   // structures at home
+    if (!born) this.hold.roots = A.starterFood;   // a burn-in scaffold (ODD §5)
+    // structures at home (a newborn shares its mother's, life.js)
+    this.shelter = born ? null : world.dwellings ? world.newDwelling(home, id) : newShelter(home);
     // know-how (ODD §7.3): recipes and builds it can make. Starts with PARAMETERS.agents.knowhow (ODD §5);
     // grows by tinkering and by seeing others practise; kept for life, so a craft is lost
     // when everyone who knows it dies without anyone having seen them practise it
@@ -239,7 +259,8 @@ var Agent = class Agent {
   capacity() {
     const A = PARAMETERS.agents, years = this.ageDays / PARAMETERS.year.days;
     const f = clamp(1 - (years - A.oldAge.declineStart) / A.oldAge.declineSpan, A.oldAge.floor, 1);
-    return A.wakingHours * f - this.walked;   // a morning spent moving camp is gone
+    // a morning spent moving camp is gone; care and late pregnancy take hours (life.js)
+    return A.wakingHours * f - this.walked - careLoad(this);
   }
 
   // ── Travel and work: walk the plan, gather, drink, build, look around ─────────────────
@@ -264,13 +285,22 @@ var Agent = class Agent {
         const frac = cap > 0 && world.inSeason(res) ? world.amount(res, s.hex) / cap : 0;
         // a tool for the task multiplies the yield and wears by the hour (ODD §2 Tools)
         const tool = TOOL_FOR[s.act], mult = tool && this.hold[tool] > 0 ? TOOLS[tool].mult : 1;
-        const got = frac > 0 ? world.take(res, s.hex, gatherRate(res) * frac * mult * s.hours) : 0;
+        const got = frac > 0 ? world.take(res, s.hex, gatherRate(res) * frac * mult * s.hours * workRate(this)) : 0;
+        // children along who help, at a child's rate and bare-handed (ODD §2, Stage 6): their
+        // haul is the carer's; it does not enter what the carer learns of its own rate
+        for (const c of this.charges) {
+          const r = workRate(c);
+          if (!(r > 0) || !(frac > 0)) continue;
+          const extra = world.take(res, s.hex, gatherRate(res) * frac * s.hours * r);
+          this.hold[GOOD_OF[s.act]] += extra;
+          if (extra > 0) c.helped = true;
+        }
         if (mult > 1) this.hold[tool] = Math.max(0, this.hold[tool] - s.hours / TOOLS[tool].life);
         const good = GOOD_OF[s.act];
         this.hold[good] += got;
         if (this.got[good] != null) this.got[good] += got / mult;
         // what it learns is the bare-handed rate (the tool's share is known from the recipe)
-        this.obs.push({ act: s.act, hex: s.hex, perHour: got / s.hours / mult, frac, season: world.seasonIndex });
+        if (workRate(this) === 1) this.obs.push({ act: s.act, hex: s.hex, perHour: got / s.hours / mult, frac, season: world.seasonIndex });
         this.look(world, s.hex);   // sees what it left behind
         if (IS_FORAGE[s.act]) { this.log.forageHours += s.hours; this.log.forageTravel = Math.max(this.log.forageTravel, world.travel(this.home)[s.hex]); }
       } else if (s.act === A_DRINK) {
@@ -403,7 +433,7 @@ var Agent = class Agent {
   // ── Consume: the evening at home ─────────────────────────────────────────────────────
   consume(world) {
     const out = Agent.evening(this.need, this.hold, shelterIns(this.shelter), this.busy, this.drank,
-      world.season().cold, this.capacity());
+      world.season().cold, this.capacity(), 1, foodScale(this));
     this.need.food = Math.max(-needReserve('food'), out.food);
     this.need.water = Math.max(-needReserve('water'), out.water);
     this.need.warmth = out.warmth; this.need.rest = out.rest;
@@ -426,15 +456,17 @@ var Agent = class Agent {
   }
 
   // ── ties (ODD §2 Ties, Owing) ─────────────────────────────────────────────────────────
-  // The record for another agent, faded to today: tallies fade with time; the owing balance
-  // shrinks at the agent's own forgetting rate (the expected value of its daily chance).
+  // The record for another agent, faded to today: tallies fade with time, more slowly the
+  // more dealings the tie holds (familiarity, ODD §2 Levels of trust, Stage 6); the owing
+  // balance shrinks at the agent's own forgetting rate (the expected value of its daily chance).
   tie(id, day) {
     let t = this.ties.get(id);
-    if (!t) { t = { kind: 0, given: 0, owed: 0, n: 0, ratio: 0, last: day }; this.ties.set(id, t); }
+    if (!t) { t = { kind: 0, given: 0, owed: 0, n: 0, ratio: 0, food: 0, last: day }; this.ties.set(id, t); }
     const dt = day - t.last;
     if (dt > 0) {
-      const f = Math.exp(-dt / PARAMETERS.exchange.tallyMemory);
-      t.kind *= f; t.given *= f;
+      const E = PARAMETERS.exchange;
+      const f = Math.exp(-dt / (E.tallyMemory * (1 + t.n / E.familiarity)));
+      t.kind *= f; t.given *= f; t.food *= f;
       t.owed *= Math.pow(1 - this.forget, dt);
       t.last = day;
     }
@@ -442,6 +474,27 @@ var Agent = class Agent {
   }
   trust(id, day) { return this.ties.has(id) ? this.tie(id, day).kind : 0; }
   owedBy(id, day) { return this.ties.has(id) ? this.tie(id, day).owed : 0; }
+  // A grudge: the unreturned gifts it carries before it stops giving to (and trading with)
+  // the other rise smoothly with the kindness it has received from it (ODD §2 Levels of
+  // trust, Stage 6): about `owedLimit` for a new tie, out of reach for a deep one.
+  grudge(id, day) {
+    if (!this.ties.has(id)) return false;
+    const E = PARAMETERS.exchange, t = this.tie(id, day);
+    return t.owed >= E.owedLimit * (1 + t.kind / E.tolerance);
+  }
+  // Its weight on another's need (ODD §2, Decided 2026-11-05): the share of its belonging
+  // that tie supplies, over the larger of its total and what meets the need; at most 1.
+  // (The total is taken once a day, at its first use, so the day's own gifts do not move it.)
+  tieWeight(id, day) {
+    if (!this.ties.has(id)) return 0;
+    if (this._bondDay !== day) {
+      let s = 0;
+      for (const [k] of this.ties) { const t = this.tie(k, day); s += Math.min(t.kind, t.given); }
+      this._bondSum = s; this._bondDay = day;
+    }
+    const t = this.tie(id, day);
+    return Math.min(t.kind, t.given) / Math.max(this._bondSum, PARAMETERS.exchange.belongingSet);
+  }
 
   // Belonging (ODD §2 Needs): ties in both directions, trusting and being trusted. Each tie
   // counts the smaller of the kindness received and the kindness given.
@@ -491,10 +544,11 @@ var Agent = class Agent {
   // floors the stored levels at the reserve (death).
   // `days` > 1 lumps several days into one step (the planner's long Keep projection): the
   // needs run down and the fire burns for that many days, and eating can make it all up.
-  static evening(need, hold, ins, busy, drank, cold, capacity, days) {
+  // `fs` scales the daily food need (a child's, a nursing or pregnant mother's; life.js).
+  static evening(need, hold, ins, busy, drank, cold, capacity, days, fs) {
     const N = PARAMETERS.needs, G = PARAMETERS.goods;
     days = days || 1;
-    let food = need.food - days * (N.foodDecay + N.workBurn * busy);
+    let food = need.food - days * (N.foodDecay * (fs || 1) + N.workBurn * busy);
     let water = drank ? 1 : need.water - days * N.waterDecay;
     const h = Object.assign({}, hold);
     // drink from the gourd
@@ -559,7 +613,8 @@ var Agent = class Agent {
   chat(world) {
     const k = PARAMETERS.agents.chatK;
     // ties first (strongest trust first), then the rest in random order
-    const pool = shuffleInPlace(this.met.slice(), world.rng);
+    // (a child with a carer has lived nothing of its own to tell, Stage 6)
+    const pool = shuffleInPlace(this.met.filter((b) => !b.carer), world.rng);
     pool.sort((x, y) => this.trust(y.id, world.day) - this.trust(x.id, world.day));
     this.chatted = 0;
     for (let i = 0; i < pool.length && this.chatted < k; i++) {

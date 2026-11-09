@@ -94,6 +94,7 @@ var World = class World {
     if (opts.agents != null) this.placeAgents(opts.agents);
     else if (PARAMETERS.agents.layout === 'bands') this.placeBands(PARAMETERS.agents.bands);
     else this.placeAgents(PARAMETERS.agents.n);
+    this.nextId = this.agents.length;   // ids of those born later (life.js)
   }
 
   // Bands a day or two apart (ODD §5): centres on land within a hex of water, at least
@@ -152,14 +153,30 @@ var World = class World {
         const sum = d.reduce((x, y) => x + y, 0);
         if (sum < bestSum) { best = s; bestDay = d; bestSum = sum; }
       }
-      if (best < 0) continue;
-      const arrive = M.map((a) => siteDay(a, this, best, tr[best]));
-      const sArrive = arrive.reduce((x, y) => x + y, 0);
-      if (!(sArrive + (n - 1) * bestSum < n * sStay)) continue;
-      // each member's own choice
-      const others = this.camps.filter((c) => c !== camp && c.members.length && c.hex !== best && c.hex !== camp.hex && tr[c.hex] <= PARAMETERS.agents.wakingHours);
-      const atBest = this.camps.find((c) => c !== camp && c.hex === best);
+      const arrive = best < 0 ? null : M.map((a) => siteDay(a, this, best, tr[best]));
+      const moves = best >= 0 && arrive.reduce((x, y) => x + y, 0) + (n - 1) * bestSum < n * sStay;
+      const others = this.camps.filter((c) => c !== camp && c.members.length && c.hex !== camp.hex && (!moves || c.hex !== best) && tr[c.hex] <= PARAMETERS.agents.wakingHours);
       const stayers = this.camps.filter((c) => c !== camp && c.hex === camp.hex).flatMap((c) => c.members);
+      if (!moves) {
+        // the camp stays: each member may still leave for another camp within reach, by the
+        // same costs (ODD §5 Leaving a camp that stays, Decided 2026-11-07)
+        if (!others.length) continue;
+        const here = M.concat(stayers), join = new Map();
+        M.forEach((a, k) => {
+          const b0 = a.need.belonging, adj = (b) => n * K * (sq(b) - sq(b0));
+          let c = n * stay[k] + adj(a.belongingWith(here, this.day)), pick = null;
+          for (const o of others) {
+            const cJoin = siteDay(a, this, o.hex, tr[o.hex]) + (n - 1) * siteDay(a, this, o.hex, 0) + adj(a.belongingWith(o.members, this.day));
+            if (cJoin < c) { pick = o; c = cJoin; }
+          }
+          if (pick) join.set(a, pick);
+        });
+        for (const [a, o] of join) { this.moveTo(a, o, tr[o.hex]); this.campJoins = (this.campJoins || 0) + 1; }
+        if (join.size) camp.members = M.filter((a) => !join.has(a));
+        continue;
+      }
+      // each member's own choice
+      const atBest = this.camps.find((c) => c !== camp && c.hex === best);
       const goers = M.concat(atBest ? atBest.members : []);
       const choice = new Map();
       M.forEach((a, k) => {
@@ -212,6 +229,21 @@ var World = class World {
     d.sleepers.push(id);
     this.dwellings.push(d);
     return d;
+  }
+  // Death (ODD §7.5, Decided): everything stays where it lies. A dead agent's goods stay in
+  // the dwelling it slept in, and whoever sleeps there takes them: by location, no heirs.
+  leaveGoods(a) {
+    const d = a.shelter;
+    if (!d) return;
+    if (!d.left) d.left = {};
+    for (const g in a.hold) if (a.hold[g] > 0) { d.left[g] = (d.left[g] || 0) + a.hold[g]; a.hold[g] = 0; }
+  }
+  takeGoods(a) {
+    const d = a.shelter;
+    if (!d || !d.left) return;
+    for (const g in d.left) a.hold[g] = (a.hold[g] || 0) + d.left[g];
+    d.left = null;
+    a.mu = null;
   }
   leaveDwelling(a) {
     const s = a.shelter.sleepers, k = s.indexOf(a.id);
@@ -532,31 +564,52 @@ var World = class World {
   // the order contested hexes are drawn from.
   agentDay() {
     const live = this.agents;
+    // children with a carer go with it (life.js): they neither plan nor act on their own
+    const adults = live.filter((a) => !a.carer), deps = live.filter((a) => a.carer);
+    for (const a of live) { a.incoming = null; a.announced = null; }
     if (this.camps && PARAMETERS.camp.move && this.day % PARAMETERS.camp.every === 0) this.campsDay();   // moving camp
-    for (const a of live) a.plan = planDay(a, this);                 // 1. Plan
-    const order = live.slice();
+    // 1. Plan, in a random order, each announcing what it expects to bring home; those after
+    // count their ties' announced hauls as coming in tonight (planning together, ODD §7.6)
+    const planOrder = adults.slice();
+    for (let i = planOrder.length - 1; i > 0; i--) {
+      const j = this.rng.int(i + 1);
+      const t = planOrder[i]; planOrder[i] = planOrder[j]; planOrder[j] = t;
+    }
+    for (const a of planOrder) {
+      if (a.child && workRate(a) === 0) { a.plan = []; continue; }
+      a.incoming = expectedIncoming(a, this);
+      a.plan = planDay(a, this);
+      a.announced = announcedHaul(a, this);
+    }
+    const order = adults.slice();
     for (let i = order.length - 1; i > 0; i--) {                       // 2. Travel and work
       const j = this.rng.int(i + 1);
       const t = order[i]; order[i] = order[j]; order[j] = t;
     }
     for (const a of order) a.act(this);
+    for (const c of deps) followCarer(c, this);
     this.meet(live);                                                   //    meeting and chat
     this.giftsToday = 0;
     for (const a of live) { a.xnet = {}; for (const g of FLOW_GOODS) a.xnet[g] = -a.hold[g]; }
     exchangeDay(this, live);                                          // 3. Exchange
     for (const a of live) for (const g of FLOW_GOODS) a.xnet[g] += a.hold[g];   // net in exchange
     if (this.camps) this.bedDown(order);                              //    where to sleep
-    for (const a of live) a.consume(this);                            // 4. Consume
-    for (const a of live) a.learn();                                  // 5. Learn
+    for (const a of adults) this.takeGoods(a);                        //    goods left where one sleeps
+    for (const a of adults) a.consume(this);                          // 4. Consume
+    for (const c of deps) dependentEvening(c, this);
+    for (const a of adults) if (!a.child || workRate(a) > 0) a.learn();   // 5. Learn
     for (const a of live) a.age(this);                                // 6. Aging and deaths
-    for (const a of live) if (!a.alive) { a.deathDay = this.day; this.dead.push(a); this.leaveDwelling(a); }
+    const died = live.filter((a) => !a.alive);
+    for (const a of died) { a.deathDay = this.day; this.dead.push(a); this.leaveGoods(a); if (!a.carer) this.leaveDwelling(a); }
     this.wearDwellings();
     this.agents = live.filter((a) => a.alive);
     if (this.camps) {
       for (const c of this.camps) c.members = c.members.filter((a) => a.alive);
       this.camps = this.camps.filter((c) => c.members.length);
     }
+    lifeDay(this, died);                                              // 7. Births, growing up, conception
   }
+
 
   // Meeting is co-location (ODD §3): agents who were in the same hex today, including
   // home in the evening, meet. Each sees what the others worked at there (passive, no cap),

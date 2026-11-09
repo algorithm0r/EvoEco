@@ -29,7 +29,8 @@ function planBest(agent, world, withTrade) {
   const A = PARAMETERS.agents;
   agent.costs = null;                     // hour costs as of this morning
   agent.hutV = hutValue(agent, world);   // worked out once a day (also used in the exchange)
-  const cands = planCandidates(agent, world);
+  const half = Math.ceil(A.topPerActivity / 2);
+  const cands = undominated(agent, world, planCandidates(agent, world), half);
   // candidates are ranked without the trade arm (five times cheaper; the route itself is
   // built and chosen with it)
   const base0 = planCost(agent, world, [], false);
@@ -37,7 +38,7 @@ function planBest(agent, world, withTrade) {
     c.solo = planCost(agent, world, [c], false);
     c.rate = (base0 - c.solo) / planHours(agent, world, [c]);
   }
-  const top = [], half = Math.ceil(A.topPerActivity / 2);
+  const top = [];
   for (const key of ['solo', 'rate']) {
     const kept = ACT_NAMES.map(() => 0);
     const sorted = cands.slice().sort(key === 'solo' ? (a, b) => a.solo - b.solo : (a, b) => b.rate - a.rate);
@@ -51,6 +52,37 @@ function planBest(agent, world, withTrade) {
   const byGain = greedyRoute(agent, world, top, base, false, withTrade);
   const byRate = greedyRoute(agent, world, top, base, true, withTrade);
   return byRate.cost < byGain.cost ? byRate : byGain;
+}
+
+// The shortlist keeps, per activity, the best `half` stops by one-stop cost and the best
+// `half` by gain per hour. For gathering and drinking, a one-stop day differs between stops
+// of one activity only in what it brings in and the round trip, and costs less with more
+// brought in and fewer hours; so a stop that `half` others match or beat on both can make
+// neither list, and is dropped before the costly scoring. A speed-up only: the shortlist is
+// unchanged (Stage 6, 2026-11-06: ranking was most of the planner's and camp weighing's time).
+function undominated(agent, world, cands, half) {
+  const fromHome = world.travel(agent.home), groups = new Map();
+  cands.forEach((c, i) => {
+    c._keep = true;
+    if (!IS_GATHER[c.act] && c.act !== A_DRINK) return;
+    c._i = i;
+    c._amt = c.act === A_DRINK ? 0 : planEstimate(agent, c.hex, c.act, world.day);
+    c._trip = fromHome[c.hex] + world.travel(c.hex)[agent.home];
+    let g = groups.get(c.act);
+    if (!g) groups.set(c.act, (g = []));
+    g.push(c);
+  });
+  for (const g of groups.values()) {
+    g.sort((x, y) => x._trip - y._trip || y._amt - x._amt || x._i - y._i);
+    const best = [];   // the `half` largest amounts among stops as near or nearer
+    for (const c of g) {
+      if (best.length >= half && !(c._amt > best[half - 1])) { c._keep = false; continue; }
+      best.push(c._amt);
+      best.sort((x, y) => y - x);
+      if (best.length > half) best.length = half;
+    }
+  }
+  return cands.filter((c) => c._keep);   // in their first order, so ties fall as before
 }
 
 // One greedy build of the route from the shortlist: each step takes the improving move with
@@ -183,7 +215,7 @@ function planEstimate(agent, hex, act, day) {
   const frac = agent.seenFrac[act][hex];
   const sd = A.sightSd * (1 - Math.exp(-(day - agent.seenDay[hex]) / A.sightMemory));
   const tool = TOOL_FOR[act], mult = tool && agent.hold[tool] > 0 ? TOOLS[tool].mult : 1;
-  return agent.rate(act) * mult * Math.min(1, frac + A.curiosity * sd);
+  return agent.rate(act) * mult * workRate(agent) * Math.min(1, frac + A.curiosity * sd);
 }
 
 function planCost(agent, world, plan, withTrade) {
@@ -227,6 +259,8 @@ function planCost(agent, world, plan, withTrade) {
   }
   if (plan.length) hours += world.travel(at)[agent.home];
   if (!(hours <= cap)) return Infinity;
+  // what ties at camp announced this morning, as it expects it to come back tonight (ODD §7.6)
+  if (agent.incoming) for (const g in agent.incoming) hold[g] += agent.incoming[g];
   return holdingsCost(agent, world, hold, shelter, hours, drank, agent.need.belonging, withTrade !== false) - bonus;
 }
 
@@ -277,7 +311,8 @@ function keepCost(agent, world, hold, shelter, busy, drank, belonging) {
   const A = PARAMETERS.agents, G = PARAMETERS.goods, N = PARAMETERS.needs;
   const cap = agent.capacity();
   const tab = projectionTable(world);
-  const e = Agent.evening(agent.need, hold, shelterIns(shelter), busy, drank, tab.coldNow, cap);
+  const fs = foodScale(agent);   // a child's or a mother's food need (life.js), held through the projection
+  const e = Agent.evening(agent.need, hold, shelterIns(shelter), busy, drank, tab.coldNow, cap, 1, fs);
   let cost = needCost(e, true, belonging, agent.coldDays);
   // a night that kills is the worst case of every need, tonight and on every day it takes
   // away (ODD §2 Needs: below zero the scale runs to death; a dead agent has nothing)
@@ -348,7 +383,7 @@ function keepCost(agent, world, hold, shelter, busy, drank, belonging) {
     // inflows that just cover the day's need carried tonight's hunger unchanged for months,
     // and food outweighed even a lethal thirst.)
     const Lf = agent.livedFood[si].v;
-    let food = Lf + T.persist * (nf - Lf) - S * (N.foodDecay + N.workBurn * work);
+    let food = Lf + T.persist * (nf - Lf) - S * (N.foodDecay * fs + N.workBurn * work);
     const fire = Math.min(1, h.wood / (G.fireWood * S));
     h.wood -= fire * G.fireWood * S;
     const pot = h.pot > 0;
@@ -467,4 +502,56 @@ function needCost(e, withRest, belonging, coldDays) {
   const sq = (x) => (1 - x) * (1 - x);
   return sq(needLevel('food', e.food)) + sq(needLevel('water', e.water)) + sq(needLevel('warmth', e.warmth, coldDays)) +
     (withRest ? sq(e.rest) : 0) + sq(belonging);
+}
+
+// ── planning together (ODD §7.6, Default 2026-11-04) ─────────────────────────────────────
+// Each morning at camp, in a random order, each agent plans its day and announces what it
+// expects to bring home. Those planning after count each tie's announced haul as coming in
+// tonight, times a learned value per tie: how much of that tie's announced hauls has come back
+// to it as gifts or swaps. No threshold and no household: the group is as wide as trust and
+// that record reach.
+function campMates(agent, world) {
+  return agent.camp ? agent.camp.members : world.agents.filter((b) => b.home === agent.home && !b.carer);
+}
+function expectedIncoming(agent, world) {
+  const day = world.day;
+  let out = null;
+  for (const b of campMates(agent, world)) {
+    if (b === agent || !b.announced || !agent.ties.has(b.id)) continue;
+    const t = agent.tie(b.id, day);
+    if (!t.rel || !(t.rel.v > 0) || !(t.kind > 0)) continue;
+    for (const g in b.announced) {
+      if (!out) out = {};
+      out[g] = (out[g] || 0) + t.rel.v * b.announced[g];
+    }
+  }
+  return out;
+}
+// what its plan expects to gather, by good
+function announcedHaul(agent, world) {
+  const out = {};
+  for (const s of agent.plan) {
+    if (!IS_GATHER[s.act]) continue;
+    const g = GOOD_OF[s.act];
+    out[g] = (out[g] || 0) + planEstimate(agent, s.hex, s.act, world.day) * s.hours;
+  }
+  return out;
+}
+// After the evening's exchange: for each tie at camp that announced a haul today, the share
+// of it that came back (gifts and swaps received from that tie), by one error-driven update.
+function learnReliability(world) {
+  const day = world.day, r = PARAMETERS.agents.learnRate;
+  for (const a of world.agents) {
+    if (a.carer) { a.recv = null; continue; }
+    for (const b of campMates(a, world)) {
+      if (b === a || !b.announced || !a.ties.has(b.id)) continue;
+      let said = 0;
+      for (const g in b.announced) said += b.announced[g];
+      if (!(said > 0)) continue;
+      const t = a.tie(b.id, day);
+      if (!t.rel) t.rel = newLearned(0);
+      learnOwn(t.rel, Math.min(1, ((a.recv && a.recv.get(b.id)) || 0) / said), r);
+    }
+    a.recv = null;
+  }
 }

@@ -61,7 +61,7 @@ var PARAMETERS = {
     greens: { kind: 'crop', cover: 'grass', perLand: 1200, season: [0, 0.25], perHour: 14 },   // quick to pick; rot in days
     seeds:  { kind: 'crop', cover: 'grass', perLand: 900, season: [0.25, 0.5], perHour: 6 },  // the wild grain
     nuts:   { kind: 'crop', cover: 'trees', perLand: 1200, season: [0.5, 0.75], perHour: 6 },
-    roots:  { kind: 'plant', cover: 'roots', perLand: 1000, season: [0.5, 1], perHour: 12 },   // slow to dig; the winter food
+    roots:  { kind: 'plant', cover: 'roots', perLand: 2000, season: [0.5, 1], perHour: 12 },   // slow to dig; the winter food (1000 → 2000, 2026-11-07: camps of 20 starved in early winter)
     wood:   { kind: 'plant', cover: 'trees', perLand: 200, perHour: 4 },
     soil:   { kind: 'renewable', r: 0.01, floor: 0.2, season: 'none', capBy: { plains: 6, forest: 6, hills: 2 },
               floodplainBonus: 2, floodplainRange: 1 },  // fertile land near water
@@ -119,7 +119,7 @@ var PARAMETERS = {
     // bands a day or two apart; homes within `radius` hexes of the band centre. No ties or
     // households are pre-built, only nearness (ODD §5)
     bands: { n: 5, size: 20, spacing: 14, radius: 2 },
-    startAgeYears: 20,
+    startAge: [15, 45],   // years, uniform, at the start (ODD §5 Starting ages, Decided)
     // know-how at the start (ODD §5, Decided: no tech level known by default; gathering, fire
     // and the stone tools are assumptions). A variant adds levels: 'leanTo', 'pot', 'hut', 'farm'
     knowhow: ['axe', 'pick', 'hoe', 'sickle'],
@@ -165,6 +165,27 @@ var PARAMETERS = {
     projectPrior: 2,      // pseudo-count of finished projects behind the chance of finishing
   },
 
+  // --- life cycle (ODD §2 Agents life cycle, §7.4 Births; Stage 6; numbers Default) ---
+  life: {
+    on: true,             // births; off: a fixed cohort that only ages and dies (tests)
+    nurseAge: 2,          // years an infant lives on its mother's milk
+    helpAge: 6,           // from here a child works at its carer's task, at a child's rate
+    matureAge: 15,        // plans and works on its own
+    fertile: { female: [16, 45], male: 16 },   // years (ODD §7.4 Fertility limits)
+    month: 30,            // days between a woman's weighings of a child (ODD §7.4)
+    conceive: 0.2,        // chance a month's trying conceives (ODD §7.4, the human rate)
+    pregnancyDays: 270,
+    lateDays: 90,         // the last part of pregnancy: more food needed, fewer hours
+    lateFood: 0.15,       // extra share of the daily food need, late in pregnancy
+    lateHours: 2,         // hours a day fewer, late in pregnancy
+    milkFood: 0.25,       // extra share of the mother's daily food need per infant nursed
+    careHours: [2, 1, 0.5],   // hours a day from the carer's rest: infant, child under helpAge, older child
+    childFood: [0.4, 1],  // a child's food need as a share of an adult's, at nurseAge and at matureAge
+    childRate: [0.25, 1], // a child's work rate as a share of an adult's, at helpAge and at matureAge
+    survivalPrior: { died: 1, years: 52 },   // before any are seen: 1 death in 52 child-years (3 in 4 grow up)
+    startWait: 3,         // years over which each starting woman's first chance to conceive is spread (ODD §5)
+  },
+
   // --- moving camp (ODD §5, Decided — Chris, 2026-11-03; numbers Default) ---
   camp: {
     move: true,           // bands move camp as a group; off: homes fixed near the band centre
@@ -179,7 +200,9 @@ var PARAMETERS = {
     tradeWeight: 0.5,     // a barter's weight in the kindness tally, vs 1 for a gift; swept incl. 0
     tallyMemory: 60,      // days for a tally to fade by 1/e
     forget: 0.01,         // daily chance of forgetting an unreturned gift (per agent; a setting)
-    owedLimit: 3,         // unreturned gifts beyond which it stops giving (a grudge)
+    owedLimit: 3,         // unreturned gifts beyond which it stops giving (a grudge), for a new tie
+    tolerance: 5,         // kindness received that adds another owedLimit to the grudge limit (Stage 6)
+    familiarity: 40,      // dealings that add another tallyMemory to how slowly a tie fades (Stage 6)
     belongingSet: 5,      // tie strength that meets the belonging need
     priceRate: 0.2,       // error-driven update of the price norm
     relRate: 0.1,         // update of how reliably its trades come off

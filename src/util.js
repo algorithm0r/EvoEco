@@ -7,15 +7,16 @@ function clamp(x, lo, hi) { return x < lo ? lo : (x > hi ? hi : x); }
 
 // Seeded PRNG (mulberry32). The model never calls Math.random: every draw comes from a
 // generator made from PARAMETERS.seed, so the same seed reproduces the same run.
+// The state lives on the generator (`rng.s`), so a saved colony carries on the same draws.
 function makeRng(seed) {
-  let a = seed >>> 0;
   const rng = function () {
-    a = (a + 0x6D2B79F5) >>> 0;
+    const a = rng.s = (rng.s + 0x6D2B79F5) >>> 0;
     let t = a;
     t = Math.imul(t ^ (t >>> 15), t | 1);
     t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
     return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
   };
+  rng.s = seed >>> 0;
   rng.int = function (n) { return Math.floor(rng() * n); };
   rng.pick = function (arr) { return arr[Math.floor(rng() * arr.length)]; };
   return rng;

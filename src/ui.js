@@ -63,7 +63,7 @@ function wireCharts(dm) {
     $(id).setAttribute('window', win);
     $(id).data = { dx, series: series.map(([label, key, color]) => ({ label, values: r[key], color })) };
   };
-  line('pop', [['alive', 'alive'], ['died', 'died', 'var(--cb-bad)']]);
+  line('pop', [['adults', 'adults'], ['children', 'children'], ['pregnant', 'pregnant'], ['born', 'born'], ['died', 'died', 'var(--cb-bad)']]);
   line('needs', [['food', 'food'], ['water', 'water'], ['warmth', 'warmth'], ['rest', 'rest'], ['belonging', 'belonging']]);
   line('camps', [['camps', 'camps'], ['moves', 'campMoves']]);
   line('shelter', [['huts lived in', 'hutsLivedIn'], ['huts empty', 'hutsEmpty'], ['huts being built', 'hutsBuilding'], ['lean-tos', 'leanTos']]);

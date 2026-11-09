@@ -25,7 +25,7 @@ var DataManager = class DataManager {
     // per-day events summed over the period (trades, gifts) and the running totals the
     // period's change is read from (grain, camp moves, deaths)
     this.acc = { trades: 0, gifts: 0, days: 0 };
-    this.last = { sown: 0, reaped: 0, campMoves: 0, dead: 0 };
+    this.last = { sown: 0, reaped: 0, campMoves: 0, dead: 0, born: 0 };
   }
 
   // Stage 2 adds the living agents' mean need levels and hours (the full percentile
@@ -42,6 +42,9 @@ var DataManager = class DataManager {
       cover: { grass: w.coverShare('grass'), roots: w.coverShare('roots'), trees: w.coverShare('trees'), fields: w.coverShare('fields') },
       held: Object.fromEntries(FOODS.map((k) => [k, mean((a) => a.hold[k])])),
       alive: L.length, dead: w.dead.length,
+      // Stage 6: the life cycle
+      children: L.filter((a) => a.child).length, pregnant: L.filter((a) => a.pregnant).length,
+      births: w.births || 0, conceptions: w.conceptions || 0, tries: w.tries || 0, matured: w.matured || 0,
       food: mean((a) => a.level('food')), waterNeed: mean((a) => a.level('water')),
       warmth: mean((a) => a.level('warmth')), rest: mean((a) => a.need.rest),
       busy: mean((a) => a.busy), heldFood: mean((a) => FOODS.reduce((s, k) => s + a.hold[k] * PARAMETERS.goods[k].restores, 0)),
@@ -67,6 +70,11 @@ var DataManager = class DataManager {
     const mean = (f, list) => (list = list || L).length ? list.reduce((s, a) => s + f(a), 0) / list.length : null;
     r.alive.push(L.length);
     r.died.push(w.dead.length - this.last.dead);
+    // Stage 6: the life cycle
+    const kids = L.filter((a) => a.child).length;
+    r.adults.push(L.length - kids); r.children.push(kids);
+    r.pregnant.push(L.filter((a) => a.pregnant).length);
+    r.born.push((w.births || 0) - this.last.born);
     for (const k of ['food', 'water', 'warmth']) r[k].push(mean((a) => a.level(k)));
     r.rest.push(mean((a) => a.need.rest));
     r.belonging.push(mean((a) => a.need.belonging));
@@ -105,7 +113,7 @@ var DataManager = class DataManager {
       r[k].push(bins);
     }
     this.acc = { trades: 0, gifts: 0, days: 0 };
-    this.last = { sown: w.sown || 0, reaped: w.reaped || 0, campMoves: w.campMoves || 0, dead: w.dead.length };
+    this.last = { sown: w.sown || 0, reaped: w.reaped || 0, campMoves: w.campMoves || 0, dead: w.dead.length, born: w.births || 0 };
   }
 
   update() {
@@ -145,7 +153,8 @@ DataManager.SERIES = ['alive', 'died', 'food', 'water', 'warmth', 'rest', 'belon
   'fields', 'farmReturn', 'discoveries', 'learnedBySeeing', 'know_leanTo', 'know_pot', 'know_hut', 'know_farm',
   'know_drying', 'know_roasting', 'know_grinding', 'cover_grass', 'cover_roots', 'cover_trees', 'cover_fields',
   'held_raw', 'held_kept',
-  'tieDensity', 'tieClustering', 'tieLargest', 'tieInside'];
+  'tieDensity', 'tieClustering', 'tieLargest', 'tieInside',
+  'adults', 'children', 'pregnant', 'born'];
 // the distributions across the living, binned each period: need levels run from -1 (the
 // reserve spent, ODD §2 Needs) to 1; rest and belonging from 0 to 1
 DataManager.DISTS = {
@@ -154,4 +163,5 @@ DataManager.DISTS = {
   dWarmth: { get: (a) => a.level('warmth'), lo: -1, hi: 1, bins: 20 },
   dRest: { get: (a) => a.need.rest, lo: 0, hi: 1, bins: 20 },
   dBelonging: { get: (a) => a.need.belonging, lo: 0, hi: 1, bins: 20 },
+  dAge: { get: (a) => ageYears(a), lo: 0, hi: 80, bins: 16 },   // Stage 6: the age structure
 };
