@@ -127,20 +127,71 @@ function greedyRoute(agent, world, top, base, perHour, withTrade) {
 // hours to get there (ODD §5 Moving camp: each member scores a site by its own planning
 // cost there). At a new site it would take the best empty dwelling there, if any (its own is
 // left behind), and fields beyond a half day's reach of it bring nothing back
-// (pendingGrain). The agent is restored after.
-function siteDay(agent, world, hex, walk) {
+// (pendingGrain). With `n` campers there, the land it saw is expected to thin over the week
+// by its learned thinning per camper (ODD §5 Crowding enters the forecast); the mean over the
+// week is half the week's thinning. Where the best free dwelling is less warm than its own, it
+// is assumed to rebuild its own, the hours charged to the forecast's first week; and for the
+// rest of the season it gathers by how full it has seen the site's land against its usual
+// (ODD §5 A site's forecast prices rebuilding and its own land). The agent is restored after.
+function siteDay(agent, world, hex, walk, n) {
   const keep = { home: agent.home, shelter: agent.shelter, drinkTrip: agent.drinkTrip,
     farmFert: agent.farmFert, hutV: agent.hutV, walked: agent.walked };
   agent.walked = 0;
   agent.walked = Math.min(walk, agent.capacity());
+  agent.crowd = n && agent.thin ? 0.5 * n * Math.max(0, agent.thin[world.seasonIndex].v) : 0;
   if (hex !== agent.home) {
+    const own = agent.shelter;
     agent.settle(world, hex);
-    agent.shelter = (world.dwellings && world.bestDwelling(hex, agent)) || newShelter(hex);
+    const d = world.dwellings && world.bestDwelling(hex, agent);
+    agent.shelter = d || newShelter(hex);
+    if (!(d && shelterIns(d) >= shelterIns(own))) {
+      const r = rebuildAt(agent, world, own, hex);
+      if (r && shelterIns(r.shelter) > shelterIns(agent.shelter)) { agent.shelter = r.shelter; agent.rebuild = r.hours; }
+    }
   }
+  agent.landRatio = landRatio(agent, world, hex);
   const cost = planBest(agent, world, false).cost;
   Object.assign(agent, keep);
   agent.costs = null;
+  agent.crowd = 0; agent.landRatio = 1; agent.rebuild = 0;
   return cost;
+}
+
+// The agent's own shelter put up again at `hex`, and the hours it takes it: the build's hours
+// (fewer with an axe) and its inputs at its hour costs there, times how complete its shelter
+// is, shared among those sleeping in it now. A hut only if it knows how and can get the
+// inputs; else its lean-to, if it has one. Null if neither.
+function rebuildAt(agent, world, own, hex) {
+  const c = hourCosts(agent, world), sharers = Math.max(1, own.sleepers.length);
+  const hours = (B, done) => {
+    let T = B.hours / (B.tool && agent.hold[B.tool] > 0 ? TOOLS[B.tool].mult : 1);
+    for (const g in B.inputs) T += B.inputs[g] * c[g];
+    return T * done / sharers;
+  };
+  if (own.hutDone && own.hut > 0 && agent.knows.has('hut')) {
+    const T = hours(BUILDS.hut, own.hut);
+    if (T < Infinity) return { shelter: Object.assign(newShelter(hex), { hut: own.hut, hutDone: true }), hours: T };
+  }
+  if (own.leanTo > 0 && agent.knows.has('leanTo')) {
+    const T = hours(BUILDS.leanTo, own.leanTo);
+    if (T < Infinity) return { shelter: Object.assign(newShelter(hex), { leanTo: own.leanTo }), hours: T };
+  }
+  return null;
+}
+
+// How full the agent has seen a site's land, less the thinning expected there, against how full
+// the land around camp usually is this season; 1 until it has learned the usual.
+function landRatio(agent, world, hex) {
+  const L = agent.livedLand && agent.livedLand[world.seasonIndex];
+  if (!L || (L.nh === 0 && L.nn === 0) || !(L.v > 0.01)) return 1;
+  return world.landAround(agent, hex, agent.crowd) / L.v;
+}
+
+// How full the agent expects a hex to be for an activity: as last seen, less the thinning
+// expected while a camp site is scored (siteDay; food and wood only).
+function seenLand(agent, act, h) {
+  const f = agent.seenFrac[act][h];
+  return agent.crowd > 0 && (IS_FORAGE[act] || act === A_WOOD) ? Math.max(0, f - agent.crowd) : f;
 }
 
 // Hours a route takes: travel between its stops and back home, and the work at each.
@@ -212,7 +263,7 @@ function planCandidates(agent, world) {
 // optimistic, so stale hexes get looked at again (ODD §4.4).
 function planEstimate(agent, hex, act, day) {
   const A = PARAMETERS.agents;
-  const frac = agent.seenFrac[act][hex];
+  const frac = seenLand(agent, act, hex);
   const sd = A.sightSd * (1 - Math.exp(-(day - agent.seenDay[hex]) / A.sightMemory));
   const tool = TOOL_FOR[act], mult = tool && agent.hold[tool] > 0 ? TOOLS[tool].mult : 1;
   return agent.rate(act) * mult * workRate(agent) * Math.min(1, frac + A.curiosity * sd);
@@ -331,7 +382,11 @@ function keepCost(agent, world, hold, shelter, busy, drank, belonging) {
   // grain it expects back at harvest: fields sown earlier and any sown today (Stage 5d)
   const arriving = agent.pendingGrain(world) + (hold.sown || 0);
   const farming = agent.knows.has('farm') && agent.farmFert > 0;
-  let projSown = 0, ripened = false, carryWork = 0;
+  // hours to rebuild at a site being scored fall in the first step (siteDay)
+  let projSown = 0, ripened = false, carryWork = agent.rebuild || 0;
+  // gathering this season scaled by the site's land against the usual (siteDay)
+  const ratio = agent.landRatio, si0 = tab.length ? tab[0].si : -1;
+  let thisSeason = ratio !== 1;
   const rateWood = Math.max(0.1, agent.rate(A_WOOD));
   const keeps = KEEP_RECIPES.filter(([r]) => agent.knows.has(r));
   const capAhead = cap + agent.walked;   // a walk moving camp shortens today only
@@ -357,8 +412,13 @@ function keepCost(agent, world, hold, shelter, busy, drank, belonging) {
     if (h.axe > 0) h.axe = Math.max(0, h.axe - S * F.wood.v / rateWood / TOOLS.axe.life);
     // each food rots at its own rate, and what the season brings in is added (Stage 5g)
     const rot = T.rot, inf = inflow[si];
-    for (let q = 0; q < NF; q++) { const x = fq[q] * rot[q] + S * inf[q]; fq[q] = x > 0 ? x : 0; }
-    h.wood = Math.max(0, h.wood + S * (F.wood.v * wMult + F.xwood.v));
+    if (thisSeason && si !== si0) thisSeason = false;
+    const lr = thisSeason ? ratio - 1 : 0;   // extra share of what it gathers
+    for (let q = 0; q < NF; q++) {
+      const x = fq[q] * rot[q] + S * (inf[q] + (lr && F[FOODS[q]] ? lr * F[FOODS[q]].v : 0));
+      fq[q] = x > 0 ? x : 0;
+    }
+    h.wood = Math.max(0, h.wood + S * (F.wood.v * wMult * (1 + lr) + F.xwood.v));
     if (h.pot > 0) h.pot = Math.max(0, h.pot - G.pot.wear * S);
     const covered = Math.min(S, waterDays);
     waterDays -= covered;

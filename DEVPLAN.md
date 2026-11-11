@@ -286,6 +286,14 @@ generation, and growth that brings bands into competition. Design first, one que
       population endogenous (the care weight decided 2026-11-06)
 - [x] Death: holdings stay where they lie (open access): goods stay in the dead agent's
       dwelling and whoever sleeps there takes them (2026-11-06)
+- [x] Crowding enters the forecast: each member learns the thinning per camper by season, and a
+      site's seen land is cut by it times the headcount (ODD §5, Chris 2026-11-10)
+- [x] A site's forecast prices rebuilding and its own land (ODD §5, Chris 2026-11-10): tech
+      bands at 40 years, seeds 1–6, mean 345 alive vs 156 before
+- [ ] Peer groups split together: a member chooses alone, so a group cannot leave a merged
+      camp as one (ODD §5, Decided 2026-11-10, mechanism Open)
+- [ ] Contests between bands without warfare: skirmishes settle who stays at a site (ODD §5,
+      Decided 2026-11-10, mechanism Open; how it sits with open access is Open)
 **Done when:** households form and dissolve on their own, and a population persists across
 several generations without scaffolding.
 
@@ -387,9 +395,18 @@ How runs are compared is a research question to settle then (ODD §4.10).
       beyond half a day's reach drop out of the projection's harvest
 - [x] feat: a hut shelters 5 and a lean-to 2, beds chosen each evening by warmth then ties
       (Chris, 2026-11-03); huts fill, and 80–95% of sleepers helped build
-- [ ] idea: nothing given, seed 1: a merged camp of ~40 lost 15 to hunger in year 3 (83/100
+- [x] idea: nothing given, seed 1: a merged camp of ~40 lost 15 to hunger in year 3 (83/100
       alive vs 98 with one agent per structure). Check across seeds whether merged camps
-      outgrow their land; the move rule sums costs but nothing weighs camp size directly
+      outgrow their land; the move rule sums costs but nothing weighs camp size directly.
+      Traced 2026-11-09 (no tech, seed 2, year 27, scratchpad ct27_2.txt): two camps (80 and 76
+      adults) picked the same site in late spring and merged into ~300 people. The merged camp
+      moved weekly as one, stripped each site within a week, hit thirst in summer (22 dead),
+      and starved through autumn, ending at about 10. A camp of 41 adults elsewhere lost
+      nobody and stored up to 180 days a head. `siteDay` scores a site as one member's best day
+      on the land as they saw it, repeated for six days, whatever the camp's size; a member can
+      only follow, stay, or join a camp within a day's walk, so the big camp never split.
+      Addressed 2026-11-10 by crowding in the forecast (Stage 6): no tech, seed 2, 40 years,
+      308 alive vs 161
 - [x] feat: every learned value keeps a habit, a norm and a score of which pays off; the
       agent blends by the scores (ODD §4.4, Chris 2026-11-03 "fix 2"). Seasonal flows,
       evening food, working day and sowing return are now told in chat
@@ -449,5 +466,28 @@ How runs are compared is a research question to settle then (ODD §4.10).
       generation matured and bearing. "Several generations" needs 60+ years
 - [ ] check: the static server on :8000 did not answer on 2026-11-06, so the new charts are
       unchecked in the browser
+- [ ] check: with discovery off (stone tools only), 40 years, seeds 1–3 (2026-11-09,
+      scratchpad nt40_*): near-zero deaths for 20+ years, 286 / 302 / 324 alive at year 20 (vs
+      124 / 96 / 128 with discovery), women half the adults; then camps of ~100 overshoot (seed 2
+      lost ~300 of 391 in year 27, hunger and thirst; seed 3 ~100 in years 30–31). Which
+      know-how costs lives is untested: add one item at a time to the start set
+- [x] check: what tech costs (2026-11-09, scratchpad roi2.mjs, roi_t*/roi_n*, 8 years, seeds
+      1–3, means per adult-day): with discovery vs without, busy 7.8 vs 6.5 h for the same food
+      (1.66 vs 1.67 days' food gathered). Tech work 0.53 h, of which tinkering 0.30 (still
+      0.17–0.42 in year 8); travel 4.3 vs 3.4 h; food per food-hour 0.65 vs 0.77; wood 0.34 vs
+      0.73 h; warmth 0.88 vs 0.75. Nothing sown or reaped in 8 years in any seed. Untested
+      guess for the travel: huts hold camps near stripped land. Confirmed and fixed
+      2026-11-10 (forecast held the shelter fixed and was blind to the site's land; Stage 6).
+      After (roiF_*): busy 6.8 vs 6.3 h, food 1.91 vs 1.93, travel 3.3 vs 3.1, warmth 0.80
+      vs 0.72. Tech still buys warmth, not food
+- [ ] check: winter and huts (2026-11-11, scratchpad hutprobe.mjs, seed 3 tech colony at year
+      40): of 17 finished huts none is slept in through winter; camps sit on bare ground at
+      root sites, and people start new huts while finished ones stand. Huts are used mainly
+      in autumn, one site of 11. Unknown whether winter food outweighs warmth or the forecast
+      underprices cold
+- [ ] check: 40 years, seeds 1–6, new forecast (scratchpad rf40t_*/rf40n_*): tech 375 / 339
+      / 452 / 356 / 398 / 150, no tech 498 / 308 / 410 / 348 / 362 / 290; old code tech 193 /
+      162 / 115 / 213 / 58 / 195. Seed 6 with tech lost 50 to hunger in year 40, untraced.
+      Camp moves ~45 per 100 people a year (old ~38)
 - [ ] idea: camp joins (`world.campJoins`) are counted but not charted (moves are); add a
       series if leaving a camp that stays needs watching

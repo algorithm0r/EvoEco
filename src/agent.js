@@ -197,6 +197,11 @@ var Agent = class Agent {
     this.xnet = {};
     for (const g of FLOW_GOODS) this.got[g] = this.xnet[g] = 0;
     this.livedFood = [1, 1, 1, 1].map(newLearned);   // its usual evening food level, by season
+    this.thin = [0, 0, 0, 0].map(newLearned);        // how much the land around camp thins in a week per camper, by season (ODD §5)
+    this.crowd = 0;            // while a site is scored: how much its land is expected to thin (siteDay)
+    this.livedLand = [0.5, 0.5, 0.5, 0.5].map(newLearned);   // how full the land around camp usually is, by season (ODD §5)
+    this.landRatio = 1;        // while a site is scored: its land against the usual (siteDay)
+    this.rebuild = 0;          // while a site is scored: hours to rebuild its shelter there (siteDay)
     this.si = 0;               // season of its day, for learning
     this.met = [];             // agents met today
     this.places = [home];      // where it was today
@@ -601,6 +606,8 @@ var Agent = class Agent {
       for (const k of FLOW_KEYS) if (G[k].nh > 0) learnNorm(F[k], G[k].h, r);
       if (b.livedFood[si].nh > 0) learnNorm(this.livedFood[si], b.livedFood[si].h, r);
       if (b.busyHabit[si].nh > 0) learnNorm(this.busyHabit[si], b.busyHabit[si].h, r);
+      if (b.thin && this.thin && b.thin[si].nh > 0) learnNorm(this.thin[si], b.thin[si].h, r);
+      if (b.livedLand && this.livedLand && b.livedLand[si].nh > 0) learnNorm(this.livedLand[si], b.livedLand[si].h, r);
     }
     if (b.farmL.nh > 0) learnNorm(this.farmL, b.farmL.h, r);
   }

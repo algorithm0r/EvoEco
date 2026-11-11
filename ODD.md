@@ -861,6 +861,64 @@ trade places and price norms must all form.
     camp within reach against staying, by the same costs. Found 2026-11-06: in seed 2, year 4,
     a camp of 28 starved beside a camp of 9 holding about 75 days of food a head, because
     the choice to join came up only after the whole camp had decided to move.
+  - **Crowding enters the forecast (Decided — Chris, 2026-11-10; mechanism Open):**
+    "population does need to feature into future predictions, but i'm not exactly certain how
+    to do so." Found 2026-11-09: in seed 2 with no tech, two camps merged to about 300 and
+    starved in year 27. Every option a member weighs (follow, stay, join) is planned as if the
+    member were alone at the site, so no one ever saw a reason to leave the crowd.
+    - **Learned thinning, linear in camp size (Decided — Chris, 2026-11-10, on Claude's
+      proposal):** "sure let's try that." Asked for "a blend of A and B": the forecast scales
+      with headcount, and how much is learned from experience. The member's yield from full
+      land stays as learned; what crowding changes is how full they expect the land to be.
+      Each member learns, by season, how much the land around camp thins in a week per
+      person camped there. A site's expected fullness for n campers is what they saw, less
+      that amount times n, and never below bare.
+    - **As built (Default, 2026-11-10):**
+      - **Learning.** At each weekly camp check, a member who has stayed at the same camp
+        through the same season compares the land within `look` hexes (food in season and
+        wood, as they have seen it; the shortlist's measure) with a week before. The drop,
+        divided by the camp's size then, is one experience (rate `camp.thinRate`). It is
+        told in chat as a norm, like the other seasonal values. The prior is 0, so the forecast
+        starts as before.
+      - **Forecast.** When a site is scored, every hex's seen fullness for food and wood is
+        cut by half a week's thinning times n: the mean over the week weighed, not its end. A
+        learned negative (regrowth outpacing the take) counts as 0. n is the members plus any
+        camp already at the site; staying when the camp moves counts the member and any
+        other camp at the hex, since the rest are assumed to follow; joining counts that camp
+        plus the member.
+  - **A site's forecast prices rebuilding and its own land (Decided — Chris, 2026-11-10):**
+    "the forecast should price in the cost to rebuild. so a site with infrastructure beats one
+    with out other things equal. but a stripped site with infrastructure should lose to a rich
+    site with none." Found 2026-11-10: the months-long Keep forecast of a site held its
+    shelter fixed (bare ground for months where no dwelling stood, as if no one would build)
+    and brought food in at the member's usual seasonal rate whatever the site's land. A hut
+    on stripped land outweighed rich land by months of warmth against one day of food. With
+    tech, people gathered the same food as without (1.66 against 1.67 days' worth a day, 8
+    years, seeds 1–3) for 1.3 more hours of work.
+    - **As built (Default, 2026-11-10):**
+      - **Rebuilding.** At a site whose best free dwelling is less warm than the member's own,
+        the forecast assumes they rebuild what they have, and its first week carries the hours:
+        the build's hours (fewer with an axe) and its inputs at their own hour costs, times how
+        complete their own shelter is, shared among those sleeping in it now. Tonight is spent
+        in the rebuilt shelter too (a small optimism).
+      - **The site's land.** Each member learns, by season, how full the land around camp
+        usually is (the thinning measure, at each weekly check; rate `camp.landRate`, told
+        in chat as a norm). For the rest of the current season the forecast scales what they
+        gather (food and wood, not what they net in exchange) by how full they have seen the
+        site's land, less crowding, against that usual fullness. Later seasons come in at the
+        usual rate, since the site's land in those seasons is unseen.
+  - **Newcomers earn their way in; splits follow peer groups (Decided — Chris, 2026-11-10;
+    mechanism Open):** "new members should be treated differently already due to ties. they
+    need to earn their way into the group by gaining ties. when two groups 'merge' they might
+    still have largely separate internal structures, so when they choose to split, they might
+    split in different ways. with peer groups staying together." Already true: belonging and
+    gifts come only through ties, so a newcomer starts with neither. Missing: each member
+    chooses alone, assuming the rest follow, so a peer group cannot leave together.
+  - **Contests between bands, without warfare (Decided — Chris, 2026-11-10; mechanism
+    Open):** "actual fighting was probably rare on the scale that there were casualties. more
+    likely there were skirmishes to determine relative strength an that determine which band
+    would stay and which would back away." Open: how this sits with open access (§2), since a
+    band that backs away has been excluded from the site.
   - **As built (Default, 2026-11-03):**
     - **Weighing.** Each camp weighs moving every 7 days, and a move is weighed over those 7
       days. Its summed cost is the walk-day at the site plus 6 ordinary days, against 7 days

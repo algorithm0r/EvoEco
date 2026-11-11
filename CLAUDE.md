@@ -63,3 +63,7 @@ tokens and a `**Done when:**` criterion. `/log-session` rewrites STATUS — don'
   preview pane loads it without scripts.
 - Headless batch: `node runner.mjs --reps N` (writes to MongoDB via the Server).
 - Smoke (no DB): `node smoketest.mjs` — prints the numbers that go in the DEVLOG entry.
+- Every node run goes through the CPU coordinator (conventions §4a″):
+  `cpuslot run --tag evoeco --desc "EvoEco <what>" -- node ...`, and long scripts write
+  `{done,total,note}` to `CPUSLOT_HEARTBEAT` at most every 30 s. `cpuslot run --help` queues
+  and waits; use `cpuslot --help`.

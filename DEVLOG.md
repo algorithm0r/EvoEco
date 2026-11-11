@@ -4,6 +4,59 @@
 
 <!-- append new entries above this line -->
 
+## 2026-11-11 — Camp forecast: crowding, rebuilding, a site's own land; tech no longer sinks a band
+
+**Done:** Four Decided entries (ODD §5); the two built were recorded before they were coded.
+- *Crowding enters the forecast* (Chris, 2026-11-10). Each member learns, by season, how much
+  the land around camp thins in a week per camper (`thin`, rate `camp.thinRate`, told as a
+  norm). Scoring a site cuts every hex's seen fullness by half a week of that times the
+  headcount. This answers the year-27 merged camp of ~300 that starved (no tech, seed 2).
+- *A site's forecast prices rebuilding and its own land* (Chris, 2026-11-10). Before, the
+  months-long Keep forecast held the shelter fixed and brought food in at the usual rate at
+  every site, so a hut on stripped land outweighed rich land.
+  - Rebuilding: where no free dwelling is as warm as the member's own, the forecast assumes
+    they rebuild it, and the first week carries the hours (`rebuildAt`).
+  - The site's land: each member learns how full the land around camp usually is
+    (`livedLand`, rate `camp.landRate`). For the rest of the season, gathering is scaled by the
+    site's land, less crowding, against the usual (`landRatio`, `keepCost`).
+- *Newcomers earn their way in; peer groups split together* and *contests between bands
+  without warfare* are Decided in principle (Chris, 2026-11-10); their mechanisms are Open.
+- `loadColony` merges saved parameters key by key, so a parameter added since a colony was
+  saved keeps its default.
+- The run scripts go through `cpuslot` with a description and a heartbeat (conventions §4a″).
+
+**Changed:** `src/planner.js` (`siteDay`, `rebuildAt`, `landRatio`, `keepCost`),
+`src/world.js` (`learnThinning`, `landAround` cut), `src/exchange.js` (`hourCosts` reads
+`seenLand`), `src/agent.js` (`thin`, `livedLand`, chat), `src/params.js` (`thinRate`,
+`landRate`), `colony.mjs`. ODD §5 has the four entries. DEVPLAN: Stage 6 gained the two
+built items and the two Open ones; the tech-cost and merged-camp Backlog checks were ticked
+with their results; new checks for winter huts and the 40-year multi-seed table were added.
+`CLAUDE.md` Run section now names `cpuslot`.
+
+**State:** smoke PASS @ v0.9.0-1-g29c9bd4-dirty (pre-commit), 2026-11-11. Bands year: 101/100 alive, 1,445 trades, 11,646 gifts, 623 trusted ties, 72 discoveries, 10 conceptions, 245 camp moves, 155 joins; solitary 8/8. Planner 0.599 ms per agent-day (was 0.413; machine busy, untimed clean).
+- 40 years, seeds 1–6, people alive at year 40:
+  - new code, with tech: 375 / 339 / 452 / 356 / 398 / 150 (mean 345);
+  - new code, no tech: 498 / 308 / 410 / 348 / 362 / 290 (mean 369);
+  - old code, with tech: 193 / 162 / 115 / 213 / 58 / 195 (mean 156);
+  - old code, no tech: 499 / 161 / 416 / 263 / 379 / 278 (mean 333).
+- Return on tech at year 8 (seeds 1–3, per adult-day, tech vs none):
+  - busy 6.8 vs 6.3 h (was 8.2 vs 6.7);
+  - food gathered 1.91 vs 1.93 days' worth;
+  - travel 3.3 vs 3.1 h;
+  - warmth 0.80 vs 0.72.
+  So tech is cheap now but still buys warmth, not food.
+- Camp moves are ~45 per 100 people a year (old code ~38). Returns to a standing empty hut:
+  10–76 a year (old code 1–5).
+- One year of the seed-3 tech colony at year 40: huts are used mainly in autumn, at one site
+  (11 huts, 55 adults). Nobody sleeps in a hut in winter, and new huts are begun while 17
+  finished ones stand.
+- Seed 6 with tech lost 50 to hunger in year 40; untraced.
+
+**Next:** Trace winter. The camp shortlist (`campSites`) ranks sites by land alone, so a hut
+site is weighed only if its land is top 5; probe written (`winterprobe.mjs`), not run. Then
+Stage 6: balanced demographic start, women's risk in the return on a child, apprenticing out;
+then the mechanisms for peer-group splits and contests.
+
 ## 2026-11-09 — Stage 6 built but apprenticing; famines traced; roots doubled; 40-year runs
 
 **Done:** Stage 6, all but apprenticing out, each piece recorded in the ODD first.

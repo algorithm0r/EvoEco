@@ -142,18 +142,22 @@ var World = class World {
     let K = 1;   // weight of a day's belonging in a day's cost (tonight and the projection)
     for (const T of tab) K += T.beta * T.len;
     const sq = (x) => (1 - x) * (1 - x);
+    // campers at a hex now, for the crowding forecast (ODD §5 Crowding enters the forecast)
+    const at = (h) => { let s = 0; for (const c of this.camps) if (c.hex === h) s += c.members.length; return s; };
+    this.learnThinning();
     for (const camp of this.camps.slice()) {
       if (!camp.members.length || camp.movedDay === this.day) continue;
-      const M = camp.members, tr = this.travel(camp.hex);
-      const stay = M.map((a) => siteDay(a, this, camp.hex, 0));
+      const M = camp.members, tr = this.travel(camp.hex), nHere = at(camp.hex);
+      const stay = M.map((a) => siteDay(a, this, camp.hex, 0, nHere));
       const sStay = stay.reduce((x, y) => x + y, 0);
-      let best = -1, bestDay = null, bestSum = sStay;
+      let best = -1, bestDay = null, bestSum = sStay, nBest = 0;
       for (const s of this.campSites(camp)) {
-        const d = M.map((a) => siteDay(a, this, s, 0));
+        const ns = M.length + at(s);
+        const d = M.map((a) => siteDay(a, this, s, 0, ns));
         const sum = d.reduce((x, y) => x + y, 0);
-        if (sum < bestSum) { best = s; bestDay = d; bestSum = sum; }
+        if (sum < bestSum) { best = s; bestDay = d; bestSum = sum; nBest = ns; }
       }
-      const arrive = best < 0 ? null : M.map((a) => siteDay(a, this, best, tr[best]));
+      const arrive = best < 0 ? null : M.map((a) => siteDay(a, this, best, tr[best], nBest));
       const moves = best >= 0 && arrive.reduce((x, y) => x + y, 0) + (n - 1) * bestSum < n * sStay;
       const others = this.camps.filter((c) => c !== camp && c.members.length && c.hex !== camp.hex && (!moves || c.hex !== best) && tr[c.hex] <= PARAMETERS.agents.wakingHours);
       const stayers = this.camps.filter((c) => c !== camp && c.hex === camp.hex).flatMap((c) => c.members);
@@ -166,7 +170,7 @@ var World = class World {
           const b0 = a.need.belonging, adj = (b) => n * K * (sq(b) - sq(b0));
           let c = n * stay[k] + adj(a.belongingWith(here, this.day)), pick = null;
           for (const o of others) {
-            const cJoin = siteDay(a, this, o.hex, tr[o.hex]) + (n - 1) * siteDay(a, this, o.hex, 0) + adj(a.belongingWith(o.members, this.day));
+            const nJ = o.members.length + 1, cJoin = siteDay(a, this, o.hex, tr[o.hex], nJ) + (n - 1) * siteDay(a, this, o.hex, 0, nJ) + adj(a.belongingWith(o.members, this.day));
             if (cJoin < c) { pick = o; c = cJoin; }
           }
           if (pick) join.set(a, pick);
@@ -182,10 +186,11 @@ var World = class World {
       M.forEach((a, k) => {
         const b0 = a.need.belonging, adj = (b) => n * K * (sq(b) - sq(b0));
         let pick = 'follow', c = arrive[k] + (n - 1) * bestDay[k] + adj(a.belongingWith(goers, this.day));
-        const cStay = n * stay[k] + adj(a.belongingWith(stayers, this.day));
+        // staying while the rest follow: only the member and any other camp at the hex remain
+        const cStay = n * siteDay(a, this, camp.hex, 0, stayers.length + 1) + adj(a.belongingWith(stayers, this.day));
         if (cStay < c) { pick = 'stay'; c = cStay; }
         for (const o of others) {
-          const cJoin = siteDay(a, this, o.hex, tr[o.hex]) + (n - 1) * siteDay(a, this, o.hex, 0) + adj(a.belongingWith(o.members, this.day));
+          const nJ = o.members.length + 1, cJoin = siteDay(a, this, o.hex, tr[o.hex], nJ) + (n - 1) * siteDay(a, this, o.hex, 0, nJ) + adj(a.belongingWith(o.members, this.day));
           if (cJoin < c) { pick = o; c = cJoin; }
         }
         choice.set(a, pick);
@@ -206,6 +211,38 @@ var World = class World {
       camp.members = left;
     }
     this.camps = this.camps.filter((c) => c.members.length);
+    for (const c of this.camps) {
+      const n = at(c.hex);
+      for (const a of c.members) a.thinSnap = { hex: c.hex, si: this.seasonIndex, day: this.day, full: this.landAround(a, c.hex), n };
+    }
+  }
+
+  // Learned thinning (ODD §5 Crowding enters the forecast): a member who has stayed at the same
+  // camp since the last check, in the same season, takes the drop in how full it has seen the
+  // land around camp, per camper then and per week, as one experience. Every member also takes
+  // how full that land is now as an experience of its usual land.
+  learnThinning() {
+    const si = this.seasonIndex, rate = PARAMETERS.camp.thinRate, n = PARAMETERS.camp.every;
+    for (const c of this.camps) for (const a of c.members) {
+      if (!a.thin) a.thin = [0, 0, 0, 0].map(newLearned);   // a colony saved before this rule
+      if (!a.livedLand) { a.livedLand = [0.5, 0.5, 0.5, 0.5].map(newLearned); a.landRatio = 1; a.rebuild = 0; }
+      // how full the land around camp usually is (ODD §5 A site's forecast prices rebuilding)
+      learnOwn(a.livedLand[si], this.landAround(a, c.hex), PARAMETERS.camp.landRate);
+      const s = a.thinSnap;
+      if (!s || s.hex !== c.hex || s.si !== si || !(s.n > 0) || !(this.day > s.day)) continue;
+      learnOwn(a.thin[si], (s.full - this.landAround(a, c.hex)) / s.n * n / (this.day - s.day), rate);
+    }
+  }
+  // How full an agent has seen the land within `look` hexes of a hex: food in season and wood,
+  // the shortlist's measure (campSites); less `cut` on each, never below bare.
+  landAround(a, hex, cut = 0) {
+    const acts = FORAGE.filter((k) => this.inSeason(ACT_RES[k])).concat([A_WOOD]);
+    let s = 0, k = 0;
+    for (const m of this.grid.within(hex, PARAMETERS.camp.look)) {
+      if (!(this.land[m] > 0) || !a.known[m]) continue;
+      for (const act of acts) { s += Math.max(0, a.seenFrac[act][m] - cut); k++; }
+    }
+    return k ? s / k : 0;
   }
 
   // An agent walks to a camp and makes its home there: its dwelling is left behind (for

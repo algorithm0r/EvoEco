@@ -78,11 +78,13 @@ function hourCosts(agent, world) {
   const out = {};
   for (const act of GATHER) {
     const tool = TOOL_FOR[act], mult = tool && agent.hold[tool] > 0 ? TOOLS[tool].mult : 1;
-    const rate = agent.rate(act) * mult, seen = agent.seenFrac[act];
+    const rate = agent.rate(act) * mult;
     let best = Infinity;
     for (let h = 0; h < world.grid.n && world.inSeason(ACT_RES[act]); h++) {
-      if (!agent.known[h] || !(tr[h] <= reach) || !(seen[h] > 0.02)) continue;
-      const c = (2 * tr[h] + A.chunk) / (rate * seen[h] * A.chunk);
+      if (!agent.known[h] || !(tr[h] <= reach)) continue;
+      const seen = seenLand(agent, act, h);   // less any thinning expected at a site being scored
+      if (!(seen > 0.02)) continue;
+      const c = (2 * tr[h] + A.chunk) / (rate * seen * A.chunk);
       if (c < best) best = c;
     }
     out[GOOD_OF[act]] = best;

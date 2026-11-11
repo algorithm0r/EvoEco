@@ -19,7 +19,10 @@ export function saveColony(world, file) {
 
 export function loadColony(file) {
   const { params, world } = v8.deserialize(readFileSync(file));
-  for (const k of Object.keys(params)) globalThis.PARAMETERS[k] = params[k];
+  // saved values over the current ones, key by key, so a parameter added since the colony was
+  // saved keeps its default instead of going missing
+  const merge = (t, s) => { for (const k of Object.keys(s)) { if (s[k] && typeof s[k] === 'object' && !Array.isArray(s[k]) && t[k] && typeof t[k] === 'object') merge(t[k], s[k]); else t[k] = s[k]; } };
+  merge(globalThis.PARAMETERS, params);
   Object.setPrototypeOf(world, globalThis.World.prototype);
   for (const a of world.agents.concat(world.dead)) Object.setPrototypeOf(a, globalThis.Agent.prototype);
   Object.setPrototypeOf(world.grid, globalThis.HexGrid.prototype);

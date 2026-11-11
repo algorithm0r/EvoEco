@@ -192,6 +192,8 @@ var PARAMETERS = {
     every: 7,             // days between a camp's decisions (the days a move is weighed over)
     sites: 5,             // sites shortlisted, by how full the members saw the land around them
     look: 2,              // hexes around a site that the shortlist looks at
+    thinRate: 0.3,        // update of the learned thinning per camper (ODD §5 Crowding enters the forecast), once a week
+    landRate: 0.3,        // update of how full the land around camp usually is (ODD §5 A site's forecast prices rebuilding and its own land), once a week
     warmer: 0.05,         // insulation by which a bed counts as noticeably warmer
   },
 
