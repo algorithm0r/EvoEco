@@ -76,7 +76,14 @@ tokens and a `**Done when:**` criterion. `/log-session` rewrites STATUS — don'
   closed stage is v0.9.0). The ODD keeps its own design version (v0.3 …); the two are separate
   numbers.
 
+## Remote (Chris, 2026-11-15)
+Public at https://github.com/algorithm0r/EvoEco; GitHub Pages serves `main` at
+https://algorithm0r.github.io/EvoEco/ (linked in the repo's About). Push `main` (and tags)
+after each `/log-session` commit. `results/` stays out of git (`.gitignore`): data lives in
+Mongo and on disk, never in the public repo.
+
 ## Run
+- Online: https://algorithm0r.github.io/EvoEco/ (GitHub Pages).
 - Browser: http://localhost:8000/research/EvoEco/sim/ (the always-on Static Server,
   conventions §4a′). Never start a server to view it; opening `index.html` from disk in the
   preview pane loads it without scripts.
