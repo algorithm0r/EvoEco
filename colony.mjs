@@ -25,6 +25,10 @@ export function loadColony(file) {
   merge(globalThis.PARAMETERS, params);
   Object.setPrototypeOf(world, globalThis.World.prototype);
   for (const a of world.agents.concat(world.dead)) Object.setPrototypeOf(a, globalThis.Agent.prototype);
+  // holdings as one fast object (tree.js newHold): deserialized, they come back slow
+  for (const a of world.agents) a.hold = Object.assign(globalThis.newHold(), a.hold);
+  // a learned return on farming saved as NaN (a field of no fertility, before 2026-11-11) starts again from the prior
+  for (const a of world.agents) if (!Number.isFinite(a.farmL.v)) a.farmL = globalThis.newLearned(globalThis.PARAMETERS.goods.grain.prior);
   Object.setPrototypeOf(world.grid, globalThis.HexGrid.prototype);
   const rng = makeRngFrom(world.rng.s);
   world.rng = rng;

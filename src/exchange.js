@@ -134,7 +134,7 @@ function marginal(agent, world, g) {
   if (!agent.mu) agent.mu = {};
   if (agent.mu[g] != null) return agent.mu[g];
   const d = WHOLE[g] ? 1 : PARAMETERS.exchange.marginalLot, h = agent.hold;
-  const lo = Object.assign({}, h), hi = Object.assign({}, h);
+  const lo = { ...h }, hi = { ...h };
   lo[g] = Math.max(0, h[g] - d);
   hi[g] = h[g] + Math.min(d, room(agent, g));
   if (!(hi[g] > lo[g])) return (agent.mu[g] = 0);
@@ -208,71 +208,109 @@ var GIFT_GOODS = FOODS.concat(['wood', 'water']);
 function giftsAt(world, here) {
   const day = world.day;
   for (const g of GIFT_GOODS) {
-    for (const j of here) {
-      let need = shortfall(j, g);
-      if (need <= 0) continue;
-      // givers who will consider it (a tie to j, j's parent, or a tie to the keeper of the
-      // child j, Stage 6: giftTerms), most weight on j's need first, then most trust
+    const G = PARAMETERS.goods[g];
+    // j's gift of g, as it stands: givers who will consider it (a tie to j, j's parent, or a tie
+    // to the keeper of the child j, Stage 6: giftTerms), most weight on j's need first, then
+    // most trust; the first whose gift pays gives, each giver once. Returns { i, terms, amount,
+    // pay } or null.
+    const giftFor = (j, need, gave) => {
       const givers = [];
       for (const i of here) {
-        if (i === j || i.carer || !(i.hold[g] > 0)) continue;
+        if (i === j || i.carer || !(i.hold[g] > 0) || gave.has(i)) continue;
         const terms = giftTerms(i, j, day);
         if (terms) givers.push({ i, terms, t: i.trust((terms.via || j).id, day) });
       }
       givers.sort((x, y) => y.terms.weight - x.terms.weight || y.t - x.t);
-      const G = PARAMETERS.goods[g];
       for (const { i, terms } of givers) {
-        if (need <= 0) break;
         // the whole shortfall, or if that does not pay, a day's food (Stage 6: one deep in
         // hunger's debt needs more at once than anyone gives, and got nothing)
         const sizes = [Math.min(need, i.hold[g], room(j, g))];
         if (G && G.restores) sizes.push(Math.min(sizes[0], PARAMETERS.needs.foodDecay * foodScale(j) / G.restores));
         const before = costWith(i, world, i.hold);
-        let amount = 0;
         for (const x of sizes) {
           if (!(x > 1e-6)) continue;
-          const hold2 = Object.assign({}, i.hold);
+          const hold2 = { ...i.hold };
           hold2[g] -= x;
           let cAfter = costWith(i, world, hold2, terms.parent ? i.need.belonging : i.belongingIfGave((terms.via || j).id, day));
           // the receiver's need weighs in the giver's own cost, by the giver's weight on it (ODD
           // §2 Ties, Decided 2026-11-05; a parent's weight on its child, §7.4, Decided 2026-11-06)
-          if (terms.weight > 0) cAfter -= terms.weight * (needsCost(j, world, j.hold) - needsCost(j, world, Object.assign({}, j.hold, { [g]: j.hold[g] + x })));
-          if (cAfter < before) { amount = x; break; }                     // giving must pay the giver
+          if (terms.weight > 0) cAfter -= terms.weight * (needsCost(j, world, j.hold) - needsCost(j, world, ({ ...j.hold, [g]: j.hold[g] + x })));
+          if (cAfter < before) return { i, terms, amount: x, pay: before - cAfter };   // giving must pay the giver
         }
-        if (!(amount > 0)) continue;
-        i.hold[g] -= amount; i.mu = null;
-        j.hold[g] += amount; j.mu = null;
-        received(j, i, amount);
-        need -= amount;
-        if (g === 'grain') world.creditReturn(i, j, amount);
-        bookGift(i, j, terms, day);
-        // food a giver brings (what a woman expects of a father, ODD §7.4): in the record of
-        // the one the gift is to, or of the child's keeper
-        if (G && G.restores) {
-          const to = terms.via || (j.child && j.keeper && j.keeper !== i ? j.keeper : j);
-          to.tie(i.id, day).food += amount * G.restores;
-        }
-        world.giftsToday = (world.giftsToday || 0) + 1;
-        world.giftAmounts[g] = (world.giftAmounts[g] || 0) + amount;   // all time, by good (measures)
       }
+      return null;
+    };
+    // the receivers short of g, each with its gift as it stands
+    const open = [];
+    for (const j of here) {
+      const need = shortfall(j, g);
+      if (need > 0) { const gave = new Set(); open.push({ j, need, gave, gift: giftFor(j, need, gave) }); }
+    }
+    // the gift that pays its giver most goes first (ODD §2 Ties, Who is given to first, Decided
+    // 2026-11-15), until none pays; after each, those whose giver just gave are weighed again
+    for (;;) {
+      let r = null;
+      for (const o of open) if (o.gift && (!r || o.gift.pay > r.gift.pay)) r = o;
+      if (!r) break;
+      const { j } = r, { i, terms, amount } = r.gift;
+      i.hold[g] -= amount; i.mu = null;
+      j.hold[g] += amount; j.mu = null;
+      received(j, i, amount);
+      r.need -= amount; r.gave.add(i);
+      if (g === 'grain') world.creditReturn(i, j, amount);
+      bookGift(i, j, terms, day);
+      // food a giver brings (what a woman expects of a father, ODD §7.4): in the record of
+      // the one the gift is to, or of the child's keeper
+      if (G && G.restores) {
+        const to = terms.via || (j.child && j.keeper && j.keeper !== i ? j.keeper : j);
+        to.tie(i.id, day).food += amount * G.restores;
+      }
+      world.giftsToday = (world.giftsToday || 0) + 1;
+      world.giftAmounts[g] = (world.giftAmounts[g] || 0) + amount;   // all time, by good (measures)
+      for (const o of open) if (o === r || (o.gift && o.gift.i === i)) o.gift = o.need > 1e-9 ? giftFor(o.j, o.need, o.gave) : null;
     }
   }
 }
-// What the receiver's need costs it with `hold`: a child with a carer does not plan, so only
-// its evening counts, and a night that kills it costs what anyone's does (keepCost: the worst
-// cost on every day it takes away); anyone else, its evening and projection.
+// What the receiver's need costs it with `hold`: anyone but a child with a carer, its evening
+// and projection (costWith). A child with a carer: its evening, then its coming days on what it
+// holds (ODD §7.4 Gifts to children, Decided — Chris, 2026-11-14): the projection's weeks, the
+// food it holds eaten as it needs it, nothing coming in (it neither gathers for itself nor
+// plans), and every day it is dead the worst cost, tonight's lethal night included (keepCost).
+// Only food is projected: its water, warmth and bed are its carer's, and a gift of food does
+// not change them.
 function needsCost(j, world, hold) {
   if (!j.carer) return costWith(j, world, hold);
   const e = Agent.evening(j.need, hold, shelterIns(j.shelter), j.busy, true, world.season().cold,
     PARAMETERS.agents.wakingHours, 1, foodScale(j));
   let c = needCost(e, true, j.need.belonging, j.coldDays);
-  if (!isInfant(j) && e.food <= -needReserve('food')) {
-    let lost = 0;
-    for (const T of projectionTable(world)) lost += T.beta * T.len;
-    c += lost * WORST_NEED_COST;
+  if (isInfant(j)) return c;   // lives on milk
+  // day by day, at the giver's discount, to the projection's far horizon (a year): with nothing
+  // coming in, a day's food moves its death by a day, which weekly steps would not see
+  const A = PARAMETERS.agents, N = PARAMETERS.needs, RF = needReserve('food'), H = A.horizonFar, D = A.discount;
+  const deadFrom = (t) => WORST_NEED_COST * Math.pow(D, t) * (1 - Math.pow(D, H - t + 1)) / (1 - D);   // days t..H, dead
+  if (e.food <= -RF) return c + deadFrom(1);
+  const sq = (x) => (1 - x) * (1 - x), fq = FQ_SCRATCH, NF = FOODS.length;
+  const other = c - sq(needLevel('food', e.food));   // its other needs, held at tonight's
+  for (let q = 0; q < NF; q++) fq[q] = e.hold[FOODS[q]] || 0;
+  const daily = N.foodDecay * foodScale(j) + N.workBurn * j.busy;   // a child of 6+ works beside its carer
+  let food = e.food, beta = 1;
+  for (let t = 1; t <= H; t++) {
+    beta *= D;
+    food -= daily;
+    for (let q = 0; q < NF && food < 1; q++) {
+      if (!(fq[q] > 0)) continue;
+      const eat = Math.min(fq[q], (1 - food) / FOOD_REST[q]);
+      food += eat * FOOD_REST[q]; fq[q] -= eat;
+    }
+    for (let q = 0; q < NF; q++) fq[q] *= CHILD_KEEP[q];
+    food = Math.min(food, 1);
+    const fl = food >= 0 ? food : Math.max(-1, food / RF);
+    if (fl <= -1) return c + beta * (sq(-1) + other) + deadFrom(t + 1);   // the night that kills, then dead
+    c += beta * (sq(fl) + other);
   }
   return c;
 }
+var CHILD_KEEP = FOODS.map((k) => 1 - PARAMETERS.goods[k].rot);   // each food's keeping a day
 
 // ── barter ─────────────────────────────────────────────────────────────────────────────
 function barterAt(world, hex, here) {
@@ -352,7 +390,7 @@ function lotGain(world, i, g, j, l, deal) {
   if (WHOLE[g]) w = Math.floor(w);
   if (WHOLE[l] && w * deal.r > j.hold[l] + 1e-9) w = 0;
   if (!(w > 1e-6)) return { gi: -1, gj: -1, w: 0 };
-  const hi = Object.assign({}, i.hold), hj = Object.assign({}, j.hold);
+  const hi = { ...i.hold }, hj = { ...j.hold };
   hi[g] -= w; hi[l] += w * deal.r;
   hj[g] += w; hj[l] -= w * deal.r;
   return {

@@ -1,56 +1,40 @@
 // Headless batch runner. Loads the SAME browser sim files into the MAIN V8 realm via indirect
-// eval (NOT vm — conventions §4: vm adds a ~7-10x hot-loop tax on per-tick global reads, and a
-// one-config-per-process runner never needs vm's sandbox isolation). Runs reps and writes
-// self-describing packets via the standard DB client (direct transport).
-//   node runner.mjs [--reps N] [--ticks N] [--db NAME] [--collection NAME] [--from FILE] [--save FILE]
-// --from starts each rep from a saved colony (ODD §5 Spin-up); --save writes the colony at the end
-// (with several reps, the rep number is added to the file name).
-import { readFileSync } from 'fs';
-import { fileURLToPath } from 'url';
-import path from 'path';
-import { createRequire } from 'module';
+// eval (exp.mjs loadSim; NOT vm — conventions §4: vm adds a ~7-10x hot-loop tax on per-tick
+// global reads, and a one-config-per-process runner never needs vm's sandbox isolation).
+// Saves every run under the experiment data protocol (conventions §4, exp.mjs, db.js v2):
+//   node runner.mjs --register <slug> "<question>"     claim expNNN, print the EXPLOG stub
+//   node runner.mjs --exp expNNN [--reps N] [--seed S] [--ticks N] [--name PREFIX] [--from C] [--save]
+//   node runner.mjs --scratch [...]                     a check nothing will cite
+// Each run goes to Mongo evoeco.expNNN_<slug> (the record) and results/expNNN_<slug>/<run>.json.
+// --from starts each rep from a saved colony (ODD §5 Spin-up): a file, or expNNN/<run> for one an
+// earlier experiment saved. --save keeps each rep's colony as results/expNNN_<slug>/<run>.colony.bin.
+import { loadSim, openExperiment, flag, has, colonyPath, resolveColony, beat } from './exp.mjs';
 
-const require = createRequire(import.meta.url);
-const { createDB } = require('./src/db.js');
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-
-const argv = process.argv.slice(2);
-const flag = (n, d) => { const i = argv.indexOf('--' + n); return i >= 0 ? argv[i + 1] : d; };
-const reps = parseInt(flag('reps', '1'), 10);
-const ticksOverride = parseInt(flag('ticks', '0'), 10);
-const fromFile = flag('from', null), saveFile = flag('save', null);
-
-// load the DOM-free sim core into the main V8 realm. Everything is `var`/`function`/`var X =
-// class X`, so once the leading 'use strict' directive is stripped the top-level names attach
-// to globalThis and read as fast native globals (no vm proxy → no inlining penalty).
-const indirectEval = eval; // aliased → indirect eval runs in the global (sloppy) realm
-for (const f of ['util.js', 'params.js', 'engine.js', 'hex.js', 'mapgen.js', 'agent.js', 'tree.js', 'planner.js', 'exchange.js', 'life.js', 'world.js', 'datamanager.js']) {
-  let src = readFileSync(path.join(__dirname, 'src', f), 'utf8');
-  src = src.replace(/^\s*(['"])use strict\1;?/, '');
-  indirectEval(src);
-}
-
+const P = loadSim(['datamanager.js']);
 const { saveColony, loadColony } = await import('./colony.mjs');
-const P = globalThis.PARAMETERS;
 const { World, DataManager } = globalThis;
-const dbName = flag('db', P.db.db);
-const collection = flag('collection', null);
-const limit = ticksOverride || P.epoch;
+const { db, ex, dir } = await openExperiment('runner.mjs');
 
-const db = createDB(Object.assign({}, P.db, { transport: 'direct', db: dbName }));
+const reps = parseInt(flag('reps', '1'), 10);
+const seed0 = parseInt(flag('seed', '1'), 10);
+const prefix = flag('name', 'run');
+const fromRef = flag('from', null), fromFile = fromRef && resolveColony(fromRef);
+const limit = parseInt(flag('ticks', '0'), 10) || P.epoch;
+
 for (let r = 0; r < reps; r++) {
-  const run = 'run_' + String(r).padStart(3, '0');
-  db.config.run = run;
-  P.seed = r + 1;  // one map per rep
+  P.seed = seed0 + r;  // one map per rep; a saved colony brings its own seed and generator state
   const world = fromFile ? loadColony(fromFile) : new World();
+  const name = prefix + '_s' + P.seed + (fromFile && reps > 1 ? '_r' + r : '');
+  const run = ex.run(P, { name, seed: P.seed });  // after loadColony, which merges saved PARAMETERS
+  await run.start();
   const dm = new DataManager(world, null, null);
   for (let t = 1; t <= limit; t++) {
     world.update();
     if (world.day % P.reportingPeriod === 0) dm.samples.push(dm.sample());
+    beat(t, limit, ex.label + '/' + name);
   }
-  if (saveFile) saveColony(world, reps > 1 ? saveFile.replace(/(\.[^.]*)?$/, '_' + r + '$1') : saveFile);
-  const pkt = db.packet(P, { run, samples: dm.samples });
-  const res = await db.insert(collection || run, pkt);
-  console.log(run + ': seed ' + P.seed + ', ' + dm.samples.length + ' samples  saved=' + JSON.stringify(res));
+  if (has('save')) saveColony(world, colonyPath(dir, name));
+  const res = await run.save(Object.assign({ samples: dm.samples }, fromRef ? { from: fromRef } : {}));
+  console.log(ex.label + '/' + name + ': ' + dm.samples.length + ' samples, ' + (res.bytes / 1024).toFixed(1) + ' KB' + (has('save') ? ', colony saved' : ''));
 }
 await db.close();

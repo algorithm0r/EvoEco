@@ -4,6 +4,47 @@
 
 <!-- append new entries above this line -->
 
+## 2026-11-15 — Game, carrying and gear (5h); the data protocol; children no longer starve beside fed carers
+
+**Done:** Work since `fefbe89` (2026-11-11 to 2026-11-15), each rule in the ODD before its code.
+- *Stage 5h (2026-11-11 to 11-13):*
+  - Game (`game.js`): small game as a flow, herds and wolves, traces.
+  - Hunting, the spear, snares, the bow; injury, learned and priced, with death costed as the life ahead.
+  - Nights out; herds that hold out (wolves a control).
+  - Thirst and NaN fixes.
+  - Carrying (ODD §2 Containers and carrying, C1–C4): caps by kind, the load in the day's food, goods left lying and picked up, and the first material tree (gourds, hides, fibre).
+  - Fetch trips back to an old camp.
+  - Gear is a strategy whose return is learned (Decided 2026-11-13).
+- *The data protocol (2026-11-13; a side session):* `exp.mjs`, `EXPLOG.md`, numbered experiments.
+- *Stage 6:* a woman counts the children she already has (Decided 2026-11-13). Then why children starve beside fed carers:
+  - **exp002:** the founding cohort's age gap persists 40 years.
+  - **exp003:** the gift sum weighed her loss over months and the child's hunger over one evening.
+  - **Two Decided rules:** a child's need, to a giver, is its coming days on what it holds (2026-11-14); and the gift that pays its giver most goes first, so the neediest of equal ties is fed first (2026-11-15). The day-by-day projection and the gift loop's re-weighing are Defaults.
+
+**Changed:**
+- *Model code:* `src/game.js` (new), `src/agent.js`, `src/planner.js`, `src/exchange.js` (`needsCost`, `giftsAt`), `src/life.js`, `src/world.js`, `src/tree.js`, `src/params.js`.
+- *Plumbing:* `src/db.js` (v2 client), `colony.mjs`, `runner.mjs`, `smoketest.mjs`, `index.html`, `exp.mjs`, `package.json`.
+- *Probes:* `probes/` (carryprobe, giftprobe, deathprobe, summarizers).
+- *Docs:*
+  - ODD: §2 Game, Containers and carrying, Ties ("Who is given to first"); §5 trips; §7.4 She counts the children she already has, Gifts to children.
+  - CLAUDE.md: Experiment data.
+  - DEVPLAN: 5h active; Stage 6 items; Backlog.
+
+**State:**
+- *Smoke:* PASS @ v0.9.0-2-gfefbe89-dirty (pre-commit), 2026-11-15.
+- *Bands year:* 325 big-game kills, 1,748 nights out, 98 monthly weighings, 56 tries, 7 conceptions, 214 camp moves, 187 joins.
+- *Planner:* 1.692 ms per agent-day (machine shared).
+- *Experiments:*
+  - **exp001** (mothers count children): done.
+  - **exp002** (founding wave, 40 years, seeds 1–3): done.
+  - **exp003** (why fed carers' children starve): done.
+  - **exp004** (the two gift rules, from the exp002 colonies): child-days in food deficit 91,475 → 1,062 (s1, 7 years) and 130,165 → 3,331 (s2, 10 years). But children's hunger deaths in s2 stayed at 47 (exp002: 49), adults at the end fell (s2: 56 vs 80), and child thirst deaths rose (13 and 9 vs 5 and 4).
+  - **exp005** (every death by cause and age, same spans): running.
+- *Raw results:* all in EXPLOG.
+- *Browser view:* unchecked since 2026-11-06.
+
+**Next:** Read exp005: are the missing adults mothers, and where do the thirst and infant deaths come from? Then the start state (Chris's call: a balanced age profile or a burn-in). Then C5 (the winter check with carrying). Then the meat-share balance and planner cost.
+
 ## 2026-11-11 — Camp forecast: crowding, rebuilding, a site's own land; tech no longer sinks a band
 
 **Done:** Four Decided entries (ODD §5); the two built were recorded before they were coded.

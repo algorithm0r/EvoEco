@@ -245,9 +245,67 @@ practised from year 2; 92/100 through year 1, 82/100 after three, no floor; ledg
 
 #### 5e — Containers and carrying  [ PLANNED ]
 Raised by Chris, 2026-11-03 (ODD §2, Open). Design first.
-- [ ] A carrying limit per trip (what one person carries home by hand)
+- ~~A carrying limit per trip (what one person carries home by hand)~~ → **5h**
 - [ ] Containers: baskets for foraged goods; skins for water beside gourds and pots
 - [ ] Porting as a service; transport: pack goats, oxen, horses, sledges, wagons
+**Done when:** set once the design is settled.
+
+#### 5h — Game, multi-day trips, then carrying  [ ACTIVE ]
+ODD §2 Game, §5 multi-day trips (Decided 2026-11-11, mechanisms Open). Design first, one
+question at a time. Raised by the winter check (2026-11-11): bands store ~130 days of food a
+head by summer's end but move weekly in winter, since stores weigh nothing when carried.
+- [x] Design walk (ODD §2 Game, §5 trips; 2026-11-11): small game a flow with a damped
+      predator density; herds follow grazing, avoid predator and people traces; a herd
+      predator; traces as pheromones; emergent parties; killer holds the carcass; spear in the
+      kit, snares then bow by tinkering; injury for all, learned and priced; death costed as
+      the life ahead; where to sleep chosen in the morning plan
+- [x] 1. Game in the world, no hunting: small game and its predator, herds and theirs,
+      the three traces; check the densities wobble and do not cycle (game.js; no people, 40
+      years: small game 0.24–0.55, ~800 animals, ~15 wolves, no cycle; 2026-11-11)
+- [x] 2. Hunting and meat: the hunt as a planner activity, success rising with party size,
+      the spear, meat and dried meat, game sightings and the seasonal habit (bands year:
+      ~225–275 big-game kills, parties of 1–7; a hollow of small game round camps)
+- [x] 3. Injury and risk: hazard by setting, learned rates, priced hours; death costed in
+      the planner and the Keep forecast
+- [ ] Re-run the stores probe with death priced in the forecast: do late-winter hunger
+      deaths fall? (From step 3.)
+- [x] 4. Nights out: the morning plan chooses camp or a night out; evening exchange where a
+      party sleeps (bands year: ~1,400 nights out, mostly spring and summer; no thirst deaths)
+- [x] 5. The hunting ladder: snares and traps, then the bow (snares known by nearly all
+      by the end of year 1; the bow found in year 2, none made yet)
+- [ ] Balance: meat is 55–75% of food gathered, most of it small game hunted by hand (8 an hour
+      made it 3/4 of the diet; now 4); hunting injuries rare (most injuries in camp)
+- [x] Herds are hunted out: 10 years from scratch, seeds 1–3, herds ~1,050 → 10–110 animals by
+      years 7–10. Chris (2026-11-12): herds should hold out; wolves are a control, not a
+      competitor. Built: hunters find a herd by its size (n/(n+20)); wolves take in proportion
+      and their numbers track the herds. After: herds 129–243 at year 10, none lost
+- [x] fix: thirst deaths, three causes (2026-11-12): a hurt carer could not walk home part way;
+      a stranded carer's water lay beyond half a day's reach; a camp move charged an absent
+      hunter the walk. Also injury priced by who and where (dependents, stranding). After:
+      none in 30 run-years
+- [ ] Seed 3: children die of hunger in years 7–10 (3, 9, 3, 2 a year); predates the fixes
+- [x] fix: NaN spread by chat: a stranded hunter's Infinity walk became a NaN working day, told
+      as a norm until camps scored drinking as NaN (85 thirst deaths, seed 3 colony year);
+      stranded hunters now plan nights out, learning skips non-finite values. Also a NaN return
+      on farming already in the saved colonies (a field of no fertility) is reset on load.
+      After: the seed 3 colony year has no deaths (the old code lost 21, 18 of hunger)
+- [ ] Planner cost: 1.6–2.2× the last commit's (more stops weighed, nights out); holdings
+      kept as one fast object (V8 dictionary mode past 19 keys had made it 3–5×)
+- [x] Carrying design walk (2026-11-12, ODD §2 Containers and carrying): what can't be carried
+      stays, open to anyone, and spoils; the limit is on all carrying; storage and carrying are
+      technologies; no innate water container; one load with a cap per kind, gear raising it;
+      food and water eaten in place; carried children and the load's weight in the day's effort;
+      the first material tree (gourds, hides, fibre). (From 5e.)
+- [x] C1. Carried vs stored, caps by kind, one load, children; the pack on a night out
+- [x] C2. Weight carried times hours walked in the day's food
+- [x] C3. Goods left at a moved camp, at a kill, by the dead out; picked up by whoever stops there
+- [x] C4. The material tree: gourd fruit → dried → gourd; hide → tanning → water skin or bag;
+      fibre → basket; gear's worth learned from what hands could not hold
+- [ ] C5. The winter check: do stores now hold bands in place? (5 years, seeds 1–3, limit vs free)
+- [x] Planner trips to fetch goods lying in the world: moving camp in more than one trip (Decided 2026-11-13); a fetch stop, and a site's forecast with trips back
+- [x] Gear is a strategy whose efficiency is learned (ODD §2, Decided 2026-11-13): the return an
+      hour bare-handed, with a basket and with a bag, learned as habit and norm; the projection
+      scales gathering hours by it
 **Done when:** set once the design is settled.
 
 ### Stage 6 — Households and generations  [ ACTIVE ]
@@ -294,6 +352,16 @@ generation, and growth that brings bands into competition. Design first, one que
       camp as one (ODD §5, Decided 2026-11-10, mechanism Open)
 - [ ] Contests between bands without warfare: skirmishes settle who stays at a site (ODD §5,
       Decided 2026-11-10, mechanism Open; how it sits with open access is Open)
+- [x] A woman counts the children she already has: another child's care hours come out of her
+      rest, priced by her crowding (ODD §7.4, Decided 2026-11-13; exp001)
+- [x] Children starve beside fed carers: traced (exp002, exp003) to the gift sum weighing her loss
+      over months and the child's hunger over one evening. Fixed by two Decided rules: a child's
+      need is its coming days on what it holds (2026-11-14), and the gift that pays most goes
+      first (2026-11-15). exp004: child-days in deficit 91,475 → 1,062 (s1), 130,165 → 3,331 (s2)
+- [ ] exp005 (running): who dies under the new gift rules. In exp004 adults at the end fell
+      (s2: 56 vs 80 in exp002) and children's thirst deaths rose (13 and 9 vs 5 and 4)
+- [ ] The start state (Chris's call, after child survival): a hand-designed balanced age profile
+      or a burn-in. exp002: the founding cohort's age gap persists 40 years in all three seeds
 **Done when:** households form and dissolve on their own, and a population persists across
 several generations without scaffolding.
 
@@ -426,7 +494,7 @@ How runs are compared is a research question to settle then (ODD §4.10).
 - [ ] idea: with farming known, mobile bands sowed 12 seeds in three years against 115 with
       fixed homes (seed 1, one run each). Check across seeds before reading it as the
       foraging vs farming trade-off
-- [ ] fix: carrying has no limit when a camp moves; ties to containers (5e)
+- ~~fix: carrying has no limit when a camp moves; ties to containers (5e)~~ → **5h**
 - [ ] idea: the initial state may need work (Chris, 2026-11-03: "we can leave it for now"):
       with no ties at the start, bands scatter in the first spring and re-form by day 180
 - [x] fix: late-winter squeeze: the three-year deaths (8, 1, 9) all come at winter's end, when
@@ -491,3 +559,11 @@ How runs are compared is a research question to settle then (ODD §4.10).
       Camp moves ~45 per 100 people a year (old ~38)
 - [ ] idea: camp joins (`world.campJoins`) are counted but not charted (moves are); add a
       series if leaving a camp that stays needs watching
+- [x] feat: the experiment data protocol (conventions §4; 2026-11-13): `exp.mjs`, `EXPLOG.md`,
+      numbered experiments in Mongo `evoeco.expNNN_<slug>` and `results/expNNN_<slug>/`
+- [ ] idea: the old-age hazard (Gompertz) runs at every age, so a few children die of "old age";
+      harmless, but relabel or floor it if child deaths by cause are reported
+- [ ] chore: exp002's twelve saved colonies take ~580 MB in `results/`; keep the y10/y30 ones
+      exp003–005 start from, drop the rest if disk matters
+- [ ] perf: `giftsAt` now weighs each receiver's gift again after any gift by the same giver;
+      watch the exchange share of run time in long runs

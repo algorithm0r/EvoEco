@@ -72,6 +72,100 @@ var PARAMETERS = {
     tin:    { kind: 'deposit', deposit: 150, clusters: 1, radius: 0, fill: 1, on: ['hills'],
               distanceFromCopper: 25 },  // hexes; ODD §2: tin far from the copper (Cline 2014)
     iron:   { kind: 'deposit', deposit: 400, clusters: 3, radius: 1, fill: 0.5, on: ['hills', 'forest'] },
+    // small game (ODD §2 Game, Stage 5h): meat on the hoof, the ceiling per hex by terrain;
+    // breeds, seeps and is eaten by its predator in game.js
+    smallgame: { kind: 'game', capBy: { plains: 600, forest: 600, hills: 300, river: 300 }, perHour: 4 },   // 8 made it 3/4 of the diet (2026-11-11)
+    // the first material tree (ODD §2 Containers and carrying, Decided 2026-11-12): wild gourd
+    // vines, thickest by water, ripe in late summer; fibre (reeds and bark) to plait, growing
+    // back, thickest by water
+    gourds: { kind: 'crop', cover: 'grass', perLand: 10, floodplainBonus: 3, floodplainRange: 1, season: [0.5, 0.75], perHour: 2 },
+    fibre:  { kind: 'renewable', r: 0.02, floor: 0.2, capBy: { plains: 15, forest: 30, hills: 5 }, floodplainBonus: 2, floodplainRange: 1, perHour: 4 },
+  },
+
+  // --- game (ODD §2 Game, Decided — Chris, 2026-11-11; numbers Default, game.js) ---
+  game: {
+    weatherSd: 0.2,       // year-to-year spread of small game's breeding (lognormal)
+    // small game, as fullness of its ceiling: breeding a day at the height of the growing season
+    // (about 2 a year), the seed floor, the start, and the share of a fullness difference that
+    // seeps across an edge a day
+    small: { r: 0.018, floor: 0.02, start: 0.6, seep: 0.05 },
+    // its predator, as a load (1 = usual): take p·x/(x + H) a day, shared out by 1 + c·load
+    // (the damping), growth e per unit taken, death m a day; a floor so it can come back
+    pred: { p: 0.0034, H: 0.3, c: 0.5, e: 0.98, m: 0.0014, floor: 0.01, start: 1, seep: 0.03 },
+    // herds' grazing, in animal-days per unit of land under full grass or trees; regrowth a
+    // day; the share of browse regrowth that goes on through autumn and winter
+    graze: { grass: 300, browse: 100, r: 0.05, browseAllYear: 0.5 },
+    // herds: how many at the start and their size; the ceiling on all big game; steps a day;
+    // the pull of water and the push of the pack and people traces (per unit of trace); chance;
+    // births a day at the height of the season when fed and with room; background death a day;
+    // death a day when unfed; the update of how fed; split size; fewest herds before
+    // animals come in from beyond the map, and the daily chance they do
+    herd: { n: 24, start: 60, ceiling: 4000, steps: 2, water: 0.3, avoidPack: 0.5, avoidPeople: 0.1,
+            wander: 0.05, birth: 0.0061, die: 0.00028, starve: 0.01, fedRate: 0.05, split: 120, min: 4, arrive: 0.01 },
+    // packs: how many and their size; steps a day; how far they scent a herd (hexes); the least
+    // rise in the herd trace they follow; the daily chance of turning while ranging; the take a
+    // day per wolf per animal of the herd it is on; herd animals per wolf the numbers drift
+    // toward, the share of the gap closed a day, the sd of the yearly draw on that; and as herds
+    pack: { n: 6, start: 6, steps: 3, sense: 3, minTrace: 0.05, turn: 0.2, take: 0.0009,
+            perWolf: 50, track: 0.003, sd: 0.2, split: 14, min: 2, arrive: 0.01 },
+    // traces: fading a day and seeping to neighbours a day, by kind; what one person leaves on a
+    // hex it was at today
+    trace: { fade: { herd: 0.15, pack: 0.15, people: 0.3 }, seep: 0.1, person: 0.1 },
+  },
+
+  // --- injury (ODD §2 Game: risks all people face, Decided — Chris, 2026-11-11; numbers Default) ---
+  injury: {
+    // chance of an injury: a day in camp, and an hour out of camp, hunting big game, building
+    camp: 0.0002, out: 0.00005, hunt: 0.0004, build: 0.0002,
+    herdScale: 60,        // big game's risk scales with the herd's size against this (within ×0.5–×2)
+    shares: { minor: 0.85, major: 0.12, death: 0.03 },   // what an injury turns out to be
+    minorDays: 10,        // days a minor injury takes to heal
+    minorCut: 0.3,        // share of its working hours a hurt agent keeps while it heals
+    majorCut: 0.3,        // share of its working hours a major injury takes for life
+    dayCost: 0.5,         // the forecast's cost of a day's work lost (need-cost units)
+    learnRate: 0.01,      // update of the learned rates, a day (injuries are rare)
+  },
+
+  // --- hunting big game (ODD §2 Game, Stage 5h; numbers Default) ---
+  hunt: {
+    signFull: 3,          // herd trace at which a hex reads as a herd for sure (sign 1)
+    memory: 4,            // days for a sighting of sign to give way to where herds usually are
+    seasonRate: 0.1,      // update of where herds usually are, per hex and season, from sightings
+    candidates: 6,        // hunting stops a planner weighs: the best by sign for the walk
+    pKill: 0.2,           // chance an hour on a big herd, bare-handed, of a kill
+    findH: 20,            // herd size at which a hunter finds the animals in the hex half as often
+    party: 1,             // how much each hunter's chance rises with others on the herd (to 1 + party)
+    partyScale: 2,        // others on the herd at which most of that rise is had
+    carcass: 100,         // meat in one big animal
+    learnRate: 0.05,      // update of the learned meat per hour (kills are lumpy)
+    minTrace: 0.05,       // least rise in the herd trace a hunter follows
+    hide: 1,              // hides in one big animal (ODD §2 Containers and carrying, Decided 2026-11-12)
+    smallHide: 0.02,      // hide's worth of small skins per unit of small game's meat
+  },
+
+  // --- snares (ODD §2 Game, the hunting ladder's first rung; numbers Default) ---
+  snare: {
+    perHour: 6,           // snares set in an hour
+    most: 12,             // snares one owner keeps in a hex
+    catch: 0.2,           // meat a snare takes a day from a full hex
+    wear: 0.02,           // share of the snares lost a day
+    candidates: 3,        // snaring places a planner weighs (its own snares first)
+    learnRate: 0.1,       // update of the learned catch per hour of tending (it comes in lumps)
+  },
+
+  // --- carrying (ODD §2 Containers and carrying, Decided — Chris, 2026-11-12): one load by
+  // weight, a cap per kind in bare hands that gear raises toward the load; kg a unit of each
+  // carried good (tools and gear go in hand); carried children's weight by age (infant, under
+  // helpAge, older); food burned a day per kg carried per hour walked ---
+  carry: {
+    load: 25,
+    bare: { loose: 1, bulky: 10, water: 0 },
+    weight: { greens: 1, grain: 0.4, roots: 0.5, nuts: 0.5, driedGreens: 0.3, roastedNuts: 0.5, meal: 0.3,
+              meat: 0.5, driedMeat: 0.25, wood: 2, flint: 1, clay: 2, water: 4, pot: 4,
+              gourdFruit: 1, driedGourd: 0.3, hide: 5, leather: 2, fibre: 1 },
+    child: [8, 4, 0],
+    burn: 0.0004,
+    fetchHours: 0.25,     // taking up goods lying somewhere (ODD §2 Fetching is moving camp in more than one trip)
   },
 
   // --- needs (ODD §2 Needs: levels in 0..1, set point 1, convex cost) ---
@@ -94,7 +188,14 @@ var PARAMETERS = {
     driedGreens: { restores: 0.15, cookedBonus: 1.2, rot: 0.004 },   // three units of greens dried
     roastedNuts: { restores: 0.14, cookedBonus: 1, rot: 0.001 },
     meal:        { restores: 0.12, cookedBonus: 1.5, rot: 0.003 },   // ground seeds: cooked on the fire, no pot
-    gourd: 0.5,               // water carried home (in need units)
+    meat:        { restores: 0.1, cookedBonus: 1.5, rot: 0.15 },     // game (Stage 5h): rots about as fast as greens
+    driedMeat:   { restores: 0.2, cookedBonus: 1.2, rot: 0.004 },    // two units of meat dried
+    // gear (ODD §2 Containers and carrying, Decided 2026-11-12): water each vessel holds (need
+    // units) and daily wear; a gourd fruit dries in about `dryDays` where it is kept
+    gourd:     { cap: 0.5, wear: 1 / 400, dryDays: 21 },
+    waterskin: { cap: 2, wear: 1 / 300 },
+    bag:       { wear: 1 / 300 },
+    basket:    { wear: 1 / 200 },
     drinkDraw: 1,             // water units taken from the source per drink
     fireWood: 2,              // wood burned per evening fire
     fireHeat: 0.35,           // warmth a fire adds
@@ -122,7 +223,8 @@ var PARAMETERS = {
     startAge: [15, 45],   // years, uniform, at the start (ODD §5 Starting ages, Decided)
     // know-how at the start (ODD §5, Decided: no tech level known by default; gathering, fire
     // and the stone tools are assumptions). A variant adds levels: 'leanTo', 'pot', 'hut', 'farm'
-    knowhow: ['axe', 'pick', 'hoe', 'sickle'],
+    knowhow: ['axe', 'pick', 'hoe', 'sickle', 'spear', 'gourd'],   // the spear: ODD §2 Game, Decided 2026-11-11; the gourd: ODD §5 (made, Decided 2026-11-12)
+    starterGourds: 1,     // burn-in scaffold (ODD §5): a gourd in hand on day 1
     starterFood: 15,      // burn-in scaffold (ODD §5): roots in hand on day 1
     wakingHours: 14,      // hours for travel, work and rest each day
     sight: 2,             // hexes known around home at the start
@@ -150,7 +252,7 @@ var PARAMETERS = {
     normRate: 0.2,        // error-driven update of norms from others' reported experience
     arbRate: 0.1,         // update of how far habit and norm each miss its own experience (ODD §4.4)
     arbExtreme: 0.9,      // a weight beyond this becomes 1: one source alone
-    priorPerHour: { greens: 5, seeds: 2.5, roots: 3, nuts: 2, wood: 3, quarry: 1, dig: 3 },  // starting guess of the yield per hour from a full hex (below the truth: a few hours of foraging at it give ~0.7 food a day in any season)
+    priorPerHour: { greens: 5, seeds: 2.5, roots: 3, nuts: 2, wood: 3, quarry: 1, dig: 3, smallgame: 3, hunt: 4, snare: 4, gourds: 1, fibre: 3 },  // starting guess of the yield per hour from a full hex (below the truth: a few hours of foraging at it give ~0.7 food a day in any season)
     sightSd: 0.5,         // uncertainty (in fullness) of a sighting once it is old
     sightMemory: 30,      // days for a sighting to grow most of that uncertainty
     curiosity: 1.0,       // optimism per sd of uncertainty

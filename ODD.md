@@ -269,6 +269,19 @@ Chris's reading (median stagnates only once hoarding arrives).
       Every variant is short of food by midwinter (mean food 0.25–0.30), so sharing spreads
       a common shortage across ties until stores are gone. A receiver near death tonight
       weighs heavily (the lethal-night cost, a flagged Default), so ties pour food into it.
+  - **Who is given to first: where the gift pays most (Decided — Chris, 2026-11-15:** "if this
+    means give to the person with the most need (equally tied) then yes"**).** Of all those
+    short of a good at a place, the gift that pays its giver most goes first (her weight on
+    the receiver × the receiver's gain, less her own cost), then the next, until no gift pays.
+    Between people she is tied to equally, her cost is the same, so the needier one (the
+    larger gain: the one nearer death, in a child's case) is fed first; a closer tie can
+    outweigh a greater need. (Until 2026-11-15 receivers were taken in the order agents are
+    stored, oldest-born first. In an exp002 colony a mother of three holding one unit of greens
+    gave it to her 8-year-old at food −4.1 while two of hers at −5.8 got nothing.)
+    - *As built — Default (Claude, 2026-11-15):* each receiver's gift is chosen as before
+      (givers by weight on it, then trust; the first whose gift pays gives, the whole shortfall
+      or else a day's food); the receivers are then served largest pay first, and after each
+      gift the receivers whose giver just gave are weighed again.
 - **Power is not a primitive.** It emerges as asymmetric dependence (Emerson 1962): the agent
   many need and who needs few. Intimacy likewise emerges, as tie strength from frequent mutual giving.
 
@@ -352,13 +365,143 @@ Deliberately small; it grows later.
   goods) and porting as a service, with its transport technology (carrying by hand, pack
   goats, oxen, horses, wagons). Nothing yet limits what an agent carries except water, so a
   basket would do nothing until a carrying limit exists.
+  - **The limit is on all carrying (Decided — Chris, 2026-11-12: "all carrying"),** daily
+    trips and camp moves alike.
+  - **Storage and carrying are technologies (Decided — Chris, 2026-11-12):** "storage on
+    person, in the sleeping place might be default and suffer the most loss. but things like
+    underground store or a granary and baskets and skins etc should be how this is handled."
+    Goods are somewhere: on the person (up to what it can carry) or at its sleeping place,
+    the defaults, where losses are highest; storage built in the world (an underground pit,
+    a granary) loses less, and carrying gear (baskets, skins) carries more.
+  - **No innate water container; containers are made goods (Decided — Chris, 2026-11-12):**
+    "perhaps no water tech. gourds, skins, bladders, wood are all tech they can build. if we
+    start them knowing gourds, let's have them build gourds. that way gourds can wear out and
+    gourds can be duplicated. folks could have multiple gourds." The gourd stays known from
+    the start (2026-11-05) but becomes something made, held, worn out and given, like a tool.
+    This replaces the assumed gourd capacity.
+  - **Carrying has dimensions, by kind of good, and gear raises it (Decided — Chris,
+    2026-11-12):** "humans can carry/drag a lot of weight. but only with tech. with two
+    hands you can't carry much. so tech increases the weight of what you can carry. probably
+    also depending on the kind. like water you can't carry without tech. but tools you can."
+    Bare hands carry little; water not at all; tools in hand. Gear raises what can be
+    carried, kind by kind.
+  - **The first material tree: foraging and hunting return secondary materials (Decided —
+    Chris, 2026-11-12):** "for now let's assume that they are made from plant material from
+    foraging. skins are made from hunting material. we are starting to reach our first real
+    material tree. our primary foraging returns secondary resources. hunting and gathering
+    bring food, but also skins and shells etc." Gourds are made from plant material that
+    foraging brings in; skins from what hunting brings in.
+  - **Both: some come with the haul, some take work, and some need processing (Decided —
+    Chris, 2026-11-12):** "i think we probably have both kinds and this is the split between
+    actions. some resources need further processing (or could use it) like tanning." Raw
+    materials arrive with the haul or by work of their own; processing (as drying meat
+    already is) turns them into what makes things, e.g. tanning a hide.
+  - **The first set (Decided — Chris, 2026-11-12, on Claude's proposal: "yes that's a good
+    first set"):** gourds (gourd fruit from gathering, dried for weeks, made into a water
+    gourd); hides (from kills, tanned to leather, made into a water skin or a carrying bag);
+    fibre (reeds, bark, gathered on purpose, made into a basket for loose food); bare-hands
+    limits per kind, each piece of gear raising its kind's. Pits, granaries and dragging
+    (sledges) come later.
+  - **One load, with a cap per kind (Decided — Chris, 2026-11-12, on Claude's proposal:
+    "yes this works well"):** each person carries one load, by weight; within it each kind
+    has a bare-hands cap (water none, loose food a couple of handfuls, bulky goods an armful,
+    tools in hand), and gear raises a kind's cap toward the whole load.
+  - **Food and water can be eaten and drunk in place (Decided — Chris, 2026-11-12):** "one
+    addition. water and food can be eaten in place." What is eaten where it is gathered is
+    not carried.
+  - **Carried children take part of the load, and the load is part of the day's effort
+    (Decided — Chris, 2026-11-12):** "yes, carried children take part of the load. and
+    carrying load is part of the calculation of daily load." The day's effort gains the
+    weight carried times the hours walked with it (Decided — Chris, 2026-11-12, on Claude's
+    proposal: "yes, go ahead and build it"); walking speed is unchanged for now.
+  - **Fetching what was left is moving camp in more than one trip (Decided — Chris,
+    2026-11-13):** "fetching goods that are at old camps seems a reasonable task to plan. its
+    basically moving camp in more than one trip." On Claude's proposal ("agreed"): a site's
+    forecast counts everything the member holds, with the trips back for what it cannot carry
+    in one charged to the forecast's first week (a round trip per extra load) and what rots
+    before it is fetched; the trips themselves are planned day by day by the ordinary planner,
+    which gains a stop at goods lying where it knows of them, weighed against everything else
+    it could do that day (the same stop reaches meat left at a kill). An agent knows of goods
+    lying where it left them or where it has stood since (Default).
+  - **Gear's worth is learned, slowly, and from seeing others (Decided — Chris, 2026-11-13):**
+    "i want it to be learned, the accumulation of any tech should be slow. but once enough
+    folks have gear, you learn from seeing that gear is better. so in an established culture
+    gear is considered by all in planning." Raised by Chris: "a capacity increase should
+    translate into less trips and more productivity." (Found 2026-11-13: the learned worth
+    came only from what an agent's own hands could not hold, which the planner avoids, so it
+    stayed near zero; and the forecast credited gear as more food in the same hours, never
+    as fewer hours.) Not an imagined day with the gear.
+  - **Gear is a strategy whose efficiency is learned like any other (Decided — Chris,
+    2026-11-13):** "agents should mostly be learning the efficiency of strategies in a loose
+    RL right? with our habit/norm structure." On Claude's proposal ("yes please"): each agent
+    learns, by season, its return per hour of gathering on days with a basket or a bag and on
+    bare-handed days (habit from its own days, norm from what others tell in chat, §4.4).
+    The forecast credits gear held (or makeable) as the same food in fewer hours: the hours
+    it gathers a day scaled by the bare return over the gear's. Before the gear has any
+    experience or norm behind it, the agent's own shortfall (the 'l' flows) is its guess.
+    *As built (Default):* a day's gear is a bag if it holds one, else a basket, else bare;
+    the return is the food (what it restores) kept or eaten at foraging stops, as if without
+    tools, over those hours, learned at the seasonal rate (`flowRate`) with the hours it
+    forages a day; told in chat as the other seasonal values are. Wood a bag would bring is
+    still credited by the shortfall. A water skin's worth stays mechanical (fewer trips to
+    water, from what its vessels hold).
+  - **As built (Stage 5h, 2026-11-13) — Default** (`tree.js` carrying, `params.carry`):
+    - *Load and caps:* an adult carries 25 kg (a working child by its work rate), less its
+      carried children (infant 8 kg, under 6 years 4); bare hands hold 1 kg loose, 10 kg
+      bulky, no water. kg a unit: greens 1, nuts and roots 0.5, meat 0.5, dried meat 0.25,
+      grain 0.4, wood 2, flint 1, clay 2, water 4 (a day's need is 2 units), pot 4, gourd
+      fruit 1, dried gourd 0.3, hide 5, leather 2, fibre 1. Tools and gear go in hand.
+    - *Effort:* 0.0004 food a day per kg carried per hour walked (25 kg for 2 hours is about
+      a sixth of a day's food need).
+    - *Where goods are:* at camp an agent's holding is its store where it sleeps. A day trip
+      takes up only what it can carry; what it gathers beyond that it eats there, up to a
+      day's food, and leaves the rest growing (or in its snares). Leaving camp for a planned
+      night out it packs gear, its vessels' water and a night's food (best food per kg); the
+      rest stays where it sleeps, and the evening out lives on the pack. Home again, the two
+      join. A pot stays where its owner sleeps.
+    - *The kill:* the killer takes up what it can carry (20 of a carcass's 100 meat in bare
+      hands) and the hide if it fits; the rest lies at the kill, and the others hunting that
+      herd take up what they can. Sharing is still gifts and barter where they stand; the
+      killer no longer holds the whole carcass (it cannot carry it).
+    - *Goods lying in the world:* at a hex, open to anyone, food rotting at its rate. An
+      agent stopping there takes up what it can carry (food best per kg first); goods lying
+      where it sleeps join its store. Water left lying is not kept.
+    - *Order taken up:* tools in hand; then the pot, food best per kg, the material tree's
+      goods (leather, dried gourd, gourd fruit, hide, fibre), then flint, wood and clay, as far
+      as it can carry. The same order serves moving camp, a trip back and any stop.
+    - *Moving camp:* each mover carries what it can in that order; the rest lies at the old
+      camp. A member out that morning carries none of what was at camp.
+    - *Fetching (2026-11-13):* an agent knows what lies where it left goods (moving camp, a
+      kill) or where it has stood since, as it last saw it, food rotted since; finding a
+      place emptied, it forgets it. Each day the planner may add a stop of 15 minutes
+      (`carry.fetchHours`) at any such place within half a day, the route's cost counting
+      what it would take up there. A site's forecast is scored twice, with only what the
+      member carries there and with a trip a day back for the rest (each taking what it can
+      carry, while trips bring something, up to the days until the camp weighs moving again,
+      only if the round trip fits in a day), the trips' hours charged to the first week; the
+      cheaper counts. Not priced: the effort of carrying on those trips.
+    - *The material tree:* gourd vines on grassland, three times as thick by water, ripe in
+      late summer (2 fruit an hour); a fruit dries where it is kept, about 3 weeks, and a
+      dried gourd is made into a gourd in an hour (known from the start; each starting adult
+      has one, a burn-in scaffold). A gourd holds 0.5 days of water and wears at 1/400 a day;
+      several gourds hold more. A kill brings a hide; small game brings small skins (0.02 of
+      a hide per unit of meat). Tanning (found by tinkering with a hide) turns a hide to
+      leather in 4 hours; leather is made into a water skin (2 days of water, 1/300 a day)
+      or a bag (any food or bulky good up to the whole load, 1/300). Fibre (reeds and bark,
+      regrowing, thickest by water, 4 an hour) is plaited into a basket (4 fibre, 4 hours;
+      loose food up to the whole load, 1/200). Water skin, bag and basket are found by
+      tinkering with their material.
+    - *Gear's worth (learned, not written in):* each agent learns, by season, what its hands
+      could not hold each day ('l' flows); the Keep forecast adds it back for the kinds its
+      basket or bag would carry. Vessels are worth the trips to water they save (as the pot).
 
 - **Warmth has levels from two sources (Decided — Chris, 2026-11-02).** Shelter level sets a
   base, and a fire (firewood used up daily) adds to it. A hut without fuel is better than no
   hut; a hut with a fire is better still. So wood is a daily consumable for anyone who wants
   more warmth than the shelter alone gives. Seasons raise the need (cold days).
 - Deepest chain (depth check): iron ore + charcoal → bloom → axe head → timber → house, about four.
-- **Left out for now:** hunting and hides, herding, cloth, boats.
+- **Left out for now:** ~~hunting and~~ hides, herding, cloth, boats. (Hunting is now in:
+  Landscape and resources, Game, Decided 2026-11-11.)
 
 ### Tools (Decided)
 - A tool is a **multiplier on production for its task**. Tool quality sets the multiplier.
@@ -495,6 +638,189 @@ Deliberately small; it grows later.
       (at a winter-growth floor in autumn and winter, a stand-in for winter food);
       water refills daily to a level that swings ±50% with the rains (wettest in spring);
       deposits never regrow. Seasons also give a cold factor (autumn and winter) for warmth.
+  - **Game: big and small, as moving densities (Decided — Chris, 2026-11-11; mechanism
+    Open):** "i think we need big game and small game. i think we want some density measure
+    instead of individual agents for computation. but i think that we should have the density
+    range more than just grow. so the big game concentration (herd) moves around, meaning
+    hunters need to track it and follow it to maximize success rates. small game might be the
+    same, but a different dynamic profile. ... i'm seeing small game maybe as having smaller
+    fluctuations, but being more volatile. that might be wrong to model them. both should have
+    some local growth, but both should also respond to hunting and deplete. and we might need
+    to model a missing predator for these game other than humans to control the population
+    outside of hunting (to avoid cycling populations)."
+    - Game is a density on each hex, not animals as agents.
+    - Big game is a herd: a concentration that moves, so hunters must track it and follow it.
+    - Small game is a flow (Decided — Chris, 2026-11-11: "yes i like this model better. like
+      a flow that the settlement taps and sinks."): a density on each hex that breeds where it
+      stands and seeps into emptier neighbouring hexes. Hunting digs a hollow round a camp
+      that fills from its edges, the source-sink halo of village hunting (Claude, from memory:
+      Novaro, Bodmer & Redford c. 2000). Breeding supplies the surplus; moving in refills the
+      hollow. Not a plant: a plant regrows where it stood. (Chris's first sketch, smaller
+      fluctuations but more volatile, he was unsure of; superseded by this.)
+    - Both grow locally, both are depleted by hunting, and a predator other than humans holds
+      them down outside hunting, so populations do not cycle.
+    - Small game's predator is its own density, damped (Decided — Chris, 2026-11-11: "let's do
+      the damped version."): prey have a ceiling per hex, a predator's take saturates, and
+      year-to-year weather varies prey breeding, so the two wobble round a balance instead of
+      cycling. People and predators share the prey: a camp's hollow starves predators too, so
+      part of the human take is prey predators would have eaten (compensatory hunting).
+    - Herds move toward the best grazing (grass and water) near them and away from hexes where
+      they were hunted (Decided — Chris, 2026-11-11: "i like your big game plan"). No set
+      route: where herds go comes from the land and the hunting.
+    - Big game has its own predator, which moves, hunts the herds and shifts with the seasons,
+      for variety in herd behaviour (Decided — Chris, 2026-11-11). Default (Claude): it is a
+      moving concentration like a herd, drawn toward herds; herds avoid it as they avoid
+      hunters; its seasonal shifts come from following the herds, not from a route of its
+      own; damped like small game's predator.
+    - **Tracking is a trace in the land (Decided — Chris, 2026-11-11):** "if tracks are
+      basically pheromones from an ant model the hunters can simply move up gradient. this
+      works for predators too. then hunters and predators can leave their own trace that game
+      can avoid." Herds, predators and hunters each leave a trace on the hexes they pass; it
+      fades daily. Hunters and predators climb the herd trace; herds move down the predator
+      and hunter traces. This replaces "away from where they were hunted" in herd movement.
+      **Everyone leaves the people trace, not only hunters (Decided — Chris, 2026-11-11):**
+      "yes trace from everyone to drive the multi-day." Gatherers, wood-cutters and the camp
+      itself mark the land, so herds shy away from camps and hunters must range out.
+    - **Hunting parties are emergent (Decided — Chris, 2026-11-11):** "i like this model
+      idea. emergent hunting parties." A hunter's chance of a big-game kill rises with the
+      number of others hunting the same herd on the same hex that day, on a saturating curve
+      whose strength is a swept parameter. No party entity: who hunts together comes from
+      the morning announcements (§7.6), ties and habit. Small game is hunted alone, the catch
+      going by the density on the hex.
+    - **The killer holds the whole carcass (Decided — Chris, 2026-11-11):** "yes", after the
+      chimp case (Claude, from memory: whoever holds the meat keeps it; it spreads by begging
+      pressure, Gilby at Gombe, and to allies, Mitani & Watts at Ngogo). No rule of division:
+      all sharing of meat comes from gifts and barter (§2 Ties), so wide meat-sharing is a
+      result, not a rule. As built: gifts and barter already happen at every hex an agent
+      was at that day (§7.1), so hunters on the kill's hex meet the killer there before anyone
+      back at camp does, and a party out overnight exchanges where it sleeps (Boesch's Taï
+      result, hunters get more than bystanders, can then emerge). (Claude first wrote that
+      exchange was at camp only; it is not.)
+    - **Weapons (Decided — Chris, 2026-11-11: "yes to all of this"):** a stone-tipped spear is
+      in the starting kit with the other stone tools (flint and wood, wears with use,
+      multiplies big-game success). A new hunting ladder is found by tinkering: snares and
+      traps for small game first (they catch while the owner is elsewhere), then the bow
+      (raises big-game success at a distance).
+    - **Injury: risks all people face (Decided — Chris, 2026-11-11):** "minor injuries that
+      heal, major injuries that leave a disability, and death as possible outcomes. these
+      should be risks all people face. in camp lowest level. outside not hunting higher.
+      outside hunting big game highest. maybe with some risk in building." The same for
+      both sexes and all adults; any division of dangerous work is a result. Default
+      (Claude): a chance per hour by setting (in camp < out of camp < hunting big game; some
+      added for building); a herd's size raises the big-game risk and the party's size lowers
+      it (a second reason to hunt together, Ache injury records, Hill & Hurtado, from
+      memory). A minor injury takes days of work away and heals; a major one cuts the
+      agent's working capacity for life; the injured are kept by gifts from ties, as the old
+      are (§2).
+    - **Risk is learned and priced (Decided — Chris, 2026-11-11: "yes"):** each agent learns
+      an injury rate per setting (§4.4: habit from its own injuries, norm from injuries seen
+      and heard of in chat), and the planner charges each hour its expected cost: days lost,
+      capacity lost, and death. Death is costed as the discounted life ahead, which also
+      prices starvation in the Keep forecast (it priced hunger only as a squared deficit).
+      As built (Default, Claude): a day dead costs the worst-need day (WORST_NEED_COST), the
+      same price tonight's lethal night already used, so the life ahead is the projection's
+      discounted days (about 100 at 0.99) at that price; it falls with age only near the end
+      of life. In the projection, a step where food reaches death costs that from there on.
+    - **Meat — Default (Claude, 2026-11-11):** one food kind, rotting about as fast as greens;
+      the drying level (§ processing) turns it into dried meat that keeps. Big-game kills
+      are large lots, small game small ones; sizes are parameters, balanced as we go.
+    - **Knowing where game is uses habits and norms, not a new system (Decided — Chris,
+      2026-11-11):** "part of this is learning where herds typically are, but this needs to
+      be augmented probably with a local knowledge. what is true recently is more relevant
+      that what was true last season." Default (Claude): game seen on a hex is a sighting
+      like any resource, ageing as sightings do (faster for herds, which move); where herds
+      usually are each season is one more learned value (§4.4: habit from own sightings, norm
+      from chat, the same arbitration), which a fresh sighting or trace overrides.
+    - **As built (Stage 5h; Default, Claude, 2026-11-11; numbers in `PARAMETERS.game`,
+      `hunt`, `snare`, `injury`):**
+      - *Small game* is the resource `smallgame` (ceiling 600 a hex of plains or forest, half
+        on hills and rivers), gathered like a plant (8 meat an hour from a full hex). As
+        fullness x: breeding 0.018·x·(1 − x) a day at the height of the growing season (about
+        2 a year), times the year's weather (lognormal, sd 0.2); its predator load q takes
+        q·0.0034·x/(x + 0.3)/(1 + 0.5q), grows by 0.98 of that and dies at 0.0014 a day. Both
+        seep across each edge a day (prey 5% of the fullness difference, predator 3%). With no
+        people (seed 1, 40 years): fullness wobbles 0.24–0.55 at year's end, no cycle. With
+        people (seed 3 colony): a hollow round camps, 0.25–0.32 within a hex against 0.6–0.7
+        seven or more hexes out.
+      - *Herds* (24 of 60 at the start; all big game under a ceiling of 4000): each day up to
+        2 steps to the best of its hex and the neighbours by grazing fullness, + 0.3 for water,
+        − 0.5 × pack trace − 0.1 × people trace, + a little chance. They graze their own stock
+        (grass regrows in the growing season, browse under trees half as well all year);
+        calves in spring by how fed and the room under the ceiling; die of hunger when short.
+        Split above 120; animals come in from the map's edge while fewer than 4 herds.
+      - *Packs* (6 of 6): up to 3 steps a day toward a herd scented within 3 hexes, else up the
+        herd trace, else ranging on in one direction.
+        *Wolves are a control on the herds, not a competitor* (Decided — Chris, 2026-11-12:
+        "they should take in proportion to what is there and we can assume their need is
+        filled elsewise if the herd can't provide"; herds should hold out, fluctuations are
+        fine). As built (Default): a pack on a herd takes 0.0009 × wolves × animals a day, with
+        no saturation and no need; wolf numbers drift toward one wolf per 50 herd animals on
+        the map (0.3% of the gap a day), times a yearly draw (lognormal, sd 0.2), so fewer
+        animals means fewer wolves and a smaller share taken. (The first build had wolves
+        breed by how fed and die of hunger, under a ceiling of 20: with people hunting too,
+        wolves held at 12–14 while the herds fell from ~450 to ~100 and took 100–180 a year,
+        more than people did, until the herds were gone on 2 of 3 seeds: a predator pit.)
+      - *Traces* fade 15% a day (herds, packs) or 30% (people) and seep 10% to neighbours.
+        Each person marks each hex it was at 0.1; a herd marks n/60 a step.
+      - *Sign and knowing*: a hex reads as a herd at 1 with a herd on it, else herd trace / 3.
+        A look takes it in; a sighting gives way to the seasonal habit over 4 days; where herds
+        usually are is learned per hex and season (rate 0.1), habit and norm, one arbitration
+        record for all hexes (16-bit, freed at death).
+      - *The hunt*: a hunting stop is planned at the hexes with the most expected sign for the
+        walk (6 weighed); expected meat an hour = learned meat per hour at full sign × sign ×
+        weapon × the party it expects (campmates already planning a hunt within a hex). At the
+        stop the hunter steps toward a herd seen on its hex or the next, else up the herd
+        trace, while the stop's hours last, and the route goes on from where it ends. Once all
+        have acted, each hunter on a herd has a chance an hour of a kill: 0.2 × weapon (spear
+        ×2, bow ×3) × partyFactor (1 + (1 − e^−(k−1)/2), up to ×2) × n / (n + 20) for a herd
+        of n; a kill is 100 meat. The learned meat per hour moves slowly (0.05; kills are
+        lumpy). (At 0.05 an hour bare hunters rarely killed and stopped hunting.)
+      - *Finding the animals within the hex* (Decided — Chris, 2026-11-11: "finding a group is
+        way higher than finding a lone stray"): a hex is an hour's walk across, so being on a
+        herd's hex is not contact; the chance falls with the herd's size by n / (n + H), the
+        form the wolves' kills already take. H = 20 (Default: double the wolves' 10, since
+        wolves smell game from much further; Chris was unsure of the value, so it is a
+        balance parameter); pKill rose 0.15 → 0.2 to keep a herd of about 45 near its old
+        rate. A stray gives 0.05 of the full chance, a herd of 20 half.
+      - *Meat* restores 0.1 (×1.5 cooked) and rots 0.15 a day; drying makes dried meat (2 to
+        1, restores 0.2, rots 0.004), known with drying.
+      - *The spear's worth*: the projection makes it with flint and wood in hand, like the axe,
+        and it multiplies big game's share of the meat (learned as if bare-handed).
+      - *Snares*: tending snares at a hex takes their catch and sets 6 an hour (12 a hex at
+        most); each takes 0.2 × fullness meat a day from the small game, the catch rots as
+        meat, 2% of snares are lost a day. Found by tinkering with wood where small game runs.
+      - *The bow*: found by tinkering with wood and flint, spear in hand; wood 2, flint 1, 6
+        hours; ×3, lasts 160 hours; the best weapon held is used.
+      - *Injury*: a day in camp 0.0002, an hour out 0.00005, an hour on a herd 0.0004 (× herd
+        size / 60 within ×0.5–2, ÷ √party), an hour building 0.0002; 85% minor (10 days at 30%
+        of working hours), 12% major (30% of working hours for life), 3% death. Rates learned
+        from the true rates as prior (rate 0.01 a day); an injury's expected cost is 10 days ×
+        0.5 + the major share × life × 0.5 + the death share × life at the worst-need cost.
+      - *Injury priced by who and where* (Decided — Chris, 2026-11-12: "injuries should be
+        priced in for things like if i'm injured i can't care for my kids"; the fault was the
+        choice to hunt out with young children, which should feed back into planning, not a
+        rule). As built (Default): an injury is priced where the agent sleeps tonight (camp, or
+        out where its route ends; injuries come at day's end). A minor injury there costs as
+        death if the hours it would leave (30% of waking hours, less care) cannot reach the
+        nearest water it knows before its water runs out. A death costs its life ahead plus each
+        dependent's, at its weight on that child (§7.4, the weight its gifts use): a dependent
+        shares its carer's water and goes where it goes, so it dies with it. (Seed 1, year 8: a
+        woman late in pregnancy with two children slept out an hour from camp, was hurt, had
+        0.2 hours a day left and died of thirst there with three children.)
+      - *Walking home a little at a time* (Decided — Chris, 2026-11-12: "the bug i'm seeing is
+        that she didn't walk partially home"; walking, work and care are one budget of hours).
+        An agent whose camp is beyond today's hours puts the hours its plan leaves toward the
+        next hex on the way home, and the progress carries to the next day.
+      - *Two fixes found by the same deaths* (2026-11-12, as built): an agent waking out may
+        plan a drink at any water it knows within the whole day's hours, not only half (it
+        need not walk back to where it woke; seed 2, year 7: stranded 10 hours out with water
+        4.0 hours away and a reach of 3.9, a carer and two children died of thirst); and a
+        camp that moves while a member is out does not charge it the walk (seed 3, year 7: the
+        charge left a hunter low on water 2 hours that day, short of the 3 to water).
+    - Why now (2026-11-11): hunting is part of the pre-known foundation (Chris, 2026-11-05)
+      but was left out; game is the scattered winter food that the ethnography says pulls
+      bands apart in winter, as stores pull them together; and lumpy returns are the classic
+      case for sharing.
   - **What "place" means on the grid — Default:** a place is one hex. Meeting is being in the
     same hex on the same day (§3); norms are per activity per hex (§4.4); travel time is the
     hex path's length weighted by terrain.
@@ -914,6 +1240,50 @@ trade places and price norms must all form.
     split in different ways. with peer groups staying together." Already true: belonging and
     gifts come only through ties, so a newcomer starts with neither. Missing: each member
     chooses alone, assuming the rest follow, so a peer group cannot leave together.
+  - **Splitting is emergent, following the ethnographic pattern (Decided — Chris,
+    2026-11-11):** "splitting should be emergent from the model, ideally following this
+    pattern." The pattern (from Claude's summary of the literature, from memory, 2026-11-11):
+    where cold-season food is stored in one place, bands gather at a winter base and live on
+    the stores (Great Basin, Plateau, Northwest Coast); where it is scattered game, they split
+    into a few families (subarctic). No rule sets group size by season.
+  - **Storing for winter is part of the plan (Decided — Chris, 2026-11-11):** "i think storing
+    for the winter should be part of the plan. it might already be, in which case we might
+    need to tweak its balance." The Keep forecast already runs months ahead; whether bands
+    store enough to winter in one place is being checked.
+  - **Multi-day trips (Decided — Chris, 2026-11-11; mechanism Open):** "multi-day trips sound
+    good, and they might cycle well with our warmth need and fit better in summer when that
+    penalty is less." A party goes out from camp for days and carries food back, as
+    collectors' task groups do (Binford 1980), instead of the whole camp moving.
+    Hunters stay out until they must come back (Decided — Chris, 2026-11-11): "hunters should
+    stay out until they must return for provisions or to get needs met." No set trip length:
+    a hunter returns when the food carried runs low or another need (warmth, belonging, a
+    child) costs more than staying out.
+    **Where to sleep is part of the morning plan (Decided — Chris, 2026-11-11):** "they make
+    their plans in the morning, and when they make their plans in the morning, they should
+    plan to whether they come home for the night or not. But that choice ... should be
+    dependent on their prediction of tomorrow's gains based on those two outcomes." A route
+    ends either at camp or at a hex where the agent sleeps out; each is valued as tonight's
+    cost there (shelter, fire, belonging, food carried) plus the predicted gain of tomorrow
+    from there. A trip is a run of mornings that plan a night out; no trip entity. Default
+    (Claude): tomorrow's gain from a place is estimated from what is known near it (sightings,
+    traces, the seasonal habit), not by planning tomorrow in full, to keep the cost of a plan
+    near today's. A party sleeping out holds its own evening exchange.
+    *As built (Default, Claude, 2026-11-11):* a night out is weighed once the day's route is
+    built (inside the search it doubled the planner's cost): the route if it ends in a hunt,
+    the route with each hunting stop added at its end, and a whole day of hunting at each. A
+    night out has no shelter; its belonging is only from ties sleeping out within a hex (as
+    planned that morning, and as it turns out that evening), and nothing announced at camp
+    reaches it. Tonight's walk home is put off, not saved: with p the sign it expects there
+    tomorrow, tomorrow gains (2p − 1) × the walk from camp, at the best gain per hour of
+    the morning's stops, a day on. Tomorrow's water is the walk to the nearest water it
+    knows from there (none within half a day: a worst-need day). (Saving the walk outright,
+    and letting any route sleep out, sent a third of the bands out every night and 33 died
+    of thirst in a year; hunters who tracked into land where they knew no water.) A hunter
+    who has followed game, or whose camp has moved, beyond a day's walk of camp plans every
+    route as a night out (an empty day: the night where it is) until camp is in reach. (Until
+    then such a hunter's day scored Infinity and its walk home NaN, which spread by chat as
+    learned norms until whole camps scored every drink as NaN and 85 died of thirst beside a
+    river, seed 3 colony; learning now ignores a value that is not a finite number.)
   - **Contests between bands, without warfare (Decided — Chris, 2026-11-10; mechanism
     Open):** "actual fighting was probably rare on the scale that there were casualties. more
     likely there were skirmishes to determine relative strength an that determine which band
@@ -934,7 +1304,12 @@ trade places and price norms must all form.
       like the planner's: tonight plus the discounted projection. The belonging counted is
       from ties to those who would camp there, assuming the rest of the band follows.
     - **Shelter and goods.** A hut or lean-to is left behind. All goods are carried; there
-      is no carrying limit until containers (Stage 5e).
+      is no carrying limit yet. It comes after game, ahead of containers (Chris, 2026-11-11:
+      "not until we do game but we can add it to our plan"; Stage 5h).
+    - **What can't be carried stays, open to anyone, and spoils (Decided — Chris,
+      2026-11-12):** "open to anyone, like huts, but still spoils." Goods left at the old
+      camp are things in the world at that hex, as huts and fields are; anyone who comes may
+      take them, and food left there rots at its own rate.
     - **Merging.** A camp moving to a hex where another camp is merges with it.
   - **Huts and fields are things in the world; anyone may use a hut (Decided — Chris,
     2026-11-03):** "yes, huts and fields should be things in the world. anyone may use the
@@ -1167,6 +1542,21 @@ directions when gifts come back and fades when they don't.
   while nursing. Births are then at least about three years apart, near what foragers show,
   without the spacing written in. Numbers are `PARAMETERS`. *Default (Claude, not asked):*
   a man is fertile from about 16, with no upper limit but death.
+- **She counts the children she already has (Decided — Chris, 2026-11-13):** "yes, she should
+  count the children she already has." Asked after the 10-year runs (seeds 1–3), where children
+  dying of hunger rose from year 6 (33–44 a seed over years 6–10) while each woman weighed
+  another child as if she had none: the only brake was no conception while nursing.
+  - **How it is counted — Default (Claude, 2026-11-13):** the new child's daily hours (its
+    care, its food at her hour cost, less its help) come out of the hours her day has free
+    once the children in her care have theirs, and cost her, on top of the hours themselves,
+    the rest they take, valued in
+    hours as belonging is in her return (the rest need's cost, times half the hours that meet
+    it). Her free hours are her day's capacity less her usual work today, which already holds
+    her charges' care and the food she gathers for them; year by year over the new child's
+    childhood they grow back as her charges grow up (less care, more help, then grown) and
+    shrink as their food need rises. The rest cost has no floor at zero rest: hours her day
+    does not have cost more the further past it they go. A woman with time to spare pays
+    about the hours alone, as before; one whose day is full pays far more.
 - **Care for a child is an investment, not a gift (Decided — Chris, 2026-11-04, on Claude's
   proposal):** care given to a child stays out of the owing balance (§2 Ties), so a carer never
   holds a grudge against an infant. The carer values the child like a long build (§7.6 partial
@@ -1238,13 +1628,24 @@ weight (§2, above); the rest are Claude's proposals:
 - **Gifts to children.** A parent gives to its child by its weight on the child (the
   Decided rule above); it stays out of the owing balance. Anyone else gives to a child as to
   its keeper (its mother, or whoever took her place): by the tie to the keeper, booked as a
-  gift to the keeper. A child's need, to a giver, is its evening alone (it does not plan),
-  and a night that kills it costs what anyone's does (the worst cost on every day it takes
-  away, as in the projection). A gift is the receiver's whole shortfall or, if that does not
-  pay the giver, a day's food. (Both added 2026-11-06: without them, weaned children of 2 to
-  3 starved in autumn beside fed mothers holding food. A child deep in hunger's debt needed
-  more at once than was worth giving, and its death weighed no more than a hungry evening.
-  Reloading the same year-3 colony, the fixes cut year 4's child deaths from 33 to 2.)
+  gift to the keeper. **A child's need, to a giver, is its coming days on what it holds**
+  (Decided — Chris, 2026-11-14: "project the child's need over the coming days"): tonight's
+  evening, then its coming days, eating the food it holds as it needs it and with nothing
+  coming in, since it neither gathers for itself nor plans. So a child with nothing in hand
+  shows its whole road to death, and every projected day it is dead costs the worst, as in
+  anyone's projection. As built (Default, Claude, 2026-11-14): one day at a time, at the
+  giver's discount, to the projection's far horizon (a year), its other needs held at
+  tonight's. Day by day, because with nothing coming in a day's food moves its death by a
+  day; in the projection's weekly steps a child near the brink died in the first week with or
+  without it, so a day's food gained it nothing (a scratch check: 8 children dead of hunger
+  in 36 days). A
+  gift is the receiver's whole shortfall or, if that does not pay the giver, a day's food.
+  (History: from 2026-11-06 a child's need was its evening alone, with a night that kills it
+  at the worst cost. That fix cut year 4's child deaths from 33 to 2 in a reloaded year-3
+  colony, but exp003 found the giver's sum lopsided: her loss counted over months, the
+  child's hunger over one evening squeezed below zero, so above the brink a day's food paid
+  her about one day in ten. More than half of all child-days were spent hungry, while the
+  carer held a day of the child's food about 9 days in 10.)
 - **What a woman expects of a father** is the food his gifts have brought her and her child
   (a new per-tie record, fading with the tally).
 - **The chance a child grows up** is learned from the children seen: one's own, and those of

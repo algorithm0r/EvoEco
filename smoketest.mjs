@@ -16,7 +16,7 @@ import path from 'path';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const indirectEval = eval; // aliased → runs in the global (sloppy) realm, so `var` leaks to globalThis
-for (const f of ['util.js', 'params.js', 'engine.js', 'hex.js', 'mapgen.js', 'agent.js', 'tree.js', 'planner.js', 'exchange.js', 'life.js', 'world.js']) {
+for (const f of ['util.js', 'params.js', 'engine.js', 'hex.js', 'mapgen.js', 'agent.js', 'tree.js', 'planner.js', 'exchange.js', 'life.js', 'game.js', 'world.js']) {
   let src = readFileSync(path.join(__dirname, 'src', f), 'utf8');
   src = src.replace(/^\s*(['"])use strict\1;?/, ''); // strip directive so declarations leak to global
   indirectEval(src);
@@ -161,6 +161,10 @@ function agentWorld(foodScale, nAgents) {
     for (const i of aw.active[r]) { aw.caps[r][i] *= foodScale; if (aw.stock[r]) aw.stock[r][i] *= foodScale; }
     if (foodScale === 0) aw.active[r] = new Int32Array(0);
   }
+  if (foodScale === 0) {   // no game either (Stage 5h): no small game, no herds
+    aw.stock.smallgame.fill(0); aw.caps.smallgame.fill(0); aw.active.smallgame = new Int32Array(0);
+    aw.game.herds = [];
+  }
   aw.placeAgents(nAgents);
   return aw;
 }
@@ -189,8 +193,10 @@ check('more hours worked in winter than summer', mean(bySeason.winter) > mean(by
   ', autumn ' + mean(bySeason.autumn).toFixed(1) + ', winter ' + mean(bySeason.winter).toFixed(1));
 
 // barren map: no wild food at all
-const barren = agentWorld(0, 8);
+const barren = agentWorld(0, 8), herdMin = P.game.herd.min;
+P.game.herd.min = 0;   // and none come in from beyond the map
 for (let d = 0; d < 90 && barren.agents.length; d++) barren.update();
+P.game.herd.min = herdMin;
 check('barren map: all starve', barren.agents.length === 0 && barren.dead.every((a) => a.cause === 'hunger'),
   barren.dead.length + ' died of ' + [...new Set(barren.dead.map((a) => a.cause))].join(',') + ' by day ' + Math.max(...barren.dead.map((a) => a.deathDay)));
 
@@ -283,15 +289,21 @@ check('bands come through their first winter without the winter floor', xw.agent
 // one agent cuts wood for 2 hours on the same hex, with and without an axe
 const tw = new World({ agents: 0 });
 const woodHex = tw.active.wood.find((i) => tw.terrain[i] === T_FOREST);
-const cut = (withAxe) => {
+// (carrying limits lifted here: this tests the tool, ODD §2 Containers and carrying)
+const unlimited = (f) => { const C = P.carry, b = C.bare, l = C.load; C.bare = { loose: 1e9, bulky: 1e9, water: 0 }; C.load = 1e9; try { return f(); } finally { C.bare = b; C.load = l; } };
+const cut = (withAxe) => unlimited(() => {
   tw.cover.trees[woodHex] = 1;
   const a = new Agent(0, woodHex, tw);
   a.hold.axe = withAxe ? 1 : 0;
   a.plan = [{ hex: woodHex, act: A_WOOD, hours: 2 }];
   a.act(tw);
   return a;
-};
+});
 const bare = cut(false), axed = cut(true);
+// in bare hands an armful of wood is all it carries home; the rest stays standing
+const handWood = (() => { tw.cover.trees[woodHex] = 1; const a = new Agent(0, woodHex, tw); a.hold.axe = 1; a.plan = [{ hex: woodHex, act: A_WOOD, hours: 2 }]; a.act(tw); return a.hold.wood; })();
+check('what it carries home is limited by what its hands hold', Math.abs(handWood - P.carry.bare.bulky / P.carry.weight.wood) < 1e-6 && axed.hold.wood > handWood,
+  'wood in 2 h with an axe: ' + handWood.toFixed(2) + ' carried (an armful) of ' + axed.hold.wood.toFixed(2) + ' cut with no limit');
 check('an axe multiplies wood cut by its multiplier', Math.abs(axed.hold.wood / bare.hold.wood - TOOLS.axe.mult) < 0.01,
   'wood in 2 h: bare hands ' + bare.hold.wood.toFixed(2) + ', axe ' + axed.hold.wood.toFixed(2));
 const wearAgent = cut(true);
@@ -323,13 +335,14 @@ check('agents discover level 2 by tinkering in the bands year', xw.discoveries.l
   xw.discoveries.length + ' discoveries (' + [...new Set(xw.discoveries.map((d) => d.what))].join(', ') + '), first on day ' +
   (xw.discoveries[0] ? xw.discoveries[0].day : '-') + '; ' + Math.round(xw.tinkerHours || 0) + ' hours tinkering; ' + xw.learnedBySeeing.length + ' learned by seeing');
 
-// a pot stores water: one trip carries the gourd and the pot
-const potA = new Agent(0, clayHex, kw);
-const potB = new Agent(1, clayHex, kw);
+// a pot stores water where it stays, at camp (ODD §2 carrying: it is not carried)
+const wetHex = kw.waterAt.findIndex((x) => x >= 0);
+const potA = new Agent(0, wetHex, kw);
+const potB = new Agent(1, wetHex, kw);
 potB.hold.pot = 1;
-for (const a of [potA, potB]) { a.plan = [{ hex: kw.waterAt.findIndex((x) => x >= 0), act: A_DRINK, hours: 0.25 }]; a.act(kw); }
-check('a pot carries and stores more water', potB.hold.water > potA.hold.water,
-  'water carried home: gourd ' + potA.hold.water.toFixed(2) + ', gourd and pot ' + potB.hold.water.toFixed(2));
+for (const a of [potA, potB]) { a.plan = [{ hex: wetHex, act: A_DRINK, hours: 0.25 }]; a.act(kw); }
+check('a pot stores more water at camp', potB.hold.water > potA.hold.water,
+  'water kept: gourd ' + potA.hold.water.toFixed(2) + ', gourd and pot ' + potB.hold.water.toFixed(2));
 
 // a hut is a multi-day build: 4 hours a day with the inputs and an axe; no warmth until done
 const hutA = new Agent(0, clayHex, kw);
@@ -456,7 +469,7 @@ check('food processing is discovered in the bands year', procFound > 0,
   c.ageDays = 8 * Y;
   const hx = [...Array(lw.grid.n).keys()].find((i) => lw.land[i] > 0 && lw.inSeason('greens') && lw.amount('greens', i) > 10);
   m.plan = [{ hex: hx, act: A_GREENS, hours: 2 }];
-  m.act(lw); const withChild = m.hold.greens;
+  unlimited(() => m.act(lw)); const withChild = m.hold.greens;
   followCarer(c, lw);
   check('a child goes with its carer and its help adds to the carer\'s haul', c.places.join() === m.places.join() && withChild > 0 &&
     m.tie(c.id, day()).kind > 0 && c.tie(m.id, day()).kind > 0,
@@ -496,6 +509,16 @@ check('food processing is discovered in the bands year', procFound > 0,
     Ws.length + ' women, waits ' + Math.min(...waits).toFixed(2) + '–' + Math.max(...waits).toFixed(2) + ' years (mean ' + (waits.reduce((x, y) => x + y, 0) / Ws.length).toFixed(2) + ')');
   check('a woman tries for a child only when both returns are positive', !!w2.pregnant === (rw > 0 && rm > 0) && (!w2.pregnant || w2.pregnant.father === m2),
     'her return ' + rw.toFixed(0) + ' h, his ' + rm.toFixed(0) + ' h → ' + (w2.pregnant ? 'conceived' : 'no'));
+  // she counts the children she already has (ODD §7.4, Decided 2026-11-13): the same woman, with
+  // three in her care, judges another child worth less, by the rest it takes from a fuller day
+  w2.pregnant = null;
+  const fhW = hoursPerFood(w2, lw), workW = w2.busyHabit.reduce((s, H) => s + H.v / 4, 0);
+  const c0 = crowding(w2, fhW, workW), had = w2.charges;
+  w2.charges = [1, 4, 8].map((y) => ({ alive: true, child: true, ageDays: y * Y }));
+  const c3 = crowding(w2, fhW, workW), rw3 = childReturn(w2, lw, m2);
+  w2.charges = had;
+  check('a woman counts the children she already has: another child costs more rest with three in her care', c3 > c0 && rw3 < rw,
+    'rest cost of another child ' + c0.toFixed(0) + ' h with none, ' + c3.toFixed(0) + ' h with three; her return ' + rw.toFixed(0) + ' → ' + rw3.toFixed(0) + ' h');
 }
 // planning together (ODD §7.6): a tie's announced haul counts as coming in, by the learned
 // share of its hauls that came back; what comes back moves that share
@@ -510,6 +533,114 @@ check('food processing is discovered in the bands year', procFound > 0,
   check("a tie's announced haul counts as coming in, by the share that came back", inc && Math.abs(inc.greens - 5) < 1e-9 && t.rel.h > 0.5,
     'counted ' + (inc ? inc.greens : 0) + ' of 10 greens; all 10 came back, so the share moved 0.5 → ' + t.rel.h.toFixed(3));
 }
+// ── 14. game, hunting and injury (Stage 5h) ─────────────────────────────────────────
+// small game, herds and packs hold up with no people; a hunter on a herd can kill; the party
+// raises each hunter's chance; snares catch while the owner is away; an injury can kill
+{
+  const gw = new World({ agents: 0 }), K = gw.caps.smallgame;
+  const yearEnds = [];
+  for (let d = 0; d < 10 * Y; d++) {
+    gw.update();
+    if (gw.day % Y === 0) { let s = 0; for (const i of gw.active.smallgame) s += gw.stock.smallgame[i] / K[i]; yearEnds.push(s / gw.active.smallgame.length); }
+  }
+  const animals = gw.game.herds.reduce((s, h) => s + h.n, 0), wolves = gw.game.packs.reduce((s, p) => s + p.n, 0);
+  check('game holds up with no people: small game wobbles, herds and packs persist', yearEnds.every((x) => x > 0.1 && x < 0.9) && animals > 200 && wolves > 2,
+    'small game at year end ' + yearEnds.map((x) => x.toFixed(2)).join(' ') + '; after 10 years ' + animals.toFixed(0) + ' animals in ' + gw.game.herds.length + ' herds, ' + wolves.toFixed(0) + ' wolves');
+  const hw = new World({ agents: 0 }), ha = new Agent(0, fh, hw);
+  hw.agents.push(ha);
+  const herd = { hex: fh, n: 50, fed: 1 };
+  hw.game.herds = [herd];
+  const pk = P.hunt.pKill, fH = P.hunt.findH;
+  P.hunt.pKill = 1; P.hunt.findH = 0;
+  hw.huntsToday = [];
+  ha.plan = [{ hex: fh, act: A_HUNT, hours: 4, unknown: 0, sign: 1 }];
+  ha.act(hw); hw.settleHunts();
+  P.hunt.pKill = pk; P.hunt.findH = fH;
+  const lying = hw.caches && hw.caches.get(ha.at >= 0 ? ha.at : fh) || { meat: 0 };
+  check('a hunter on a herd can kill; the killer keeps what it can carry, the rest lies at the kill', herd.n === 49 &&
+    ha.hold.meat > 0 && ha.hold.meat < P.hunt.carcass && lying.meat > 0,
+    'herd 50 → ' + herd.n + '; carried ' + ha.hold.meat.toFixed(1) + ' of ' + P.hunt.carcass + ' meat, ' + lying.meat.toFixed(1) + ' left lying');
+  check("each hunter's chance rises with the party, saturating", partyFactor(1) === 1 && partyFactor(3) > 1.5 && partyFactor(8) < 1 + P.hunt.party + 1e-9,
+    'chance ×' + [1, 2, 3, 5, 8].map((k) => partyFactor(k).toFixed(2)).join(', ×') + ' for 1, 2, 3, 5, 8 hunters');
+  const sh = gw.active.smallgame[0], before = gw.stock.smallgame[sh];
+  const sa = new Agent(1, sh, gw);
+  gw.tendSnares(sa, sh, 2);
+  for (let d = 0; d < 5; d++) gw.snaresDay();
+  const caught = gw.tendSnares(sa, sh, 1);
+  check('snares catch while the owner is elsewhere', caught > 0 && gw.stock.smallgame[sh] < before,
+    caught.toFixed(2) + ' meat after 5 days away; small game there ' + before.toFixed(0) + ' → ' + gw.stock.smallgame[sh].toFixed(0));
+  const I = P.injury, shares = I.shares, camp = I.camp;
+  I.shares = { minor: 0, major: 0, death: 1 }; I.camp = 50;
+  const ia = new Agent(2, fh, gw);
+  ia.expo = { camp: 1, out: 0, hunt: 0, build: 0 };
+  gw.injuries([ia]); ia.age(gw);
+  I.shares = shares; I.camp = camp;
+  check('an injury can kill', !ia.alive && ia.cause === 'injury', 'cause ' + ia.cause);
+  // stranded and hurt, a few hours out: it edges home a little each day (Decided 2026-11-12)
+  const sw = new Agent(3, fh, gw), far = gw.grid.within(fh, 3).find((m) => gw.travel(m)[fh] > 1.5 && gw.travel(m)[fh] < 4);
+  sw.at = far; sw.hurt = 10; sw.walked = workingHours(sw) * I.minorCut - 0.5;   // half an hour a day
+  const trip = gw.travel(far)[fh];
+  let days = 0;
+  for (; days < 30 && sw.at >= 0; days++) { sw.plan = []; sw.plan.out = true; sw.act(gw); }
+  check('a stranded agent walks home a little at a time', sw.at === -1 && days >= Math.ceil(trip / 0.5) - 1,
+    trip.toFixed(1) + ' hours from camp at half an hour a day: home after ' + days + ' days');
+  // an injury costs more to one it would strand: the same agent, free, then late in pregnancy and
+  // with little working capacity, so a minor injury would leave it no hours (Decided 2026-11-12)
+  const pa = new Agent(4, fh, gw);
+  const free = injuryCost(pa, gw, fh);
+  pa.disabled = 0.5; pa.pregnant = { due: 10, today: 10 }; pa._injK = null;
+  const loaded = injuryCost(pa, gw, fh);
+  // moving camp: it carries what it can; the rest lies at the old camp, open to anyone, and rots
+  // (ODD §2 Containers and carrying, Decided 2026-11-12)
+  const mv = new Agent(5, fh, gw), other = gw.grid.within(fh, 2).find((m) => m !== fh && gw.hours[m] >= 0);
+  mv.hold.roots = 200; mv.hold.nuts = 20; mv.hold.spear = 1;
+  gw.moveTo(mv, { hex: other, members: [] }, 2);
+  const lyingRoots = gw.caches && gw.caches.get(fh) ? gw.caches.get(fh).roots : 0;
+  const kg = carriedOf(mv.hold).kg;
+  gw.cachesDay();
+  const later = gw.caches && gw.caches.get(fh) ? gw.caches.get(fh).roots : 0;
+  check('moving camp, it carries what it can; the rest lies at the old camp and rots', kg <= P.carry.load + 1e-9 && mv.hold.spear === 1 &&
+    lyingRoots > 0 && Math.abs(mv.hold.roots + lyingRoots - 200) < 1e-6 && later < lyingRoots,
+    'carried ' + kg.toFixed(1) + ' kg (' + mv.hold.roots.toFixed(1) + ' roots, ' + mv.hold.nuts.toFixed(1) + ' nuts, the spear); ' + lyingRoots.toFixed(1) + ' roots left lying, ' + later.toFixed(2) + ' a day later');
+  // and goes back for the rest: moving camp in more than one trip (Decided 2026-11-13)
+  const fopts = planCandidates(mv, gw).filter((c) => c.act === A_FETCH && c.hex === fh);
+  const fr0 = mv.hold.roots, fl0 = gw.caches.get(fh).roots;
+  mv.walked = 0; mv.plan = fopts.slice(0, 1); mv.act(gw);
+  const fl1 = gw.caches.get(fh) ? gw.caches.get(fh).roots : 0;
+  check('it can plan a trip back and take up what was left', fopts.length === 1 && mv.hold.roots > fr0 + 1 && fl1 < fl0 && mv.at === -1,
+    'a fetch stop at the old camp; roots ' + fr0.toFixed(1) + ' → ' + mv.hold.roots.toFixed(1) + ' at the new camp, ' + fl0.toFixed(1) + ' → ' + fl1.toFixed(1) + ' lying');
+  // gear is a strategy whose efficiency is learned (Decided 2026-11-13): told that days with a bag
+  // return twice the bare-handed food an hour, a bag is worth the hours it saves; its own day with
+  // a basket teaches its return with a basket
+  const ka = new Agent(7, fh, gw);
+  const bagCost = (n) => { ka.hold.bag = n; ka.costs = null; return planCost(ka, gw, [], false); };
+  const guess = bagCost(0) - bagCost(1);
+  for (const F of ka.flow) { learnNorm(F.rbare, 2, 1); learnNorm(F.rbag, 4, 1); }
+  ka._inflow = null;
+  const told = bagCost(0) - bagCost(1);
+  ka.hold.bag = 0;
+  ka.dayRet = { food: 6, hours: 2, gear: 'basket' }; ka.si = gw.seasonIndex; ka.learn();
+  const rb = ka.flow[gw.seasonIndex].rbasket;
+  check('gear is worth the hours its learned return saves; a day with it teaches that return', told > guess + 1e-6 && told > 0 && rb.nh === 1 && rb.h > 0,
+    'a bag: ' + guess.toFixed(3) + ' as its own guess, ' + told.toFixed(3) + ' once told bags double the return (' + (ka.flow[0].fhours.v * 0.5).toFixed(1) + ' h a day saved); return with a basket learned ' + rb.h.toFixed(2));
+  // the first material tree (Decided 2026-11-12): gear raises its kind's cap; water needs a vessel;
+  // gourd fruit dries where it is kept
+  const ga = new Agent(6, fh, gw), c0 = newCarried();
+  ga.hold.gourd = 0;
+  const noVessel = carryRoom(ga, ga.hold, c0, 'water'), bareNuts = carryRoom(ga, ga.hold, c0, 'nuts');
+  ga.hold.basket = 1; ga.hold.gourd = 2;
+  const basketNuts = carryRoom(ga, ga.hold, c0, 'nuts');
+  check('gear raises what it carries: a basket loose food, a second gourd twice the water', noVessel === 0 && basketNuts > 10 * bareNuts && vesselCap(ga.hold) === 2 * P.goods.gourd.cap,
+    'nuts: ' + bareNuts.toFixed(1) + ' in bare hands, ' + basketNuts.toFixed(1) + ' with a basket; water: ' + noVessel + ' without a vessel, ' + vesselCap(ga.hold) + ' with two gourds');
+  ga.hold.gourdFruit = 3;
+  for (let d = 0; d < 60; d++) ga.consume(gw);
+  check('gourd fruit dries where it is kept', ga.hold.driedGourd > 2 && ga.hold.gourdFruit < 1,
+    'after 60 days: ' + ga.hold.gourdFruit.toFixed(2) + ' fruit, ' + ga.hold.driedGourd.toFixed(2) + ' dried; the gourds wore to ' + ga.hold.gourd.toFixed(2));
+  check('an injury that would strand is priced as death', loaded > 10 * free,
+    'expected cost of an injury at camp ' + free.toFixed(1) + ' free, ' + loaded.toFixed(1) + ' with no hours left if hurt');
+}
+console.log('bands year, hunting: ' + (xw.kills || []).length + ' big-game kills, ' + (xw.nightsOut || 0) + ' nights out, injuries ' + JSON.stringify(xw.injured || {}) + ' (reported, not required)');
+
 console.log('bands year: ' + (xw.weighed || 0) + ' monthly weighings, ' + (xw.tries || 0) + ' tries, ' + (xw.conceptions || 0) + ' conceptions, ' + (xw.births || 0) + ' births; camps: ' + (xw.campMoves || 0) + ' moves, ' + (xw.campJoins || 0) + ' members joined another camp (reported, not required)');
 
 const proj = msAgentDay * 300 * 9000 / 1000;

@@ -34,9 +34,11 @@ function planBest(agent, world, withTrade) {
   // candidates are ranked without the trade arm (five times cheaper; the route itself is
   // built and chosen with it)
   const base0 = planCost(agent, world, [], false);
+  agent._hourValue = 0;
   for (const c of cands) {
     c.solo = planCost(agent, world, [c], false);
     c.rate = (base0 - c.solo) / planHours(agent, world, [c]);
+    if (c.rate > agent._hourValue && c.rate < Infinity) agent._hourValue = c.rate;
   }
   const top = [];
   for (const key of ['solo', 'rate']) {
@@ -51,7 +53,30 @@ function planBest(agent, world, withTrade) {
   const base = planCost(agent, world, [], withTrade);
   const byGain = greedyRoute(agent, world, top, base, false, withTrade);
   const byRate = greedyRoute(agent, world, top, base, true, withTrade);
-  return byRate.cost < byGain.cost ? byRate : byGain;
+  const best = byRate.cost < byGain.cost ? byRate : byGain;
+  // a night out (ODD §5 multi-day trips) is weighed once the day's route is built: the route
+  // as it is if it ends in a hunt, and the route with each hunting stop it weighs added at its
+  // end, also as a whole day of hunting (weighing it inside the search doubled the planner's
+  // cost). Not for a camp site
+  // being scored (siteDay: the day is scored as if it starts and ends there).
+  if (!withTrade) return best;
+  const tries = [];
+  if (best.plan.length && best.plan[best.plan.length - 1].act === A_HUNT) tries.push(best.plan.slice());
+  if (best.plan.length < A.maxStops) {
+    for (const c of cands) if (c.act === A_HUNT && !best.plan.some((s) => s.hex === c.hex && s.act === A_HUNT)) tries.push(best.plan.concat([c]));
+  }
+  for (const c of cands) if (c.act === A_HUNT) tries.push([c, Object.assign({}, c, { hours: 2 * A.chunk })].slice(1));
+  // and with a drink on the way, at the nearest water it weighs, when the route has none
+  const drink = cands.filter((c) => c.act === A_DRINK).sort((x, y) => world.travel(startHex(agent))[x.hex] - world.travel(startHex(agent))[y.hex])[0];
+  if (drink) for (const p of tries.slice()) if (!p.some((s) => s.act === A_DRINK) && p.length < A.maxStops) tries.push([drink].concat(p));
+  // scored without the trade arm (five times cheaper), against the route home scored the same way
+  let bar = tries.length ? planCost(agent, world, best.plan, false) : Infinity, pick = null;
+  for (const p of tries) {
+    const c = outCost(agent, world, p, false);
+    if (c < bar) { bar = c; pick = p; }
+  }
+  if (pick) { pick.out = true; best.plan = pick; best.cost = outCost(agent, world, pick, withTrade); }
+  return best;
 }
 
 // The shortlist keeps, per activity, the best `half` stops by one-stop cost and the best
@@ -61,12 +86,12 @@ function planBest(agent, world, withTrade) {
 // neither list, and is dropped before the costly scoring. A speed-up only: the shortlist is
 // unchanged (Stage 6, 2026-11-06: ranking was most of the planner's and camp weighing's time).
 function undominated(agent, world, cands, half) {
-  const fromHome = world.travel(agent.home), groups = new Map();
+  const fromHome = world.travel(startHex(agent)), groups = new Map();
   cands.forEach((c, i) => {
     c._keep = true;
     if (!IS_GATHER[c.act] && c.act !== A_DRINK) return;
     c._i = i;
-    c._amt = c.act === A_DRINK ? 0 : planEstimate(agent, c.hex, c.act, world.day);
+    c._amt = c.act === A_DRINK ? 0 : planEstimate(agent, c.hex, c.act, world.day, world);
     c._trip = fromHome[c.hex] + world.travel(c.hex)[agent.home];
     let g = groups.get(c.act);
     if (!g) groups.set(c.act, (g = []));
@@ -101,7 +126,7 @@ function greedyRoute(agent, world, top, base, perHour, withTrade) {
     };
     for (let k = 0; k < plan.length; k++) {
       const s = plan[k];
-      if (s.act === A_DRINK || s.act === A_SCOUT || s.act === A_CRAFT || s.act === A_TINKER) continue;   // fixed-length stops
+      if (s.act === A_DRINK || s.act === A_SCOUT || s.act === A_CRAFT || s.act === A_TINKER || s.act === A_FETCH) continue;   // fixed-length stops
       if (s.act === A_PROCESS && !(agent.hold[PROCESSES[s.process].from] > PROCESSES[s.process].perHour * s.hours)) continue;   // nothing more to process
       const p2 = plan.slice();
       p2[k] = Object.assign({}, s, { hours: s.hours + A.chunk });
@@ -135,11 +160,16 @@ function greedyRoute(agent, world, top, base, perHour, withTrade) {
 // (ODD §5 A site's forecast prices rebuilding and its own land). The agent is restored after.
 function siteDay(agent, world, hex, walk, n) {
   const keep = { home: agent.home, shelter: agent.shelter, drinkTrip: agent.drinkTrip,
-    farmFert: agent.farmFert, hutV: agent.hutV, walked: agent.walked };
+    farmFert: agent.farmFert, hutV: agent.hutV, walked: agent.walked, at: agent.at, hold: agent.hold };
+  agent.at = -1;   // a site is scored as if the day starts there
   agent.walked = 0;
   agent.walked = Math.min(walk, agent.capacity());
   agent.crowd = n && agent.thin ? 0.5 * n * Math.max(0, agent.thin[world.seasonIndex].v) : 0;
+  let fetched = null;
   if (hex !== agent.home) {
+    const [carried, left] = movingLoad(agent, agent.hold);   // what it carries there (ODD §2 carrying)
+    agent.hold = carried;
+    fetched = fetchTrips(agent, world, hex, carried, left);
     const own = agent.shelter;
     agent.settle(world, hex);
     const d = world.dwellings && world.bestDwelling(hex, agent);
@@ -150,11 +180,52 @@ function siteDay(agent, world, hex, walk, n) {
     }
   }
   agent.landRatio = landRatio(agent, world, hex);
-  const cost = planBest(agent, world, false).cost;
+  let cost = planBest(agent, world, false).cost;
+  // or with trips back for the rest: the better of fetching it and leaving it
+  if (fetched) {
+    agent.hold = fetched.hold; agent.fetchWork = fetched.hours;
+    cost = Math.min(cost, planBest(agent, world, false).cost);
+    agent.fetchWork = 0;
+  }
   Object.assign(agent, keep);
   agent.costs = null;
   agent.crowd = 0; agent.landRatio = 1; agent.rebuild = 0;
   return cost;
+}
+
+// Moving camp in more than one trip (ODD §2 Fetching is moving camp in more than one trip,
+// Decided — Chris, 2026-11-13): from a site at `hex`, a trip a day back to the old camp for what
+// it could not carry, each taking up what it can (fetchLoad), while trips bring something, up to
+// the days until the camp weighs moving again, and only if a round trip fits in a day. Returns
+// the holding with everything fetched and the trips' hours (charged to the forecast's first
+// week, as rebuilding is), or null. What rots meanwhile, the projection rots.
+function fetchTrips(agent, world, hex, carried, left) {
+  const trip = 2 * world.travel(hex)[agent.home] + PARAMETERS.carry.fetchHours;
+  if (!(trip <= agent.capacity())) return null;
+  const hold = { ...carried };
+  let rest = left, k = 0;
+  while (k < PARAMETERS.camp.every - 1) {
+    const [taken, r] = fetchLoad(agent, rest, carried);
+    let kg = 0;
+    for (const g in taken) kg += taken[g] * goodKg(g);
+    if (!(kg > 1e-6)) break;
+    for (const g in taken) if (taken[g] > 0) hold[g] += taken[g];
+    rest = r; k++;
+  }
+  return k ? { hold, hours: k * trip } : null;
+}
+
+// What an agent expects still lies at `hex`: what it saw there, food rotted since (World.noteGoods).
+// Null (and forgotten) when nothing would be left.
+function goodsExpected(agent, world, hex) {
+  const s = agent.goodsSeen && agent.goodsSeen.get(hex);
+  if (!s) return null;
+  const L = { ...s.hold }, d = world.day - s.day;
+  for (const g of FOODS) if (L[g] > 0) { L[g] *= Math.pow(1 - PARAMETERS.goods[g].rot, d); if (L[g] < 1e-3) L[g] = 0; }
+  L.water = 0;
+  for (const g in L) if (L[g] > 1e-6) return L;
+  agent.goodsSeen.delete(hex);
+  return null;
 }
 
 // The agent's own shelter put up again at `hex`, and the hours it takes it: the build's hours
@@ -196,10 +267,14 @@ function seenLand(agent, act, h) {
 
 // Hours a route takes: travel between its stops and back home, and the work at each.
 function planHours(agent, world, plan) {
-  let at = agent.home, h = 0;
+  const start = startHex(agent);
+  let at = start, h = 0;
   for (const s of plan) { h += world.travel(at)[s.hex] + s.hours; at = s.hex; }
-  return plan.length ? h + world.travel(at)[agent.home] : 0;
+  if (plan.out) return h;
+  return plan.length || start !== agent.home ? h + world.travel(at)[agent.home] : 0;
 }
+// where the agent's day starts: camp, or where it slept out (ODD §5 multi-day trips)
+function startHex(agent) { return agent.at >= 0 ? agent.at : agent.home; }
 
 // Everything the agent could do today: gather (wild food in its season, Stage 5g) or drink at
 // known hexes within reach, build, make or process what it knows at home, tinker, or walk to
@@ -207,12 +282,18 @@ function planHours(agent, world, plan) {
 function planCandidates(agent, world) {
   const A = PARAMETERS.agents;
   const reach = agent.capacity() / 2;
-  const fromHome = world.travel(agent.home);
+  // waking out, it need not come back to where it starts: water it knows within the whole day's
+  // hours is somewhere to drink (and, stranded, to sleep) (ODD §5 multi-day trips)
+  const drinkReach = agent.at >= 0 ? agent.capacity() - A.drinkHours : reach;
+  const fromHome = world.travel(startHex(agent));
   const out = [], unseen = [], tinkerAt = [], fields = [];
   const sowing = agent.knows.has('farm') && agent.hold.grain > 0 && world.season().phase < 0.25;
   const forage = FORAGE.filter((k) => world.inSeason(ACT_RES[k]));
   for (let h = 0; h < world.grid.n; h++) {
-    if (!(fromHome[h] <= reach)) continue;
+    if (!(fromHome[h] <= reach)) {
+      if (fromHome[h] <= drinkReach && agent.known[h] && world.waterAt[h] >= 0) out.push({ hex: h, act: A_DRINK, hours: A.drinkHours, unknown: 0 });
+      continue;
+    }
     if (!agent.known[h]) { unseen.push(h); continue; }
     if (world.land[h] > 0) {
       for (const k of forage) out.push({ hex: h, act: k, hours: A.chunk, unknown: 0 });
@@ -220,6 +301,9 @@ function planCandidates(agent, world) {
     }
     if (world.waterAt[h] >= 0) out.push({ hex: h, act: A_DRINK, hours: A.drinkHours, unknown: 0 });
     if (world.caps.flint[h] > 0) out.push({ hex: h, act: A_QUARRY, hours: A.chunk, unknown: 0 });
+    // the first material tree (Stage 5h): gourd fruit in its season, fibre
+    if (world.caps.gourds && world.caps.gourds[h] > 0 && world.inSeason('gourds')) out.push({ hex: h, act: A_GOURD, hours: A.chunk, unknown: 0 });
+    if (world.caps.fibre && world.caps.fibre[h] > 0) out.push({ hex: h, act: A_FIBRE, hours: A.chunk, unknown: 0 });
     if (world.caps.clay[h] > 0) out.push({ hex: h, act: A_DIG, hours: A.chunk, unknown: 0 });
     // farming (Stage 5d): ripe grain seen standing in a field; land to sow in spring
     if (agent.seenGrain[h] > 0.5) out.push({ hex: h, act: A_REAP, hours: A.chunk, unknown: 0 });
@@ -237,7 +321,7 @@ function planCandidates(agent, world) {
   }
   // process a food it holds, for each process it knows (Stage 5g)
   for (const p in PROCESSES) {
-    if (agent.knows.has(p) && agent.hold[PROCESSES[p].from] > 0) out.push({ hex: agent.home, act: A_PROCESS, process: p, hours: 1, unknown: 0 });
+    if (agent.knows.has(processKnow(p)) && agent.hold[PROCESSES[p].from] > 0) out.push({ hex: agent.home, act: A_PROCESS, process: p, hours: 1, unknown: 0 });
   }
   // sow on the most fertile land within reach, nearer first among equals
   fields.sort((a, b) => world.fertility(b) / (1 + fromHome[b]) - world.fertility(a) / (1 + fromHome[a]));
@@ -246,6 +330,37 @@ function planCandidates(agent, world) {
   tinkerAt.sort((a, b) => fromHome[a] - fromHome[b]);
   for (const h of [agent.home].concat(tinkerAt.slice(0, A.tinkerCandidates))) {
     out.push({ hex: h, act: A_TINKER, hours: A.tinkerHours, unknown: 0 });
+  }
+  // snares (the hunting ladder): the places it weighs are its own snares longest untended
+  // (most set, longest since) and the fullest small game for the walk, `candidates` in all
+  if (agent.knows.has('snare')) {
+    const sn = [], mine = new Set();
+    if (agent.snaresAt) for (const [h, t] of agent.snaresAt) {
+      if (fromHome[h] <= reach) { mine.add(h); sn.push({ h, k: 1e6 + t.n * (world.day - t.last) }); }
+    }
+    for (let h = 0; h < world.grid.n; h++) {
+      if (mine.has(h) || !agent.known[h] || !(fromHome[h] <= reach) || !(agent.seenFrac[A_SMALL][h] > 0.05)) continue;
+      sn.push({ h, k: agent.seenFrac[A_SMALL][h] / (1 + fromHome[h]) });
+    }
+    sn.sort((a, b) => b.k - a.k);
+    for (const x of sn.slice(0, PARAMETERS.snare.candidates)) out.push({ hex: x.h, act: A_SNARE, hours: 1, unknown: 0 });
+  }
+  // hunting big game (ODD §2 Game, Stage 5h): the hexes where it expects the most sign for the
+  // walk there
+  if (agent.herdH) {
+    const hunt = [];
+    for (let h = 0; h < world.grid.n; h++) {
+      if (!agent.known[h] || !(fromHome[h] <= reach) || world.hours[h] < 0) continue;
+      const e = herdExpect(agent, world, h);
+      if (e > 0.02) hunt.push({ h, e, k: e / (1 + fromHome[h]) });
+    }
+    hunt.sort((a, b) => b.k - a.k);
+    for (const x of hunt.slice(0, PARAMETERS.hunt.candidates)) out.push({ hex: x.h, act: A_HUNT, hours: A.chunk, unknown: 0, sign: x.e });
+  }
+  // goods it knows lie within reach: a stop to take them up (ODD §2 Fetching is moving camp in
+  // more than one trip, Decided — Chris, 2026-11-13)
+  if (agent.goodsSeen) for (const [h] of agent.goodsSeen) {
+    if (h !== agent.home && fromHome[h] <= reach && goodsExpected(agent, world, h)) out.push({ hex: h, act: A_FETCH, hours: PARAMETERS.carry.fetchHours, unknown: 0 });
   }
   // scouting: the nearest unseen hexes, each valued by how much it would reveal
   unseen.sort((a, b) => fromHome[a] - fromHome[b]);
@@ -261,30 +376,67 @@ function planCandidates(agent, world) {
 // times how full the hex looked when it last saw it. An old sighting is uncertain (the hex
 // may have regrown or been stripped), and the curiosity term makes that uncertainty
 // optimistic, so stale hexes get looked at again (ODD §4.4).
-function planEstimate(agent, hex, act, day) {
+function planEstimate(agent, hex, act, day, world) {
   const A = PARAMETERS.agents;
+  if (act === A_HUNT) return huntEstimate(agent, hex, world);
+  if (act === A_SNARE) return agent.rate(A_SNARE) * workRate(agent) * Math.min(1, seenLand(agent, A_SMALL, hex));
   const frac = seenLand(agent, act, hex);
   const sd = A.sightSd * (1 - Math.exp(-(day - agent.seenDay[hex]) / A.sightMemory));
   const tool = TOOL_FOR[act], mult = tool && agent.hold[tool] > 0 ? TOOLS[tool].mult : 1;
   return agent.rate(act) * mult * workRate(agent) * Math.min(1, frac + A.curiosity * sd);
 }
 
+// The cost of a route home for the night; or, for an agent too far out to reach camp today,
+// with the night where the route ends (ODD §5 multi-day trips: stranded out, it still plans)
 function planCost(agent, world, plan, withTrade) {
+  if (agent.at >= 0 && !(world.travel(agent.at)[agent.home] <= agent.capacity())) {
+    plan.out = true;
+    return routeCost(agent, world, plan, withTrade, true);
+  }
+  return routeCost(agent, world, plan, withTrade, false);
+}
+// The cost of a route that ends in a hunt with the night out where the hunt ends (ODD §5
+// multi-day trips: where to sleep is part of the morning plan, Decided — Chris, 2026-11-11).
+function outCost(agent, world, plan, withTrade) {
+  const last = plan[plan.length - 1];
+  if (!last || last.act !== A_HUNT || agent.child) return Infinity;
+  plan.out = true;
+  return routeCost(agent, world, plan, withTrade, true);
+}
+function routeCost(agent, world, plan, withTrade, sleepOut) {
   const A = PARAMETERS.agents, G = PARAMETERS.goods;
   const cap = agent.capacity();
-  let at = agent.home, hours = 0, bonus = 0;
-  const hold = Object.assign({}, agent.hold);
+  const start = startHex(agent);
+  let at = start, hours = 0, bonus = 0;
+  // what it carries (ODD §2 Containers and carrying): out, all it has with it; leaving camp for
+  // a night out, the pack it would take (the rest stays where it sleeps); else its vessels' water
+  let hold = { ...agent.hold }, store = agent.store;
+  if (sleepOut && !store) { const [p, s] = packOut(agent, hold); hold = p; store = s; }
+  const c = store ? carriedOf(hold) : newCarried();
+  if (!store) carryAdd(c, 'water', Math.min(hold.water, vesselCap(hold)));
+  const kidKg = childKg(agent);
+  let kgHours = 0;
   const shelter = Object.assign({}, agent.shelter);
   let drank = false;
+  const lying = new Map();   // what it expects still lies at each stop, as it takes up
   for (const s of plan) {
-    hours += world.travel(at)[s.hex];
+    const leg = world.travel(at)[s.hex];
+    hours += leg;
+    kgHours += (c.kg + kidKg) * leg;
     at = s.hex;
-    if (IS_GATHER[s.act]) {
-      const est = planEstimate(agent, s.hex, s.act, world.day);
-      const tool = TOOL_FOR[s.act];
+    if (IS_GATHER[s.act] || s.act === A_HUNT || s.act === A_SNARE) {
+      const est = planEstimate(agent, s.hex, s.act, world.day, world);
+      const tool = s.act === A_HUNT ? huntTool(hold) : TOOL_FOR[s.act];
       if (tool && hold[tool] > 0) hold[tool] = Math.max(0, hold[tool] - s.hours / TOOLS[tool].life);
-      hold[GOOD_OF[s.act]] += est * s.hours;
-    } else if (s.act === A_DRINK) { drank = true; hold.water = Math.max(hold.water, waterCarried(hold)); }
+      // what it can carry of it, and eat there
+      const g = GOOD_OF[s.act], room = carryRoom(agent, hold, c, g);
+      const q = Math.min(est * s.hours, room + (FOOD_SET[g] ? eatRoom(agent, g) : 0));
+      hold[g] += q; carryAdd(c, g, Math.min(q, room));
+    } else if (s.act === A_DRINK) {
+      drank = true;
+      if (s.hex === agent.home && !store) hold.water = Math.max(hold.water, waterCarried(hold));
+      else { const add = Math.max(0, Math.min(vesselCap(hold) - c.water / goodKg('water'), carryRoom(agent, hold, c, 'water'))); hold.water += add; carryAdd(c, 'water', add); }
+    }
     else if (s.act === A_PROCESS) {
       if (!(processFood(hold, s.process, s.hours) > 0)) return Infinity;   // nothing to process
     }
@@ -307,12 +459,70 @@ function planCost(agent, world, plan, withTrade) {
     } else if (s.act === A_SCOUT) bonus += A.scoutValue * s.unknown;
     else if (s.act === A_TINKER) bonus += tinkerBonus(agent, world, hold, s.hex, s.hours);
     hours += s.hours;
+    // goods it knows lie here: it takes up what it can carry (ODD §2 Fetching is moving camp in
+    // more than one trip; World.pickUp)
+    if (agent.goodsSeen && (s.hex !== agent.home || store)) {
+      const L = lying.get(s.hex) || goodsExpected(agent, world, s.hex);
+      if (L) { takeLying(agent, hold, c, L); lying.set(s.hex, L); }
+    }
   }
-  if (plan.length) hours += world.travel(at)[agent.home];
+  if (!sleepOut && (plan.length || start !== agent.home)) { const h = world.travel(at)[agent.home]; hours += h; kgHours += (c.kg + kidKg) * h; }
   if (!(hours <= cap)) return Infinity;
-  // what ties at camp announced this morning, as it expects it to come back tonight (ODD §7.6)
-  if (agent.incoming) for (const g in agent.incoming) hold[g] += agent.incoming[g];
-  return holdingsCost(agent, world, hold, shelter, hours, drank, agent.need.belonging, withTrade !== false) - bonus;
+  agent._carryFood = PARAMETERS.carry.burn * kgHours;
+  // home tonight: what it carried joins what stayed where it sleeps
+  if (!sleepOut && store) for (const g in store) hold[g] += store[g];
+  // the risk of the day (ODD §2 Game: risk is learned and priced): its learned rate of injury
+  // in each setting, times the hours in it, times what an injury is expected to cost
+  if (agent.injL && plan.length) {
+    let risk = 0, worked = 0;
+    for (const s of plan) {
+      worked += s.hours;
+      if (s.act === A_HUNT) risk += s.hours * agent.injL.hunt.v;
+      else if (s.act === A_BUILD) risk += s.hours * agent.injL.build.v;
+      else if (s.hex !== agent.home) risk += s.hours * agent.injL.out.v;
+    }
+    risk += (hours - worked) * agent.injL.out.v;   // the walking
+    // priced where it sleeps tonight: camp, or out where the route ends
+    const night = !sleepOut ? agent.home : plan[plan.length - 1].hex;
+    bonus -= risk * injuryCost(agent, world, night);
+  }
+  // what ties at camp announced this morning, as it expects it to come back tonight (ODD §7.6);
+  // none of it reaches a night out
+  if (agent.incoming && !sleepOut) for (const g in agent.incoming) hold[g] += agent.incoming[g];
+  if (sleepOut) {
+    // a night out: no shelter tonight, and tonight's walk home is put off, not saved. Tomorrow,
+    // with the chance p that game is still there, it hunts on without the walk out (W hours
+    // saved); else it first walks home (W hours spent). So tomorrow gains (2p - 1)·W hours, at
+    // what an hour is worth to it today (the best gain per hour of this morning's stops), a day on
+    const last = plan.length ? plan[plan.length - 1] : { hex: start };   // no stops: the night where it is
+    let sign = 0;
+    for (const m of world.grid.within(last.hex, 1)) sign = Math.max(sign, herdExpect(agent, world, m));
+    const hv = PARAMETERS.agents.discount * (agent._hourValue || 0);
+    const walk = Math.min(world.travel(agent.home)[last.hex], agent.capacity());   // beyond a day's walk: a day
+    bonus += hv * walk * (2 * Math.min(1, sign) - 1);
+    // tomorrow's water: the walk from there to the nearest water it knows, instead of camp's
+    // trip; none it knows within half a day is a day of thirst (the projection assumes water
+    // is drunk, so a night out has to price it)
+    const wt = knownWaterFrom(agent, world, last.hex);
+    bonus -= wt <= agent.capacity() / 2 ? hv * Math.max(0, 2 * wt - agent.drinkTrip) : WORST_NEED_COST;
+    // belonging tonight only from those it expects out with it: campmates who have planned a
+    // night out within a hex of it this morning (ODD §5 multi-day trips)
+    const near = [];
+    for (const b of campMates(agent, world)) {
+      if (b === agent || !b.announced || !b.plan || !b.plan.out) continue;
+      const bl = b.plan.length ? b.plan[b.plan.length - 1].hex : b.at;   // no stops: where it is
+      if (bl >= 0 && world.grid.dist(bl, last.hex) <= 1) near.push(b);
+    }
+    agent._outBelong = agent.belongingWith(near, world.day);
+    agent._outTonight = true;
+    agent._storeTonight = store;   // back at camp after tonight (keepCost's weeks ahead)
+    const cost = holdingsCost(agent, world, hold, shelter, hours, drank, agent.need.belonging, withTrade !== false) - bonus;
+    agent._outTonight = false; agent._storeTonight = null; agent._carryFood = 0;
+    return cost;
+  }
+  const cost = holdingsCost(agent, world, hold, shelter, hours, drank, agent.need.belonging, withTrade !== false) - bonus;
+  agent._carryFood = 0;
+  return cost;
 }
 
 // The cost of ending the day with `hold`: tonight's evening plus the Keep projection. With
@@ -333,12 +543,12 @@ function holdingsCost(agent, world, hold, shelter, busy, drank, belonging, withT
   for (const f of [0.25, 0.5]) {
     if (fd) {
       const give = f * hold[fd];
-      const c = keep(Object.assign({}, hold, { [fd]: hold[fd] - rel * give, wood: hold.wood + rel * give / p }));
+      const c = keep(({ ...hold, [fd]: hold[fd] - rel * give, wood: hold.wood + rel * give / p }));
       if (c < best) best = c;
     }
     if (hold.wood > 0 && fd) {
       const give = f * hold.wood;
-      const c = keep(Object.assign({}, hold, { [fd]: hold[fd] + rel * give * p, wood: hold.wood - rel * give }));
+      const c = keep(({ ...hold, [fd]: hold[fd] + rel * give * p, wood: hold.wood - rel * give }));
       if (c < best) best = c;
     }
   }
@@ -363,8 +573,10 @@ function keepCost(agent, world, hold, shelter, busy, drank, belonging) {
   const cap = agent.capacity();
   const tab = projectionTable(world);
   const fs = foodScale(agent);   // a child's or a mother's food need (life.js), held through the projection
-  const e = Agent.evening(agent.need, hold, shelterIns(shelter), busy, drank, tab.coldNow, cap, 1, fs);
-  let cost = needCost(e, true, belonging, agent.coldDays);
+  const e = Agent.evening(agent.need, hold, agent._outTonight ? 0 : shelterIns(shelter), busy, drank, tab.coldNow, cap, 1, fs, agent._carryFood);
+  // out tonight: what stayed where it sleeps is there again for the weeks ahead
+  if (agent._storeTonight) for (const g in agent._storeTonight) e.hold[g] = (e.hold[g] || 0) + agent._storeTonight[g];
+  let cost = needCost(e, true, agent._outTonight ? agent._outBelong : belonging, agent.coldDays);
   // a night that kills is the worst case of every need, tonight and on every day it takes
   // away (ODD §2 Needs: below zero the scale runs to death; a dead agent has nothing)
   if (e.food <= -needReserve('food') || e.water <= -needReserve('water') ||
@@ -383,7 +595,7 @@ function keepCost(agent, world, hold, shelter, busy, drank, belonging) {
   const arriving = agent.pendingGrain(world) + (hold.sown || 0);
   const farming = agent.knows.has('farm') && agent.farmFert > 0;
   // hours to rebuild at a site being scored fall in the first step (siteDay)
-  let projSown = 0, ripened = false, carryWork = agent.rebuild || 0;
+  let projSown = 0, ripened = false, carryWork = (agent.rebuild || 0) + (agent.fetchWork || 0);
   // gathering this season scaled by the site's land against the usual (siteDay)
   const ratio = agent.landRatio, si0 = tab.length ? tab[0].si : -1;
   let thisSeason = ratio !== 1;
@@ -397,6 +609,8 @@ function keepCost(agent, world, hold, shelter, busy, drank, belonging) {
   for (let q = 0; q < NF; q++) fq[q] = h[FOODS[q]];
   for (let k = 0; k < tab.length; k++) {
     const T = tab[k], S = T.len, si = T.si;
+    // gourd fruit kept dries within the step (ODD §2 carrying: weeks)
+    if (h.gourdFruit > 0) { h.driedGourd += h.gourdFruit; h.gourdFruit = 0; }
     for (const [r, ins] of keeps) {
       if (h[r] > 0) continue;
       if (ins.every(([g, q]) => h[g] >= q)) {
@@ -406,6 +620,7 @@ function keepCost(agent, world, hold, shelter, busy, drank, belonging) {
     }
     // the axe speeds the projected wood-cutting while it lasts
     const wMult = h.axe > 0 ? TOOLS.axe.mult : 1;
+    const Fg = agent.flow[si].game, wt = huntTool(h), sp = Fg && Fg.v > 0 && wt ? Fg.v : 0;
     // a step as the agent has lived this season: what it brings in by gathering and nets in
     // exchange (ODD §7.6: expected future need from seasonal norms)
     const F = agent.flow[si];
@@ -414,15 +629,32 @@ function keepCost(agent, world, hold, shelter, busy, drank, belonging) {
     const rot = T.rot, inf = inflow[si];
     if (thisSeason && si !== si0) thisSeason = false;
     const lr = thisSeason ? ratio - 1 : 0;   // extra share of what it gathers
+    // carrying gear (ODD §2 Gear is a strategy whose efficiency is learned, Decided — Chris,
+    // 2026-11-13): the same food in fewer hours, the hours it gathers a day scaled by its learned
+    // return bare-handed over its return with the gear. With nothing yet learned of the gear (no
+    // day of its own with it, nothing told), its guess is its own shortfall: what its hands could
+    // not hold, brought home (a basket or bag loose food, a bag bulky goods)
+    const gs = carryGear(h), Rg = gs !== 'bare' ? F['r' + gs] : null, Rb = F.rbare;
+    const learnedGear = !!(Rg && Rg.nh + Rg.nn > 0 && Rb && Rb.v > 0);
+    const saved = learnedGear && Rg.v > Rb.v ? F.fhours.v * (1 - Rb.v / Rg.v) : 0;
+    const gl = !learnedGear && (h.basket > 0 || h.bag > 0), gb = h.bag > 0, gbf = !learnedGear && gb;
     for (let q = 0; q < NF; q++) {
-      const x = fq[q] * rot[q] + S * (inf[q] + (lr && F[FOODS[q]] ? lr * F[FOODS[q]].v : 0));
+      const lf = (FOOD_LOOSE[q] ? gl : gbf) && F['l' + FOODS[q]] ? F['l' + FOODS[q]].v : 0;
+      const x = fq[q] * rot[q] + S * (inf[q] + lf + (lr && F[FOODS[q]] ? lr * F[FOODS[q]].v : 0));
       fq[q] = x > 0 ? x : 0;
     }
-    h.wood = Math.max(0, h.wood + S * (F.wood.v * wMult * (1 + lr) + F.xwood.v));
+    h.wood = Math.max(0, h.wood + S * (F.wood.v * wMult * (1 + lr) + F.xwood.v + (gb && F.lwood ? F.lwood.v * wMult : 0)));
+    for (const g of GEAR) if (h[g] > 0) h[g] = Math.max(0, h[g] - G[g].wear * S);
+    // its best weapon adds its multiple of big game's share of the meat, and wears by the hours
+    // hunted
+    if (sp > 0) {
+      fq[FOOD_MEAT] += S * (TOOLS[wt].mult - 1) * sp;
+      h[wt] = Math.max(0, h[wt] - S * sp / Math.max(1, agent.rate(A_HUNT)) / TOOLS[wt].life);
+    }
     if (h.pot > 0) h.pot = Math.max(0, h.pot - G.pot.wear * S);
     const covered = Math.min(S, waterDays);
     waterDays -= covered;
-    let work = agent.busyHabit[si].v + agent.drinkTrip * Math.min(1, N.waterDecay / waterCarried(h)) * (1 - covered / S) + carryWork / S;
+    let work = Math.max(0, agent.busyHabit[si].v - saved) + agent.drinkTrip * Math.min(1, N.waterDecay / waterCarried(h)) * (1 - covered / S) + carryWork / S;
     carryWork = 0;
     // harvest (Stage 5d): fields sown before (this year's, at the first ripening) and any the
     // projection sowed come back at the agent's learned return, less the hours of reaping
@@ -457,6 +689,12 @@ function keepCost(agent, world, hold, shelter, busy, drank, belonging) {
     const warmth = clamp(1 - cold(T) * (1 - ins) + fire * G.fireHeat, 0, 1);
     const rest = clamp((capAhead - work) / N.restSet, 0, 1);
     const fl = food >= 0 ? food : Math.max(-1, food / RF);   // below zero, the way to death (needLevel)
+    if (fl <= -1) {
+      // starved in the projection: dead from here on, every day the worst (death costed as the
+      // life ahead, ODD §2 Game, Decided 2026-11-11; as tonight's lethal night is)
+      for (let j = k; j < tab.length; j++) cost += tab[j].beta * tab[j].len * WORST_NEED_COST;
+      return cost;
+    }
     cost += T.beta * S * (sq(fl) + sq(warmth) + sq(rest) + belongCost);   // water drunk: no deficit
     nf = food;
     // spring sowing (Stage 5d): grain still held is sown, as with the axe and the pot (made
@@ -476,6 +714,7 @@ var FOOD_REST = FOODS.map((k) => PARAMETERS.goods[k].restores);
 var FOOD_COOK = FOODS.map((k) => PARAMETERS.goods[k].cookedBonus - 1);
 var FOOD_POT = FOODS.map((k) => !!PARAMETERS.goods[k].potCook);
 var FOOD_GRAIN = FOODS.indexOf('grain');
+var FOOD_MEAT = FOODS.indexOf('meat');
 var FQ_SCRATCH = new Float64Array(FOODS.length);
 // Each season's daily inflow of each food, gathered and netted in exchange (0 for foods that
 // are only made): worked out once a day per agent, since the flows are learned in the evening.
@@ -591,9 +830,9 @@ function expectedIncoming(agent, world) {
 function announcedHaul(agent, world) {
   const out = {};
   for (const s of agent.plan) {
-    if (!IS_GATHER[s.act]) continue;
+    if (!IS_GATHER[s.act] && s.act !== A_HUNT) continue;
     const g = GOOD_OF[s.act];
-    out[g] = (out[g] || 0) + planEstimate(agent, s.hex, s.act, world.day) * s.hours;
+    out[g] = (out[g] || 0) + planEstimate(agent, s.hex, s.act, world.day, world) * s.hours;
   }
   return out;
 }
@@ -614,4 +853,26 @@ function learnReliability(world) {
     }
     a.recv = null;
   }
+}
+
+// Meat an hour of big-game hunting from a stop is expected to bring (ODD §2 Game, Stage 5h): its
+// learned meat per hour at full sign, times the sign it expects there, its spear, its own work
+// rate, and the party it expects: campmates who have planned a hunt within a hex of it this
+// morning (planning together, §7.6; parties are emergent).
+function huntEstimate(agent, hex, world) {
+  const ht = huntTool(agent.hold), tool = ht ? TOOLS[ht].mult : 1;
+  let k = 1;
+  if (world) for (const b of campMates(agent, world)) {
+    if (b === agent || !b.announced || !b.plan) continue;
+    if (b.plan.some((s) => s.act === A_HUNT && world.grid.dist(s.hex, hex) <= 1)) k++;
+  }
+  return agent.rate(A_HUNT) * tool * workRate(agent) * herdExpect(agent, world, hex) * partyFactor(k) / partyFactor(1);
+}
+
+// hours from `hex` to the nearest place it knows it can drink
+function knownWaterFrom(agent, world, hex) {
+  const tr = world.travel(hex);
+  let best = Infinity;
+  for (const m of world.grid.within(hex, 6)) if (agent.known[m] && world.waterAt[m] >= 0 && tr[m] < best) best = tr[m];
+  return best;
 }

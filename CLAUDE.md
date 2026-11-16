@@ -43,8 +43,27 @@ the scale of output. A minimal existence proof.
 - **Model/view split:** the world holds state and never draws; the `Observer` renders it.
 - **Config:** one `PARAMETERS` global (`params.js`), serialized verbatim into every saved
   packet. `PARAM_SCHEMA` drives the control panel.
-- **DB:** the vendored standard client `src/db.js` (see `~/.claude/conventions.md` §4).
-  Use `db.packet()`, `db.nextBatch()`, and `db.scratch()` for throwaway work.
+- **DB:** the vendored standard client `src/db.js` v2 (see `~/.claude/conventions.md` §4). The
+  `mongodb` driver is in `package.json`; `npm install` in `sim/` if `node_modules/` is missing.
+
+## Experiment data (Chris, 2026-11-13: "start using the protocol from now on")
+Every headless run follows the experiment data protocol (conventions §4). `exp.mjs` is the
+plumbing; `runner.mjs` and every probe script import it.
+- **Probes are experiments.** Any run whose numbers might be cited (DEVLOG, STATUS, a question to
+  Chris) is a numbered experiment: `--register <slug> "<question>"`, pre-register it in
+  `EXPLOG.md`, then run with `--exp expNNN`. The run saves its data with `run.save({...})` (Mongo
+  `evoeco.expNNN_<slug>` plus `results/expNNN_<slug>/<run>.json`). Runs that are only checks, and
+  that nothing will cite, use `--scratch`.
+- **No experiment output in a session scratchpad**: no stdout redirected to text files there, no
+  colonies saved there. Probe *scripts* may be drafted in a scratchpad, but a script that
+  produced a cited result is copied into `sim/probes/` so the result can be regenerated.
+- **Colonies belong to the run that saved them:** `results/expNNN_<slug>/<run>.colony.bin`
+  (runner `--save`; `colonyPath(dir, name)` in a probe). Start from one with `--from expNNN/<run>`.
+- **Run names** include the seed: `<arm>_s<seed>` (e.g. `limit_s3`), plus `_r<rep>` when reps
+  start from one colony.
+- **Keep packets small** (Chris): diagnostics are named switches in PARAMETERS, off when unused;
+  sample at larger gaps in longer runs. One run is one Mongo document, warned above 4 MB.
+- Output from before 2026-11-13 is archived, unregistered, in `../analysis/archive/`.
 - **Identity:** `index.html` `<title>` is `EvoEco` (conventions §6). Never a generic title.
 
 ## Conventions
@@ -61,7 +80,8 @@ tokens and a `**Done when:**` criterion. `/log-session` rewrites STATUS — don'
 - Browser: http://localhost:8000/research/EvoEco/sim/ (the always-on Static Server,
   conventions §4a′). Never start a server to view it; opening `index.html` from disk in the
   preview pane loads it without scripts.
-- Headless batch: `node runner.mjs --reps N` (writes to MongoDB via the Server).
+- Headless batch: `node runner.mjs --exp expNNN --reps N` (see Experiment data above; writes to
+  MongoDB directly through the Mint Tunnel at 127.0.0.1:27017).
 - Smoke (no DB): `node smoketest.mjs` — prints the numbers that go in the DEVLOG entry.
 - Every node run goes through the CPU coordinator (conventions §4a″):
   `cpuslot run --tag evoeco --desc "EvoEco <what>" -- node ...`, and long scripts write

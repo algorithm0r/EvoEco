@@ -95,6 +95,7 @@ var World = class World {
     else if (PARAMETERS.agents.layout === 'bands') this.placeBands(PARAMETERS.agents.bands);
     else this.placeAgents(PARAMETERS.agents.n);
     this.nextId = this.agents.length;   // ids of those born later (life.js)
+    gameInit(this);   // small game, herds, packs and traces (game.js); after the agents, so their draws are as before
   }
 
   // Bands a day or two apart (ODD §5): centres on land within a hex of water, at least
@@ -176,6 +177,7 @@ var World = class World {
           if (pick) join.set(a, pick);
         });
         for (const [a, o] of join) { this.moveTo(a, o, tr[o.hex]); this.campJoins = (this.campJoins || 0) + 1; }
+        for (const a of join.keys()) this.noteGoods(a, camp.hex);   // it knows what it left there
         if (join.size) camp.members = M.filter((a) => !join.has(a));
         continue;
       }
@@ -209,6 +211,7 @@ var World = class World {
         if (typeof o === 'object') { this.moveTo(a, o, tr[o.hex]); this.campJoins = (this.campJoins || 0) + 1; }
       }
       camp.members = left;
+      for (const a of M) if (a.home !== camp.hex) this.noteGoods(a, camp.hex);   // they know what they left there
     }
     this.camps = this.camps.filter((c) => c.members.length);
     for (const c of this.camps) {
@@ -249,11 +252,22 @@ var World = class World {
   // anyone), it sleeps in the best one with room at the camp or on bare ground of its own, and
   // it sees the land around the new home.
   moveTo(a, camp, walk) {
+    // what it can't carry stays at the old camp, open to anyone (ODD §2 Containers and carrying,
+    // Decided 2026-11-12); out, it carries none of what was there
+    const old = a.home;
+    if (a.store) { for (const g in a.store) this.cacheAdd(old, g, a.store[g]); a.store = newHold(); }
+    else {
+      const [carried, left] = movingLoad(a, a.hold);
+      for (const g in left) this.cacheAdd(old, g, left[g]);
+      a.hold = carried;
+      a.movedKgHours = carriedOf(carried).kg * walk;   // carried on the walk (the day's effort)
+    }
+    this.noteGoods(a, old);   // it knows what it left there
     this.leaveDwelling(a);
     a.settle(this, camp.hex);
     const d = this.bestDwelling(camp.hex, a);
     if (d) { d.sleepers.push(a.id); a.shelter = d; } else a.shelter = this.newDwelling(camp.hex, a.id);
-    a.walked = Math.min(walk, a.capacity());
+    a.walked = a.at >= 0 ? 0 : Math.min(walk, a.capacity());   // out, it was not on the walk
     a.camp = camp;
     camp.members.push(a);
     for (const h of this.grid.within(camp.hex, PARAMETERS.agents.sight)) a.look(this, h);
@@ -270,6 +284,8 @@ var World = class World {
   // Death (ODD §7.5, Decided): everything stays where it lies. A dead agent's goods stay in
   // the dwelling it slept in, and whoever sleeps there takes them: by location, no heirs.
   leaveGoods(a) {
+    // dead out, what it carried lies where it fell, open to anyone (ODD §2 carrying)
+    if (a.store) { for (const g in a.hold) if (a.hold[g] > 0) this.cacheAdd(a.at, g, a.hold[g]); a.hold = a.store; a.store = null; }
     const d = a.shelter;
     if (!d) return;
     if (!d.left) d.left = {};
@@ -318,7 +334,7 @@ var World = class World {
   // no one is turned out, and an agent stays put unless the move is better.
   bedDown(order) {
     for (const a of order) {
-      if (!a.camp) continue;
+      if (!a.camp || a.out) continue;   // out for the night
       const d = this.bestDwelling(a.home, a);
       if (!d || !this.betterBed(a, d, a.shelter)) continue;
       this.leaveDwelling(a);
@@ -441,8 +457,30 @@ var World = class World {
     return c != null ? c : (this._in[res] = resInSeason(res, this.season().phase));
   }
 
+  // Resources added since a colony was saved (Stage 5h: gourds, fibre): their caps as mapgen
+  // sets them (capBy, perLand, by water), a crop ripe if in season, the rest full.
+  newResources() {
+    const g = this.grid, n = g.n, isWater = (i) => this.terrain[i] === T_RIVER || this.terrain[i] === T_LAKE;
+    for (const k in PARAMETERS.resources) {
+      if (this.caps[k]) continue;
+      const R = PARAMETERS.resources[k], cap = new Float32Array(n);
+      if (R.capBy) for (let i = 0; i < n; i++) cap[i] = R.capBy[TERRAIN[this.terrain[i]]] || 0;
+      if (R.perLand) for (let i = 0; i < n; i++) cap[i] = this.land[i] * R.perLand;
+      if (R.floodplainBonus) for (let i = 0; i < n; i++) if (cap[i] > 0 && !isWater(i) && g.within(i, R.floodplainRange).some(isWater)) cap[i] *= R.floodplainBonus;
+      this.caps[k] = cap;
+      const a = [];
+      for (let i = 0; i < n; i++) if (cap[i] > 0) a.push(i);
+      this.active[k] = Int32Array.from(a);
+      if (R.kind === 'plant') continue;
+      this.stock[k] = Float32Array.from(cap);
+      if (R.kind === 'crop') { const on = this.inSeason(k), cv = this.cover[R.cover]; for (let i = 0; i < n; i++) this.stock[k][i] = on ? cap[i] * cv[i] : 0; }
+    }
+    for (const a of this.agents) for (const s of SEEN) if (!a.seenFrac[s]) a.seenFrac[s] = new Float32Array(n);
+  }
+
   // ── one day ────────────────────────────────────────────────────────────────────────────
   update() {
+    if (!this.caps.fibre) this.newResources();   // a colony saved before the material tree
     this.day++;
     const sea = this.season();
     this.seasonIndex = Math.floor(sea.phase * 4);
@@ -474,8 +512,11 @@ var World = class World {
           st[i] = Math.min(level, st[i] + R.inflow * level);
         }
       }
-      // deposits never regrow; a plant is its cover (coverDay)
+      // deposits never regrow; a plant is its cover (coverDay); game is game.js's
     }
+    gameDay(this, sea);
+    this.snaresDay();
+    this.cachesDay();
     this.fieldsDay();
     if (this.agents.length) this.agentDay();
   }
@@ -527,7 +568,7 @@ var World = class World {
       for (const f of this.fields) {
         this.fieldLand[f.hex] = Math.max(0, this.fieldLand[f.hex] - f.land);   // bare again (Stage 5g)
         const back = (f.reaped.get(f.planter.id) || 0) + f.returned;
-        if (f.planter.alive) f.planter.learnFarm(back / (f.seeds * f.fert));
+        if (f.planter.alive && f.seeds * f.fert > 0) f.planter.learnFarm(back / (f.seeds * f.fert));
         const k = f.planter.fields.indexOf(f);
         if (k >= 0) f.planter.fields.splice(k, 1);
       }
@@ -623,21 +664,28 @@ var World = class World {
       const j = this.rng.int(i + 1);
       const t = order[i]; order[i] = order[j]; order[j] = t;
     }
+    this.huntsToday = [];
     for (const a of order) a.act(this);
+    this.settleHunts();                                                //    big game's kills
+    this.injuries(adults);                                             //    injuries
     for (const c of deps) followCarer(c, this);
+    // everyone marks the places it was today, the camp included (ODD §2 Game: the people trace,
+    // which herds shy away from; Decided — Chris, 2026-11-11)
+    const mark = PARAMETERS.game.trace.person;
+    for (const a of live) for (const h of new Set(a.places)) leaveTrace(this, 'people', h, mark);
     this.meet(live);                                                   //    meeting and chat
     this.giftsToday = 0;
     for (const a of live) { a.xnet = {}; for (const g of FLOW_GOODS) a.xnet[g] = -a.hold[g]; }
     exchangeDay(this, live);                                          // 3. Exchange
     for (const a of live) for (const g of FLOW_GOODS) a.xnet[g] += a.hold[g];   // net in exchange
     if (this.camps) this.bedDown(order);                              //    where to sleep
-    for (const a of adults) this.takeGoods(a);                        //    goods left where one sleeps
+    for (const a of adults) if (!a.out) { this.takeGoods(a); this.pickUp(a, a.home, true); }   //    goods left where one sleeps
     for (const a of adults) a.consume(this);                          // 4. Consume
     for (const c of deps) dependentEvening(c, this);
     for (const a of adults) if (!a.child || workRate(a) > 0) a.learn();   // 5. Learn
     for (const a of live) a.age(this);                                // 6. Aging and deaths
     const died = live.filter((a) => !a.alive);
-    for (const a of died) { a.deathDay = this.day; this.dead.push(a); this.leaveGoods(a); if (!a.carer) this.leaveDwelling(a); }
+    for (const a of died) { a.deathDay = this.day; this.dead.push(a); this.leaveGoods(a); if (!a.carer) this.leaveDwelling(a); a.herdH = a.herdN = null; }
     this.wearDwellings();
     this.agents = live.filter((a) => a.alive);
     if (this.camps) {
@@ -647,6 +695,162 @@ var World = class World {
     lifeDay(this, died);                                              // 7. Births, growing up, conception
   }
 
+
+  // Snares (ODD §2 Game, Decided 2026-11-11: the hunting ladder's first rung; they catch while
+  // the owner is elsewhere). Each owner's snares in a hex take meat from the small game there
+  // each day, by how full it is; the catch rots in the snare as meat does, and snares are lost.
+  snaresDay() {
+    if (!this.snares || !this.snares.size) return;
+    const S = PARAMETERS.snare, rot = PARAMETERS.goods.meat.rot;
+    for (const [k, t] of this.snares) {
+      t.n *= 1 - S.wear;
+      t.caught *= 1 - rot;
+      if (t.n < 0.5) {
+        this.snares.delete(k);
+        const o = this.agents.find((x) => x.id === t.owner);
+        if (o && o.snaresAt) o.snaresAt.delete(t.hex);
+        continue;
+      }
+      const K = this.caps.smallgame[t.hex];
+      if (K > 0) t.caught += this.take('smallgame', t.hex, t.n * S.catch * this.stock.smallgame[t.hex] / K);
+    }
+  }
+  // An owner tending its snares at a hex: it takes the catch and sets more, up to `most`.
+  tendSnares(a, hex, hours) {
+    if (!this.snares) this.snares = new Map();
+    const S = PARAMETERS.snare, k = a.id + '|' + hex;
+    let t = this.snares.get(k);
+    if (!t) { t = { hex, owner: a.id, n: 0, caught: 0, last: this.day }; this.snares.set(k, t); }
+    if (!a.snaresAt) a.snaresAt = new Map();
+    a.snaresAt.set(hex, t);   // its own snares, by hex (what it remembers setting)
+    const got = t.caught;
+    t.caught = 0; t.last = this.day;
+    t.n = Math.min(S.most, t.n + S.perHour * hours * workRate(a));
+    this.made.snare = (this.made.snare || 0) + 1;
+    a.practised.push({ hex, what: 'snare' });
+    return got;
+  }
+
+  // Big game (ODD §2 Game, Decided 2026-11-11): each hunter on a herd today has a chance an hour
+  // of a kill, `pKill` times its spear, its own work rate and the party on that herd
+  // (partyFactor: emergent parties) and how easily the animals are found in the hex, n / (n +
+  // findH) (a lone stray is harder to find than a group; Decided). The killer holds the whole carcass (Decided: no rule of
+  // division; sharing is gifts and barter, which happen where the hunters stand). Each hunter
+  // learns its meat per hour from the stop, as if bare-handed.
+  settleHunts() {
+    const H = PARAMETERS.hunt, G = this.game, on = new Map();
+    for (const t of this.huntsToday) { if (!on.has(t.herd)) on.set(t.herd, new Set()); on.get(t.herd).add(t.agent); }
+    for (const t of this.huntsToday) {
+      const a = t.agent, tool = huntTool(a.hold), mult = tool ? TOOLS[tool].mult : 1;
+      const p = Math.min(1, H.pKill * mult * workRate(a) * partyFactor(on.get(t.herd).size) * t.herd.n / (t.herd.n + H.findH));
+      if (tool) a.hold[tool] = Math.max(0, a.hold[tool] - t.hours / TOOLS[tool].life);
+      let meat = 0;
+      if (t.herd.n >= 1 && this.rng() < 1 - Math.pow(1 - p, t.hours)) {
+        t.herd.n -= 1;
+        G.kills.herds = (G.kills.herds || 0) + 1;
+        // the killer takes up what it can carry and eats what it can there; the rest lies at
+        // the kill, open to anyone (ODD §2 Containers and carrying, Decided 2026-11-12)
+        meat = this.takeUp(a, 'meat', H.carcass);
+        this.cacheAdd(t.hex, 'meat', H.carcass - meat);
+        if (a.left) a.left.meat += (H.carcass - meat) / mult;   // what its hands could not hold
+        this.cacheAdd(t.hex, 'hide', H.hide - this.takeUp(a, 'hide', H.hide));
+        a.got.meat += meat / mult;
+        a.gotGame += meat / mult;
+        this.kills = (this.kills || []);
+        this.kills.push({ day: this.day, id: a.id, hex: t.hex, party: on.get(t.herd).size });
+      }
+      a.obs.push({ act: A_HUNT, hex: t.hex, perHour: meat / mult / t.stop, frac: t.sign, season: this.seasonIndex });
+      // big game's risk (ODD §2 Game): more on a bigger herd, less in a bigger party
+      const I = PARAMETERS.injury, ex = a.expo;
+      if (ex) { ex.hunt += t.hours * clamp(t.herd.n / I.herdScale, 0.5, 2) / Math.sqrt(on.get(t.herd).size); ex.out += t.stop - t.hours; }
+    }
+    // the others on the herd are at the kill: each takes up what it can of what lies there
+    for (const t of this.huntsToday) {
+      const left = this.caches && this.caches.get(t.hex);
+      if (!left) continue;
+      if (left.meat > 0) { const q = this.takeUp(t.agent, 'meat', left.meat); left.meat -= q; t.agent.got.meat += q; }
+      if (left.hide > 0) left.hide -= this.takeUp(t.agent, 'hide', left.hide);
+    }
+    for (const t of this.huntsToday) this.noteGoods(t.agent, t.hex);   // they know what lies at the kill
+  }
+
+  // ── goods in the world (ODD §2 Containers and carrying, Decided — Chris, 2026-11-12: what
+  // can't be carried stays, open to anyone, and spoils) ──────────────────────────────────────
+  cacheAdd(hex, g, q) {
+    if (!(q > 1e-9)) return;
+    if (!this.caches) this.caches = new Map();
+    let c = this.caches.get(hex);
+    if (!c) { c = newHold(); this.caches.set(hex, c); }
+    c[g] += q;
+  }
+  // food left lying rots at its own rate; an empty place is forgotten
+  cachesDay() {
+    if (!this.caches) return;
+    for (const [hex, c] of this.caches) {
+      let any = false;
+      for (const g of FOODS) { c[g] *= 1 - PARAMETERS.goods[g].rot; if (c[g] < 1e-3) c[g] = 0; }
+      c.water = 0;   // water left lying is not kept (Default)
+      for (const g in c) if (c[g] > 0) { any = true; break; }
+      if (!any) this.caches.delete(hex);
+    }
+  }
+  // Goods lying at `hex`: an agent stopping there takes up what it can carry, food first (best per
+  // kg); where it sleeps (`home`), it takes them all into its store.
+  pickUp(a, hex, home) {
+    const L = this.caches && this.caches.get(hex);
+    if (!L) { if (a.goodsSeen) a.goodsSeen.delete(hex); return; }
+    if (home) { for (const g in L) if (L[g] > 0) { a.hold[g] += L[g]; L[g] = 0; } this.noteGoods(a, hex); return; }
+    takeLying(a, a.hold, a.carried || (a.carried = newCarried()), L);
+    this.noteGoods(a, hex);
+  }
+  // What an agent knows of goods lying at `hex`: what it saw there today (ODD §2 Fetching is
+  // moving camp in more than one trip: it knows of goods where it left them or has stood since)
+  noteGoods(a, hex) {
+    if (!a.goodsSeen) a.goodsSeen = new Map();
+    const L = this.caches && this.caches.get(hex);
+    let any = false;
+    if (L) for (const g in L) if (L[g] > 1e-6 && g !== 'water') { any = true; break; }
+    if (any) a.goodsSeen.set(hex, { day: this.day, hold: { ...L } });
+    else a.goodsSeen.delete(hex);
+  }
+  // what agent `a` takes up of `q` units of good `g` after its day: as far as it can carry, plus
+  // what it eats there; returns the units taken
+  takeUp(a, g, q) {
+    const c = a.carried || (a.carried = carriedOf(a.store ? a.hold : newHold()));
+    const kept = Math.min(q, carryRoom(a, a.hold, c, g));
+    const eaten = FOOD_SET[g] ? Math.min(q - kept, eatRoom(a, g)) : 0;
+    a.hold[g] += kept; carryAdd(c, g, kept);
+    if (eaten > 0) a.need.food += eaten * foodPer(g, 0, false);
+    return kept + eaten;
+  }
+
+  // Injuries (ODD §2 Game, Decided 2026-11-11): each adult's chance today from its exposure in
+  // each setting; an injury is minor (hurt for `minorDays`), major (working hours cut for life)
+  // or death. Each learns the rates from its own day (habit; one error-driven update a day of
+  // what befell it per unit of exposure in each setting it was exposed in).
+  injuries(adults) {
+    const I = PARAMETERS.injury, S = I.shares;
+    for (const a of adults) {
+      const ex = a.expo;
+      if (!ex || a.child) continue;
+      if (!a.injL) newInjury(a);
+      const lam = I.camp * ex.camp + I.out * ex.out + I.hunt * ex.hunt + I.build * ex.build;
+      let where = null;
+      if (lam > 0 && this.rng() < 1 - Math.exp(-lam)) {
+        // the setting it happened in, by its share of the hazard
+        let u = this.rng() * lam;
+        for (const k of ['camp', 'out', 'hunt', 'build']) { u -= I[k] * ex[k]; if (u <= 0) { where = k; break; } }
+        where = where || 'out';
+        const v = this.rng();
+        this.injured = this.injured || { minor: 0, major: 0, death: 0, by: {} };
+        this.injured.by[where] = (this.injured.by[where] || 0) + 1;
+        if (v < S.death) { a.killedBy = 'injury'; this.injured.death++; }
+        else if (v < S.death + S.major) { a.disabled = (a.disabled || 1) * (1 - I.majorCut); this.injured.major++; }
+        else { a.hurt = I.minorDays; this.injured.minor++; }
+      } else if (a.hurt > 0) a.hurt--;
+      for (const k of ['camp', 'out', 'hunt', 'build']) if (ex[k] > 0) learnOwn(a.injL[k], (where === k ? 1 : 0) / ex[k], I.learnRate);
+    }
+  }
 
   // Meeting is co-location (ODD §3): agents who were in the same hex today, including
   // home in the evening, meet. Each sees what the others worked at there (passive, no cap),

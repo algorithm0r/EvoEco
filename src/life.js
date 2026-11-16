@@ -277,7 +277,34 @@ function childReturn(p, world, partner) {
   const preg = L.lateDays * (L.lateHours + L.lateFood * N.foodDecay * fh);
   const t = p.ties.get(partner.id);
   const fromHim = t ? Math.min(care * Y, t.food / tieMemory(t) * fh * L.matureAge * Y) : 0;
-  return ret - (preg + care * Y - fromHim);
+  return ret - (preg + care * Y - fromHim) - crowding(p, fh, work);
+}
+// A child's net hours a day on its carer at age `y` years: its care and its food at the carer's
+// hour cost, less its help at the carer's work; nothing once grown
+function childHours(y, fh, work) {
+  const L = PARAMETERS.life, N = PARAMETERS.needs;
+  if (y >= L.matureAge) return 0;
+  const c = { child: true, ageDays: y * PARAMETERS.year.days };
+  return L.careHours[y < L.nurseAge ? 0 : y < L.helpAge ? 1 : 2] +
+    (y < L.nurseAge ? L.milkFood : foodScale(c)) * N.foodDecay * fh - workRate(c) * work;
+}
+// The rest another child takes from a day the children in her care already fill (ODD §7.4 She
+// counts the children she already has, Decided — Chris, 2026-11-13; as built, Default): each
+// year of its childhood, its net hours come out of her free hours (her day's capacity less her
+// usual work, which holds her charges' care and food today; growing back as they grow up), at
+// the rest need's cost, valued in hours as belonging is above. No floor at zero rest.
+function crowding(p, fh, work) {
+  const L = PARAMETERS.life, N = PARAMETERS.needs, Y = PARAMETERS.year.days;
+  const rc = (F) => { const x = Math.min(1, F / N.restSet); return (1 - x) * (1 - x); };
+  const kids = p.charges.filter((c) => c.alive && c.child).map(ageYears);
+  const load = (dy) => kids.reduce((s, a) => s + childHours(a + dy, fh, work), 0);
+  const F0 = workingHours(p) - careLoad(p) - work + load(0);   // free hours before her charges
+  let cost = 0;
+  for (let y = 0; y < L.matureAge; y++) {
+    const F = F0 - load(y + 0.5), h = childHours(y + 0.5, fh, work);
+    cost += (rc(F - h) - rc(F)) * N.restSet / 2;
+  }
+  return cost * Y;
 }
 // hours per unit of food (the cheapest food to hand, ODD §7.2 hour costs)
 function hoursPerFood(a, world) {

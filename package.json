@@ -1,0 +1,9 @@
+{
+  "name": "evoeco-runner",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Headless runs for EvoEco: loads the browser sim core via indirect eval and saves numbered experiments through the vendored db.js v2 (conventions §4).",
+  "dependencies": {
+    "mongodb": "^6.21.0"
+  }
+}
