@@ -8,6 +8,7 @@ A browser-based agent-based simulation (vanilla JS + Canvas, no build step), sca
 the shared engine v2.
 
 ## Run
+- **Online:** https://algorithm0r.github.io/EvoEco/ (GitHub Pages, served from `main`).
 - **Browser:** http://localhost:8000/research/EvoEco/sim/ (the always-on Static Server;
   never start another server for it).
 - **Headless batch:** `node runner.mjs --reps 50` — runs the same sim core in the main V8 realm
