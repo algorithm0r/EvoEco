@@ -120,7 +120,7 @@ var PARAMETERS = {
     herdScale: 60,        // big game's risk scales with the herd's size against this (within ×0.5–×2)
     shares: { minor: 0.85, major: 0.12, death: 0.03 },   // what an injury turns out to be
     minorDays: 10,        // days a minor injury takes to heal
-    minorCut: 0.3,        // share of its working hours a hurt agent keeps while it heals
+    minorCut: 0.6,        // share of its working hours a hurt agent keeps while it heals (0.3 until 2026-11-16)
     majorCut: 0.3,        // share of its working hours a major injury takes for life
     dayCost: 0.5,         // the forecast's cost of a day's work lost (need-cost units)
     learnRate: 0.01,      // update of the learned rates, a day (injuries are rare)

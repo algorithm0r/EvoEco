@@ -1,16 +1,27 @@
 // Every death, and a yearly census (exp005, 2026-11-15). Starts from a saved colony and records,
 // for each agent that dies, the day it died: age, sex, cause, food and water levels, whether it
 // was a child (and an infant), the children in its care, and for a child whether its carer was
-// alive and its mother alive. Once a year: alive, adults, children, infants, women with children
-// in their care.
-//   node probes/deathprobe.mjs --exp expNNN --from expNNN/<run> --years N
+// alive and its mother alive. Since exp006 also `woke`: as it woke that day, the children in its
+// care, its injury, its hours after care and the care itself, and its carer's id (exp005's
+// `charges` was read after a dead carer's charges were passed on, so it reads 0). Once a year:
+// alive, adults, children, infants, women with children in their care.
+//   node probes/deathprobe.mjs --exp expNNN --from expNNN/<run> --years N [--set a.b=v ...]
 import { loadSim, openExperiment, flag, resolveColony, beat } from '../exp.mjs';
 const P = loadSim();
 const { loadColony } = await import('../colony.mjs');
 const fromRef = flag('from'), years = +flag('years', 5);
 const { db, ex } = await openExperiment('probes/deathprobe.mjs');   // first: --register exits here
 const w = loadColony(resolveColony(fromRef));
-const run = ex.run(P, { name: fromRef.replace('/', '_'), from: fromRef, years });
+// --set a.b=v (repeatable): a parameter set after loading, since a colony's saved parameters
+// override the current defaults (colony.mjs)
+const sets = process.argv.flatMap((x, i) => x === '--set' ? [process.argv[i + 1]] : []);
+for (const s of sets) {
+  const [path, v] = s.split('='), keys = path.split('.');
+  let o = PARAMETERS; for (const k of keys.slice(0, -1)) o = o[k];
+  if (!(keys[keys.length - 1] in o)) throw new Error('no parameter ' + path);
+  o[keys[keys.length - 1]] = JSON.parse(v);
+}
+const run = ex.run(P, { name: fromRef.replace('/', '_'), from: fromRef, years, sets });
 await run.start();
 const Y = P.year.days, r2 = (x) => +x.toFixed(2);
 const census = (d) => {
@@ -21,14 +32,19 @@ const census = (d) => {
 };
 const deaths = [], years_ = [census(0)];
 let seen = w.dead.length;
+// each agent as it woke (since exp005's fault: a dead carer's charges are passed on within the
+// day's update): children alive in its care, injury, and its hours after care
+const woke = new Map();
 for (let d = 1; d <= years * Y; d++) {
   beat(d, years * Y, ex.label + ' ' + run.name + ' year ' + (d / Y).toFixed(1));
+  woke.clear();
+  for (const a of w.agents) woke.set(a.id, { charges: a.charges.filter((c) => c.alive).length, hurt: a.hurt || 0, cap: r2(a.capacity()), care: r2(careLoad(a)), carer: a.carer ? a.carer.id : null });
   w.update();
   for (; seen < w.dead.length; seen++) {
     const a = w.dead[seen];
     deaths.push({ year: r2(d / Y), age: r2(a.ageDays / Y), female: !!a.female, cause: a.cause, child: !!a.child,
       infant: a.child ? isInfant(a) : false, food: r2(a.need.food), water: r2(a.need.water),
-      charges: a.charges.filter((c) => c.alive).length,
+      charges: a.charges.filter((c) => c.alive).length, woke: woke.get(a.id) || null,
       carerAlive: a.child ? !!(a.carer && a.carer.alive) : null, motherAlive: a.child ? !!(a.mother && a.mother.alive) : null });
   }
   if (d % Y === 0) { const c = census(d); years_.push(c); console.log(JSON.stringify(c)); }

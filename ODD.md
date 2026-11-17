@@ -711,7 +711,9 @@ Deliberately small; it grows later.
       it (a second reason to hunt together, Ache injury records, Hill & Hurtado, from
       memory). A minor injury takes days of work away and heals; a major one cuts the
       agent's working capacity for life; the injured are kept by gifts from ties, as the old
-      are (§2).
+      are (§2). A minor injury keeps 60% of the working day for 10 days (`injury.minorCut`
+      0.6, Default 2026-11-16; Chris: "maybe our minor injuries are a bit too harsh?"). It
+      kept 30% until then, while a major injury keeps 70% for life.
     - **Risk is learned and priced (Decided — Chris, 2026-11-11: "yes"):** each agent learns
       an injury rate per setting (§4.4: habit from its own injuries, norm from injuries seen
       and heard of in chat), and the planner charges each hour its expected cost: days lost,
@@ -1609,11 +1611,34 @@ directions when gifts come back and fades when they don't.
 #### The life cycle as built in Stage 6 — Default (Claude, 2026-11-06; `life.js`, numbers in `PARAMETERS.life`)
 Chris decided the stages, ages, consent, conception, fertility, care as investment and the
 weight (§2, above); the rest are Claude's proposals:
-- **A child with a carer does not plan.** Each day it is where its carer was, drinks where
-  its carer drank, shares its fire and bed (its warmth is the carer's; it takes no bed of its
-  own), and eats what it holds, which is what it is given. It does not barter. It meets and
-  hears chat, so it learns norms before it lives a season (fix 2's point); adults do not
-  spend chat on it, since it has lived nothing to tell.
+- **A child with a carer does not plan.** Each day it is where its carer was, shares its fire
+  and bed (its warmth is the carer's; it takes no bed of its own), and eats what it holds,
+  which is what it is given. It does not barter. It meets and hears chat, so it learns norms
+  before it lives a season (fix 2's point); adults do not spend chat on it, since it has lived
+  nothing to tell.
+- **Children drink and eat on their own once old enough (Decided — Chris, 2026-11-16):** "we
+  need children to be able to take care of their own needs after some age. the act of
+  drinking and eating should be something children do on their own (with their mother if they
+  still are following her) once old enough." A child eats what it holds (it already did).
+  - *As built — Default (Claude, 2026-11-16):* a child shares its carer's drinking, as before
+    (her evening water, her gourd included), and from weaning (`nurseAge`) it also drinks for
+    itself at water anywhere it was that day with her, camp included, whether or not she
+    drank. An infant's water stays its nursing carer's (milk). (A first build dropped the
+    sharing; in exp006 s1, 13 weaned children of 2–4 died of thirst while their carers lived,
+    since a carer drinking from her gourd at camp drank alone.) (Until 2026-11-16 a child drank
+    only where its carer drank. In exp005 all 22 children who died of thirst died on the same
+    day as a woman of 26–45; in s1, traced, each was her child, at a camp beside water, and she
+    was too hurt to drink.)
+- **A hurt carer puts her own recovery first, without letting her children die (Decided —
+  Chris, 2026-11-16):** "injured care givers should probably prioritize their own recovery
+  over their children, while not letting children die too."
+  - *As built — Default (Claude, 2026-11-16):* care never takes the hours a carer needs to
+    drink (her drink trip); the care her hours cannot cover lapses, as rest it would have cost
+    her. Her children drink on their own (above), are given food from her hold and by her ties
+    (exchange takes no hours), and an infant lives on her milk. (Before, a minor injury left a
+    mother of three or four 0.2 h or less after care, short of the 0.25 h a drink takes at her
+    own camp's water; a scratch check of exp005's s1 colony, `probes/thirsttrace.mjs`, not a
+    registered experiment, found this in all four of its families dead of thirst.)
 - **Infants live on milk.** An infant's food is its nursing carer's food level; she eats a
   quarter more per infant. Late in pregnancy (the last 90 days) she eats 15% more and has 2
   hours a day fewer. An infant with no nursing carer has no milk and starves.

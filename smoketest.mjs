@@ -474,6 +474,19 @@ check('food processing is discovered in the bands year', procFound > 0,
   check('a child goes with its carer and its help adds to the carer\'s haul', c.places.join() === m.places.join() && withChild > 0 &&
     m.tie(c.id, day()).kind > 0 && c.tie(m.id, day()).kind > 0,
     'mother picked ' + withChild.toFixed(1) + ' greens with a child of 8 (rate ×' + workRate(c).toFixed(2) + '); mother\'s tally of the child ' + m.tie(c.id, day()).kind.toFixed(1));
+  // a weaned child drinks at water where it is with its carer, though its carer did not drink;
+  // care never takes the hours a carer needs to drink (ODD §7.4, Decided 2026-11-16)
+  const wh = [...Array(lw.grid.n).keys()].find((i) => lw.waterAt[i] >= 0 && lw.stock.water[lw.waterAt[i]] > 0);
+  const kp = m.places; m.places = [wh]; m.drank = false; c.need.water = 0.2;
+  followCarer(c, lw); dependentEvening(c, lw); m.places = kp;
+  check('a weaned child drinks for itself where it is, though its carer did not', c.drank && c.need.water === 1, 'child water ' + c.need.water);
+  // away from water, it shares its carer's drinking (her gourd at camp)
+  const dry = [...Array(lw.grid.n).keys()].find((i) => !(lw.waterAt[i] >= 0));
+  m.places = [dry]; m.drank = false; const kw = m.need.water; m.need.water = 0.9; c.need.water = 0.2;
+  followCarer(c, lw); dependentEvening(c, lw); m.places = kp; m.need.water = kw;
+  check("away from water a child shares its carer's drinking", c.need.water === 0.9, 'child water ' + c.need.water + ' with its carer at 0.9');
+  check('care never takes the hours a carer needs to drink', careLoad(m) > 0.1 && careTaken(m, m.drinkTrip + 0.1) <= 0.1 + 1e-9 && careTaken(m, 0) === 0,
+    'care ' + careLoad(m).toFixed(2) + ' h; with ' + (m.drinkTrip + 0.1).toFixed(2) + ' h left, care takes ' + careTaken(m, m.drinkTrip + 0.1).toFixed(2) + ' h');
   // a parent feeds its hungry child, out of the owing balance
   Object.assign(m.hold, { greens: 0, roots: 10 }); c.need.food = 0.1; for (const k of FOODS) c.hold[k] = 0;
   m.need.food = 1; c.busy = 0; m.busy = 2;
@@ -584,11 +597,13 @@ check('food processing is discovered in the bands year', procFound > 0,
   for (; days < 30 && sw.at >= 0; days++) { sw.plan = []; sw.plan.out = true; sw.act(gw); }
   check('a stranded agent walks home a little at a time', sw.at === -1 && days >= Math.ceil(trip / 0.5) - 1,
     trip.toFixed(1) + ' hours from camp at half an hour a day: home after ' + days + ' days');
-  // an injury costs more to one it would strand: the same agent, free, then late in pregnancy and
-  // with little working capacity, so a minor injury would leave it no hours (Decided 2026-11-12)
+  // an injury costs more to one it would strand: the same agent, free, then knowing no water in
+  // reach, so a minor injury would leave it unable to drink (Decided 2026-11-12). (Until
+  // 2026-11-16 it was stranded by care and late pregnancy taking all its hours; care no longer
+  // takes the hours it needs to drink, ODD §7.4.)
   const pa = new Agent(4, fh, gw);
   const free = injuryCost(pa, gw, fh);
-  pa.disabled = 0.5; pa.pregnant = { due: 10, today: 10 }; pa._injK = null;
+  pa.known = new Uint8Array(pa.known.length); pa._injK = null;
   const loaded = injuryCost(pa, gw, fh);
   // moving camp: it carries what it can; the rest lies at the old camp, open to anyone, and rots
   // (ODD §2 Containers and carrying, Decided 2026-11-12)
@@ -637,7 +652,7 @@ check('food processing is discovered in the bands year', procFound > 0,
   check('gourd fruit dries where it is kept', ga.hold.driedGourd > 2 && ga.hold.gourdFruit < 1,
     'after 60 days: ' + ga.hold.gourdFruit.toFixed(2) + ' fruit, ' + ga.hold.driedGourd.toFixed(2) + ' dried; the gourds wore to ' + ga.hold.gourd.toFixed(2));
   check('an injury that would strand is priced as death', loaded > 10 * free,
-    'expected cost of an injury at camp ' + free.toFixed(1) + ' free, ' + loaded.toFixed(1) + ' with no hours left if hurt');
+    'expected cost of an injury at camp ' + free.toFixed(1) + ' free, ' + loaded.toFixed(1) + ' knowing no water in reach');
 }
 console.log('bands year, hunting: ' + (xw.kills || []).length + ' big-game kills, ' + (xw.nightsOut || 0) + ' nights out, injuries ' + JSON.stringify(xw.injured || {}) + ' (reported, not required)');
 

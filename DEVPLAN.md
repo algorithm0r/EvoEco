@@ -358,8 +358,15 @@ generation, and growth that brings bands into competition. Design first, one que
       over months and the child's hunger over one evening. Fixed by two Decided rules: a child's
       need is its coming days on what it holds (2026-11-14), and the gift that pays most goes
       first (2026-11-15). exp004: child-days in deficit 91,475 → 1,062 (s1), 130,165 → 3,331 (s2)
-- [ ] exp005 (running): who dies under the new gift rules. In exp004 adults at the end fell
-      (s2: 56 vs 80 in exp002) and children's thirst deaths rose (13 and 9 vs 5 and 4)
+- [x] Who dies under the new gift rules (exp005): young mothers of hunger, and families of
+      thirst (a hurt mother unable to drink at camp once care took her hours, her children with
+      her). Fixed by two Decided rules, 2026-11-16: children drink and eat on their own once old
+      enough; a hurt carer puts her own recovery first (care never takes her drinking hours).
+      Minor injury keeps 60% of the day. exp007: no child thirst deaths in either seed
+- [x] Why mothers starve (exp008–011): they keep giving ~0.35 a day while their own level falls;
+      no counterfactual (hunger kept, the child's real inflow, death priced with dependents)
+      stops the gift paying. Behaviour of the valuation, not a bug (Chris: "this might not be a
+      bug and if so it's a small one")
 - [ ] The start state (Chris's call, after child survival): a hand-designed balanced age profile
       or a burn-in. exp002: the founding cohort's age gap persists 40 years in all three seeds
 **Done when:** households form and dissolve on their own, and a population persists across
@@ -567,3 +574,12 @@ How runs are compared is a research question to settle then (ODD §4.10).
       exp003–005 start from, drop the rest if disk matters
 - [ ] perf: `giftsAt` now weighs each receiver's gift again after any gift by the same giver;
       watch the exchange share of run time in long runs
+- [ ] fix: four young men died of thirst on the same day, fed and unhurt (exp007 s1, year 4.08);
+      untraced, likely a party out without water
+- [ ] idea: hunger deaths come mostly in winter and early spring (exp007), in clusters that take
+      men without children too; trace a cluster against camp stores and moves
+- [ ] fix: a colony's saved parameters override current defaults on load (colony.mjs), so a run
+      from an old colony silently keeps old values; probes take `--set`, but the runner does
+      not, and nothing warns
+- [ ] idea: if the mothers' deaths matter to a result, the lever is the weight on a child or a
+      mother's own margin (stores, hours), not the gift sum's shape (exp009–011)

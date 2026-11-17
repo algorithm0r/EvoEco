@@ -37,6 +37,10 @@ function careLoad(a) {
   }
   return h;
 }
+// the care its charges take of `hours`: never the hours it needs to drink (its drink trip); the
+// care those hours cannot cover lapses (ODD §7.4 A hurt carer puts her own recovery first,
+// Decided 2026-11-16)
+function careTaken(a, hours) { return Math.min(careLoad(a), Math.max(0, hours - a.drinkTrip)); }
 function nursesOwn(a) { return a.female && a.charges.some((c) => c.mother === a && isInfant(c)); }
 
 // ── a parent's weight on its child's needs (ODD §7.4, Decided 2026-11-06) ────────────────
@@ -105,14 +109,22 @@ function bookGift(i, j, terms, day) {
 }
 
 // ── the day of a child with a carer (ODD §2: it goes with its carer) ───────────────────────
-// After its carer has acted: it was where its carer was, drank where it drank, and was cared
-// for (a kind offer in its tally; in the carer's, given). From helpAge its help at the carer's
-// task (added to the carer's haul in act) is a kind offer to the carer.
+// After its carer has acted: it was where its carer was, and was cared for (a kind offer in its
+// tally; in the carer's, given). From helpAge its help at the carer's task (added to the
+// carer's haul in act) is a kind offer to the carer. It shares its carer's drinking (one drink,
+// her gourd included); from weaning it also drinks for itself at water anywhere it was with
+// her, camp included (ODD §7.4 Children drink and eat on their own, Decided 2026-11-16).
 function followCarer(c, world) {
   const k = c.carer, day = world.day;
   c.home = k.home; c.shelter = k.shelter; c.camp = null;
   c.places = k.places.slice();
   c.drank = k.drank;
+  if (!c.drank && !isInfant(c)) {
+    for (const h of c.places) {
+      const src = h >= 0 ? world.waterAt[h] : -1;
+      if (src >= 0 && world.stock.water[src] > 0) { world.take('water', src, PARAMETERS.goods.drinkDraw); c.drank = true; break; }
+    }
+  }
   c.busy = workRate(c) > 0 ? k.busy : 0;
   c.plan = []; c.obs = []; c.practised = [];
   for (const g of FLOW_GOODS) c.got[g] = 0;
@@ -125,11 +137,15 @@ function followCarer(c, world) {
   }
 }
 
-// A dependent's evening: warmth and water as its carer's (one fire, one bed, one drink); an
-// infant's food as its nursing carer's (milk), an older child's from what it holds.
+// A dependent's evening: warmth as its carer's (one fire, one bed); its water as its carer's,
+// or full where it drank for itself (followCarer); an infant's food as its nursing carer's
+// (milk), an older child's from what it holds.
 function dependentEvening(c, world) {
   const k = c.carer;
-  if (k) { c.need.water = k.need.water; c.need.warmth = k.need.warmth; c.coldDays = k.coldDays; }
+  if (k) {
+    c.need.warmth = k.need.warmth; c.coldDays = k.coldDays;
+    c.need.water = c.drank && !isInfant(c) ? 1 : k.need.water;
+  }
   if (isInfant(c)) {
     const N = PARAMETERS.needs;
     // an infant's carer is always a nursing woman (its mother, or one who took it on)

@@ -298,7 +298,7 @@ var Agent = class Agent {
     // a morning spent moving camp is gone; care and late pregnancy take hours (life.js)
     let w = workingHours(this);
     if (this.hurt > 0) w *= PARAMETERS.injury.minorCut;   // healing (ODD §2 Game)
-    return w - this.walked - careLoad(this);
+    return w - this.walked - careTaken(this, w - this.walked);
   }
 
   // ── Travel and work: walk the plan, gather, drink, build, look around ─────────────────
@@ -977,7 +977,7 @@ function injuryCost(agent, world, hex) {
     let deps = 0;
     for (const c of agent.charges) deps += weightOn(agent, c, world.day);
     K = agent._injK = { day: world.day, death: world._injLife * WORST_NEED_COST * (1 + deps),
-      hurt: workingHours(agent) * I.minorCut - careLoad(agent),
+      hurt: workingHours(agent) * I.minorCut - careTaken(agent, workingHours(agent) * I.minorCut),
       days: (agent.need.water + needReserve('water')) / PARAMETERS.needs.waterDecay, at: new Map() };
   }
   let c = K.at.get(hex);

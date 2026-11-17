@@ -28,6 +28,227 @@ README), and DEVLOG cites them by file name.
 
 <!-- append new entries below this line, newest first -->
 
+## exp011 — Does a hungry mother's gift to her neediest weaned child still pay her if her own death in her projection is priced as the injury forecast prices it, with her weights on her dependents?
+**Pre-registered:** 2026-11-17
+**Script:** probes/mothergift.mjs (since exp011 it also computes her cost with `WORST_NEED_COST`
+scaled by 1 + Σ her weights on her living charges (`weightOn`), as `injuryCost` prices death,
+for her sum alone, restored at once).
+**Code:** as exp007–010 (past `267c629`, uncommitted; no model change).
+**Settings:** as exp009–010: the colonies' saved parameters, `--set injury.minorCut=0.6`;
+`exp002/limit_s1_y30` 7 years and `exp002/limit_s2_y10` 10 years; runs `exp002_limit_s1_y30`,
+`exp002_limit_s2_y10`.
+**Seeds / reps / length:** the two colonies, one run each, 7 and 10 years.
+**Measures:** exp010's, plus by her food level: the gift pays with her death priced with her
+dependents (weight × gain as is > her cost so priced), mean that cost, mean Σ weights.
+
+**Results (raw, 2026-11-17):** both runs complete (`results/exp011_mother-death-deps/`). Days and
+"pays" equal exp009's; "pays w/ inflow" equals exp010's (454, 855). Columns: her level; days;
+pays (as is); pays with her death priced with her dependents; mean her cost (as is); mean her
+cost so priced; mean weight × child's gain; mean Σ her weights on her charges.
+
+| level | s1 days | s1 pays | s1 pays w/ deps | s1 loss | s1 loss w/ deps | s1 w×gain | s1 Σw | s2 days | s2 pays | s2 pays w/ deps | s2 loss | s2 loss w/ deps | s2 w×gain | s2 Σw |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| −6 | 68 | 37 | 37 | 106.31 | 226.88 | 2.062 | 1.063 | 49 | 33 | 33 | 99.18 | 183.89 | 2.295 | 0.880 |
+| −5 | 71 | 51 | 51 | 1.471 | 2.802 | 2.182 | 1.185 | 102 | 64 | 64 | 21.55 | 57.75 | 2.066 | 1.190 |
+| −4 | 75 | 53 | 53 | 1.462 | 2.588 | 2.088 | 1.048 | 166 | 111 | 111 | 5.268 | 14.49 | 2.324 | 1.316 |
+| −3 | 80 | 57 | 57 | 1.399 | 2.531 | 2.224 | 1.180 | 174 | 113 | 113 | 1.851 | 5.292 | 2.401 | 1.348 |
+| −2 | 94 | 71 | 71 | 1.297 | 2.192 | 2.410 | 1.111 | 223 | 158 | 158 | 1.012 | 1.275 | 2.631 | 1.263 |
+| −1 | 146 | 117 | 117 | 1.057 | 1.691 | 2.267 | 1.131 | 311 | 230 | 230 | 0.946 | 1.355 | 2.626 | 1.361 |
+| all | 534 | 386 | 386 | | | | | 1025 | 709 | 709 | | | | |
+
+## exp010 — Does a hungry mother's gift to her neediest weaned child still pay her if the child's projection counts the food it usually receives (its last 30 days) instead of nothing coming in?
+**Pre-registered:** 2026-11-16
+**Script:** probes/mothergift.mjs (since exp010 it also tracks each weaned child's food received
+through exchange over its last 30 days, and computes the child's gain with that mean added to
+its projection each day; with nothing received the two gains agree, checked on a scratch run).
+**Code:** as exp007–009 (past `267c629`, uncommitted; no model change).
+**Settings:** as exp009: the colonies' saved parameters, `--set injury.minorCut=0.6`;
+`exp002/limit_s1_y30` 7 years and `exp002/limit_s2_y10` 10 years; runs `exp002_limit_s1_y30`,
+`exp002_limit_s2_y10`.
+**Seeds / reps / length:** the two colonies, one run each, 7 and 10 years.
+**Measures:** exp009's, plus by her food level: the gift pays with the child's usual inflow
+counted (weight × gain with inflow > her cost as is), mean weight × gain with inflow, mean
+child inflow a day.
+
+**Results (raw, 2026-11-16):** both runs complete (`results/exp010_child-inflow/`). Days,
+"pays", "gave" and "died ≤30 d" equal exp009's in every row (same runs). Columns: her level;
+days; pays (nothing coming in, as is); pays with the child's usual inflow counted; gave; died
+≤30 d; mean her cost; mean weight × gain (as is); mean weight × gain with inflow; mean child
+inflow a day (food-level units).
+
+| level | s1 days | s1 pays | s1 pays w/ inflow | s1 w×gain | s1 w×gain w/ inflow | s1 inflow | s2 days | s2 pays | s2 pays w/ inflow | s2 w×gain | s2 w×gain w/ inflow | s2 inflow |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| −6 | 68 | 37 | 53 | 2.062 | 5.064 | 0.327 | 49 | 33 | 37 | 2.295 | 5.406 | 0.311 |
+| −5 | 71 | 51 | 64 | 2.182 | 5.420 | 0.319 | 102 | 64 | 77 | 2.066 | 4.898 | 0.296 |
+| −4 | 75 | 53 | 66 | 2.088 | 4.958 | 0.336 | 166 | 111 | 127 | 2.324 | 5.142 | 0.346 |
+| −3 | 80 | 57 | 72 | 2.224 | 5.337 | 0.341 | 174 | 113 | 144 | 2.401 | 5.772 | 0.322 |
+| −2 | 94 | 71 | 82 | 2.410 | 4.947 | 0.328 | 223 | 158 | 202 | 2.631 | 6.128 | 0.335 |
+| −1 | 146 | 117 | 117 | 2.267 | 4.522 | 0.320 | 311 | 230 | 268 | 2.626 | 5.934 | 0.324 |
+| all | 534 | 386 | 454 | | | | 1025 | 709 | 855 | | | |
+
+## exp009 — When a hungry mother weighs a day's food for her neediest weaned child, does the gift pay her, and would it still pay if her projection kept her hunger instead of fading it back toward her usual level?
+**Pre-registered:** 2026-11-16
+**Script:** probes/mothergift.mjs
+**Code:** as exp007–008 (past `267c629`, uncommitted; no model change).
+**Settings:** as saved in the colonies, except `--set injury.minorCut=0.6`. Starts from
+`exp002/limit_s1_y30` run 7 years and `exp002/limit_s2_y10` run 10 years. Runs
+`exp002_limit_s1_y30`, `exp002_limit_s2_y10`. The probe calls the model's own cost functions
+before each day's gifts and sets, then restores, the mother's `livedFood`; if any of this draws
+on the generator or leaves a cache changed, the runs diverge from exp007–008.
+**Seeds / reps / length:** the two colonies, one run each, 7 and 10 years.
+**Measures:** each day a woman below food level 0 is at exchange with a weaned child in her care
+below food level 1 (her neediest such child), the model's gift sum for one day of its food in
+the food she holds most of: her cost of giving it, her weight on the child, the child's gain,
+whether it pays. The same sum with her `livedFood` (all seasons) set to her food level now (her
+hunger kept, not faded). Her usual level as read; whether she gave food that day; whether she
+died of hunger within 30 days. Tallied by her food level [−6,−5) … [−1,0).
+
+**Results (raw, 2026-11-16):** both runs complete (`results/exp009_mother-gift-sum/`). Columns:
+her level; days; the sum pays; pays with her hunger kept; she gave food; she died of hunger
+within 30 days; mean her cost (as is); mean her cost (hunger kept); mean weight × child's gain;
+mean her usual level as read.
+
+From `limit_s1_y30`, 7 years:
+
+| level | days | pays | pays kept | gave | died ≤30 d | loss | loss kept | w×gain | usual |
+|---|---|---|---|---|---|---|---|---|---|
+| −6 | 68 | 37 | 48 | 56 | 10 | 106.31 | 29.25 | 2.062 | −1.451 |
+| −5 | 71 | 51 | 55 | 58 | 8 | 1.471 | 3.596 | 2.182 | −0.994 |
+| −4 | 75 | 53 | 53 | 67 | 5 | 1.462 | 3.640 | 2.088 | −0.877 |
+| −3 | 80 | 57 | 58 | 71 | 5 | 1.399 | 1.354 | 2.224 | −0.480 |
+| −2 | 94 | 71 | 74 | 91 | 15 | 1.297 | 1.323 | 2.410 | 0.049 |
+| −1 | 146 | 117 | 110 | 128 | 6 | 1.057 | 1.970 | 2.267 | 0.337 |
+| all | 534 | 386 | 398 | 471 | 49 | | | | |
+
+From `limit_s2_y10`, 10 years:
+
+| level | days | pays | pays kept | gave | died ≤30 d | loss | loss kept | w×gain | usual |
+|---|---|---|---|---|---|---|---|---|---|
+| −6 | 49 | 33 | 42 | 38 | 27 | 99.18 | 5.251 | 2.295 | −1.534 |
+| −5 | 102 | 64 | 76 | 93 | 33 | 21.55 | 1.471 | 2.066 | −1.041 |
+| −4 | 166 | 111 | 108 | 155 | 41 | 5.268 | 5.349 | 2.324 | −0.766 |
+| −3 | 174 | 113 | 129 | 161 | 33 | 1.851 | 1.635 | 2.401 | −0.279 |
+| −2 | 223 | 158 | 155 | 205 | 16 | 1.012 | 5.207 | 2.631 | 0.047 |
+| −1 | 311 | 230 | 224 | 287 | 16 | 0.946 | 1.148 | 2.626 | 0.382 |
+| all | 1025 | 709 | 734 | 939 | 166 | | | | |
+
+## exp008 — Why do mothers starve: in the 45 days before a woman with children in her care dies of hunger, what does she gather, hold, eat and pass to her children through exchange, against other mothers in her camp who live through the same days?
+**Pre-registered:** 2026-11-16
+**Script:** probes/mothersprobe.mjs
+**Code:** as exp007 (past `267c629`, uncommitted; no model change).
+**Settings:** as saved in the colonies, except `--set injury.minorCut=0.6`. Starts from
+`exp002/limit_s1_y30` run 7 years and `exp002/limit_s2_y10` run 10 years (exp007's colonies and
+spans). Runs `exp002_limit_s1_y30`, `exp002_limit_s2_y10`. The probe wraps nothing in the model.
+**Seeds / reps / length:** the two colonies, one run each, 7 and 10 years.
+**Measures:** for every woman with children alive in her care, a daily record over the last 45
+days: her evening food level; food held after the evening (hand and store); food gathered;
+her net food through exchange (gifts and barter, out negative); her charges' net food through
+exchange, their mean food level, their number and infants; her hours after care. Food in
+food-level units. For each such woman dead of hunger: her window, and the same days for up to
+two other women with children in her camp alive at the end.
+
+**Results (raw, 2026-11-16):** both runs complete (`results/exp008_mothers-starve/`;
+`python probes/exp008sum.py`, which prints each case too).
+- Cases: 9 mothers dead of hunger (s1), with 18 peer windows; 15 (s2), with 24.
+- Each cell is the daily mean over the window's first 30 days → its last 15. "Ate" is by
+  balance: held before + gathered + exchange net − held after.
+
+| | s1 dead | s1 peers | s2 dead | s2 peers |
+|---|---|---|---|---|
+| evening food level | −0.32 → −3.74 | 0.32 → −0.83 | −0.91 → −3.92 | 0.75 → 0.35 |
+| food held | 0.59 → 0.00 | 5.11 → 4.47 | 0.53 → 0.00 | 2.61 → 1.00 |
+| gathered | 0.52 → 0.43 | 0.63 → 0.54 | 0.62 → 0.57 | 0.74 → 0.68 |
+| her net through exchange | −0.36 → −0.33 | −0.36 → −0.32 | −0.36 → −0.44 | −0.35 → −0.35 |
+| her charges' net through exchange | 0.52 → 0.49 | 0.48 → 0.47 | 0.61 → 0.63 | 0.55 → 0.56 |
+| ate | 0.21 → 0.10 | 0.31 → 0.28 | 0.29 → 0.13 | 0.51 → 0.35 |
+| children in care | 3.10 → 3.11 | 2.61 → 2.61 | 3.49 → 3.53 | 2.63 → 2.72 |
+| infants in care | 0.88 → 0.89 | 0.62 → 0.61 | 0.82 → 0.80 | 0.61 → 0.58 |
+| hours after care | 8.01 → 8.21 | 10.16 → 10.00 | 8.61 → 8.70 | 10.98 → 11.01 |
+
+## exp007 — exp006 with its build fault fixed (a weaned child shares its carer's drinking and also drinks for itself at water where it is): who dies, of what, at what age, from the same colonies and spans; and were the women who starve carers?
+**Pre-registered:** 2026-11-16
+**Script:** probes/deathprobe.mjs (as exp006).
+**Code:** past `267c629` (uncommitted): exp006's three changes, with change 1 fixed: a child
+shares its carer's drinking (her evening water) as before, and from weaning also drinks for
+itself at water anywhere it was with her (`followCarer`, `dependentEvening`). Smoke PASS,
+including a check that fails on exp006's build (child water −0.3 with its carer at 0.9).
+**Settings:** as saved in the colonies, except `--set injury.minorCut=0.6`. Starts from
+`exp002/limit_s1_y30` run 7 years and `exp002/limit_s2_y10` run 10 years. Runs
+`exp002_limit_s1_y30`, `exp002_limit_s2_y10`.
+**Seeds / reps / length:** the two colonies, one run each, 7 and 10 years.
+**Measures:** as exp006. Compared against exp005 and exp002 over the same years.
+
+**Results (raw, 2026-11-16):** both runs complete (`results/exp007_self-care-fixed/`;
+`python probes/exp005sum.py exp007_self-care-fixed`); saved `_parameters.injury.minorCut` 0.6.
+
+| group | s1 hunger | s1 injury | s1 old age | s1 thirst | s2 hunger | s2 injury | s2 old age | s2 thirst |
+|---|---|---|---|---|---|---|---|---|
+| infant | 8 | 0 | 0 | 0 | 12 | 0 | 0 | 0 |
+| child 2–14 | 17 | 0 | 0 | 0 | 40 | 0 | 0 | 0 |
+| woman 15–44 | 9 | 1 | 0 | 0 | 14 | 2 | 0 | 0 |
+| man 15–44 | 6 | 0 | 1 | 4 | 2 | 1 | 1 | 0 |
+| woman 45+ | 1 | 1 | 5 | 0 | 1 | 1 | 1 | 0 |
+| man 45+ | 2 | 1 | 5 | 0 | 2 | 0 | 4 | 0 |
+
+s1: 61 deaths; s2: 81.
+- Thirst, s1: four men aged 17–31, all on day 4.08 y, food 1, none hurt. s2: none.
+- Women dead, as they woke that day: with children in their care 11 of 17 (s1), 18 of 19 (s2).
+  Of those dead of hunger: 9 of 10 (s1), 15 of 15 (s2). None hurt.
+- Children dead of hunger, carer alive / mother alive: s1 17 / 9 of 25; s2 40 / 22 of 52.
+- Hunger deaths by quarter of the year (0 = the colony's year start, spring), s1: 11 / 6 / 1 /
+  25; s2: 30 / 2 / 15 / 24.
+- s1 adult hunger deaths cluster at years 0.94–0.98 (5), 2.96–3.02 (6), 4.75–4.91 (3).
+- Census (alive/adults/children/infants/women with charges):
+  - s1: y0 163/99/64/15/23 → y7 136/77/59/8/16.
+  - s2: y0 151/77/74/17/29 → y10 112/64/48/4/13.
+- Against exp005 (same colonies and spans): child thirst 0 vs 13 (s1), 0 vs 9 (s2); adult hunger
+  18 vs 17, 19 vs 22; child hunger (infants included) 25 vs 15, 52 vs 47; alive at the end 136
+  vs 136, 112 vs 97. exp002, the same years: adult hunger 11, 3; child hunger 29, 49; alive 145,
+  128.
+
+## exp006 — With weaned children drinking on their own, care never taking a carer's drinking hours, and a minor injury keeping 60% of the day (all 2026-11-16), who dies, of what, at what age, from the same colonies and spans as exp005; and were the women who starve carers?
+**Pre-registered:** 2026-11-16
+**Script:** probes/deathprobe.mjs (since exp006 each death also carries `woke`: as it woke that
+day, children alive in its care, injury, hours after care, care, carer id; exp005's `charges`
+read 0 because a dead carer's charges are passed on within the day).
+**Code:** past `267c629` (uncommitted). Three model changes from exp005:
+1. From weaning a child drinks at water anywhere it was with its carer, camp included, whatever
+   its carer did (`followCarer`, `dependentEvening`; ODD §7.4 Children drink and eat on their
+   own, Decided 2026-11-16, build Default).
+2. Care never takes the hours a carer needs to drink, her drink trip; care beyond that lapses
+   (`careTaken`, used in `capacity` and the injury forecast; ODD §7.4 A hurt carer puts her own
+   recovery first, Decided 2026-11-16, build Default).
+3. `injury.minorCut` 0.3 → 0.6 (Default 2026-11-16).
+**Settings:** as saved in the colonies, except `--set injury.minorCut=0.6` (a colony's saved
+parameters override current defaults, so the new default is set after loading). Starts from `exp002/limit_s1_y30` run 7 years and
+`exp002/limit_s2_y10` run 10 years. Runs `exp002_limit_s1_y30`, `exp002_limit_s2_y10`.
+**Seeds / reps / length:** the two colonies, one run each, 7 and 10 years.
+**Measures:** exp005's, plus `woke` per death. Compared against exp005 and exp002 over the same
+years.
+
+**Results (raw, 2026-11-16):** `limit_s1_y30` complete (`results/exp006_self-care/exp002_limit_s1_y30.json`;
+`python probes/exp005sum.py exp006_self-care`); saved `_parameters.injury.minorCut` 0.6.
+`limit_s2_y10` was stopped part way and saved nothing.
+- **Build fault:** change 1 as built dropped a child's sharing of its carer's drinking (her
+  evening water, gourd included), so a weaned child away from water did not drink. The fault
+  is fixed and re-run as exp007; these numbers are from the faulty build.
+- s1, 60 deaths:
+
+| group | hunger | injury | old age | thirst |
+|---|---|---|---|---|
+| infant | 5 | 0 | 0 | 0 |
+| child 2–14 | 12 | 0 | 1 | 13 |
+| woman 15–44 | 7 | 0 | 0 | 0 |
+| man 15–44 | 1 | 1 | 0 | 0 |
+| woman 45+ | 1 | 0 | 5 | 0 |
+| man 45+ | 3 | 2 | 9 | 0 |
+
+- Children dead of thirst: ages 2.3–3.6; carer alive 13 of 13, mother alive 12 of 13.
+- Women dead, as they woke that day: 8 of 13 had children in their care. Of the 8 dead of
+  hunger, 7 had 2–5 children in their care (care 2–4.5 h, hours after care 2.9–12); none hurt.
+- Census (alive/adults/children/infants/women with charges): y0 163/99/64/15/23 → y7
+  143/83/60/8/18.
+
 ## exp005 — Under the projected-need and neediest-first gift rules, who dies, of what, at what age, from the same colonies and spans as exp004: do adults (mothers in particular) die more, and where do the infant, child-thirst and other child hunger deaths come from?
 **Pre-registered:** 2026-11-16
 **Script:** probes/deathprobe.mjs
@@ -43,6 +264,37 @@ infant, children alive in its care; for a child, carer alive and mother alive. Y
 alive, adults, children, infants, women with children in their care. Tally of cause by age group
 (infant; child 2–14; adult 15–44, 45+, by sex). Compared against exp002's seasons table (deaths
 by cause, adult and child) over the same years.
+
+**Results (raw, 2026-11-16):** both runs complete (`results/exp005_deaths/exp002_limit_s1_y30.json`,
+`exp002_limit_s2_y10.json`; summarizer `probes/exp005sum.py`). Deaths by group and cause:
+
+| group | s1 hunger | s1 injury | s1 old age | s1 thirst | s2 hunger | s2 injury | s2 old age | s2 thirst |
+|---|---|---|---|---|---|---|---|---|
+| infant | 6 | 0 | 0 | 3 | 12 | 0 | 0 | 3 |
+| child 2–14 | 9 | 0 | 0 | 10 | 35 | 0 | 0 | 6 |
+| woman 15–44 | 8 | 0 | 0 | 4 | 13 | 1 | 0 | 2 |
+| man 15–44 | 0 | 3 | 1 | 0 | 2 | 3 | 0 | 0 |
+| woman 45+ | 1 | 0 | 6 | 0 | 4 | 0 | 2 | 1 |
+| man 45+ | 8 | 0 | 4 | 0 | 3 | 0 | 6 | 0 |
+| all | | | | | | | | |
+
+s1: 63 deaths; s2: 93.
+- exp002 over the same years: s1 adult hunger 11, injury 1, old age 13, thirst 1; child hunger
+  29, thirst 5. s2 adult hunger 3, injury 4, old age 9, thirst 1; child hunger 49, thirst 4.
+- Children dead of thirst with carer alive / mother alive: s1 0/0 of 13, s2 0/0 of 9.
+- Children dead of hunger, the same: s1 9/6 of 15, s2 35/19 of 47.
+- Thirst deaths by day (a woman and children dying the same day):
+  - s1: 0.28 y (F 27.2 and 4 children), 1.54 (F 29.6 and 3), 2.98 (F 27.6 and 3), 5.61 (F 26.4
+    and 3). All 17 of s1's thirst deaths are in these four groups.
+  - s2: 0.20 (F 31.6 and 2), 0.61 (F 28.6 and 2), 2.95 (F 45.1 and 5).
+- Adult hunger deaths in s2 (year, sex, age): 17 of 22 are women, 12 of them aged 29–43 in years
+  1.7–4.8.
+- **Instrument fault:** "women dead with children in care" reads 0 of 19 (s1) and 0 of 23 (s2).
+  The probe reads charges after the day's update, by which time a dead carer's charges have been
+  passed on, so this measure is void.
+- Census at years 0 and end (alive / adults / children / infants / women with charges):
+  - s1: 163/99/64/15/23 → 136/76/60/8/15.
+  - s2: 151/77/74/17/29 → 97/56/41/3/13.
 
 ## exp004 — With a child's need projected over its coming days (Decided 2026-11-14), do carers holding food feed their hungry children: how many child-days are spent in deficit and at the brink, how often does a day's food pay, and how many children die of hunger, from the same colonies and spans as exp003?
 **Pre-registered:** 2026-11-15

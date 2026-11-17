@@ -4,6 +4,42 @@
 
 <!-- append new entries above this line -->
 
+## 2026-11-16 — Who dies: thirst families fixed by children's self-care; starving mothers are behaviour
+
+**Done:**
+- *Public repo:* github.com/algorithm0r/EvoEco, with Pages serving `main`, linked in About and the README.
+- *exp005 (deaths by cause and age):* adults lost under the new gift rules were young mothers dying of hunger. Separately, whole families died of thirst: a mother, too hurt to drink at her own camp's water once care took her hours, and every child in her care, all on the same day. The cause is from a scratch check
+  (`probes/thirsttrace.mjs`), not a registered experiment.
+- *Three rules, ODD first:*
+  - Children drink and eat on their own once old enough (Decided, Chris 2026-11-16). As built (Default): a child shares its carer's drinking, and from weaning also drinks for itself at water where it is with her.
+  - A hurt carer puts her own recovery first without letting her children die (Decided). As built (Default): care never takes the hours a carer needs to drink; care beyond that lapses.
+  - A minor injury keeps 60% of the working day, not 30% (Default; Chris: "maybe our minor injuries are a bit too harsh?").
+- *exp006* caught my first build of child drinking, which dropped sharing the carer's drink: 13 toddlers died of thirst. Fixed, with a smoke check shown to fail on the faulty build. *exp007* reran it clean.
+- *Why mothers starve:*
+  - **exp008:** in their last weeks they keep giving ~0.35 a day to their children while their own level falls to −4. Against camp peers they gather less, hold no stores, and have more children and fewer hours.
+  - **Three counterfactual gift sums:** her hunger kept, not faded (exp009); the child's real inflow counted (exp010); her death priced with her dependents (exp011). None stops the gift paying; counting the child's inflow makes it pay more often.
+  - **Conclusion (Claude, Chris concurring that it may not be a bug):** behaviour of the valuation, not a bug.
+
+**Changed:**
+- *Model code:* `src/life.js` (`followCarer`, `dependentEvening`, `careTaken`), `src/agent.js` (`capacity`, injury forecast), `src/params.js` (`injury.minorCut` 0.6).
+- *Smoke:* `smoketest.mjs` (child drinks alone; shares the carer's drink; care leaves drinking hours; the stranding check rebuilt on no known water).
+- *Probes:* `probes/deathprobe.mjs` (`woke` snapshot, `--set`), `probes/mothersprobe.mjs`, `probes/mothergift.mjs`, `exp005sum.py`, `exp008sum.py`.
+- *Docs:* ODD §7.4 (two Decided entries with build Defaults), §2 Injury (minorCut); `CLAUDE.md` (Remote); README (Pages link).
+
+**State:**
+- *Smoke:* PASS @ v0.9.0-5-g267c629-dirty (pre-commit), 2026-11-16.
+- *Experiments:*
+  - exp005–exp011 logged with raw results in EXPLOG.
+  - exp006 is the faulty child-drinking build (s1 only).
+  - exp007 is the clean rerun: no child thirst deaths in either seed (exp005: 13, 9). Adult hunger 18 and 19 (exp005: 17, 22; exp002: 11, 3). Children's hunger, infants included, 25 and 52 (exp002: 29, 49).
+- *Probe:* `--set` exists because a colony's saved parameters override current defaults (colony.mjs). Any colony run after a parameter change must set it.
+
+**Next:**
+- Chris's call on the start state (a balanced age profile or a burn-in).
+- The four young men dead of thirst together in exp007 s1 (untraced).
+- Winter famine clusters (hunger deaths mostly in winter and early spring).
+- Then C5 (the winter check with carrying), the meat-share balance and planner cost.
+
 ## 2026-11-15 — Game, carrying and gear (5h); the data protocol; children no longer starve beside fed carers
 
 **Done:** Work since `fefbe89` (2026-11-11 to 2026-11-15), each rule in the ODD before its code.
