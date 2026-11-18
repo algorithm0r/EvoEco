@@ -408,7 +408,8 @@ Deliberately small; it grows later.
     tools in hand), and gear raises a kind's cap toward the whole load.
   - **Food and water can be eaten and drunk in place (Decided — Chris, 2026-11-12):** "one
     addition. water and food can be eaten in place." What is eaten where it is gathered is
-    not carried.
+    not carried. The weaned children with the gatherer eat there too (§7.4 Children eat in
+    place with their mother, Decided 2026-11-17).
   - **Carried children take part of the load, and the load is part of the day's effort
     (Decided — Chris, 2026-11-12):** "yes, carried children take part of the load. and
     carrying load is part of the calculation of daily load." The day's effort gains the
@@ -1128,7 +1129,7 @@ trade places and price norms must all form.
     starter tech for now." Everyone can carry water home in a gourd from the start; the water
     ladder's first discovered level is the pot.
 - **Starting ages: adults of mixed age, no children (Decided — Chris, 2026-11-05, on Claude's
-  proposal):** "yes i suppose we need some way to establish realistic initial colonies."
+  proposal; the "no children" half superseded 2026-11-16, *Children at the start* below):** "yes i suppose we need some way to establish realistic initial colonies."
   Agents start between about 15 and 45, both sexes in about equal numbers, with no children
   and no kin: starting with children would mean writing in mother–child links (§4.2, no
   prebuilt ties). Families form only from births; a real age structure (children, parents,
@@ -1156,6 +1157,40 @@ trade places and price norms must all form.
     year, was 30–39 in year 2), but famines go on (seed 1 lost 60 adults in years 2–3 with
     few infants), and year 20 holds 18 / 25 / 41 alive (was 68 / 26 / 37). The cohort was one
     trigger, not the cause.
+  - **Children at the start, each with a mother (Decided — Chris, 2026-11-16):** "a woman old
+    enough to be its mother is a good starting point." Starting with adults alone, the first
+    births came as a wave that reached no settled age profile in 40 years (exp002). Children
+    are now added to the starting adults, each given a woman of its band as mother and carer
+    (its keeper too), one old enough to have borne it: her age minus its age falls within the
+    fertile ages (`life.fertile.female`). This writes in the one link a birth writes (mother,
+    carer, keeper, the shared shelter), and no tie: ties still start empty (§4.2), and a
+    mother's weight on her child is learned as for a child born in the run (that last clause
+    superseded 2026-11-17, *Starting parents value their children like normal* below).
+    - **Starting parents value their children like normal (Decided — Chris, 2026-11-17):**
+      "Yes starting mother's should value children like normal." With no ties, a starting
+      mother's expectation of a grown child (§7.4, the share of belonging it will supply) fell
+      back on her strongest tie and was 0, so on day 0 every mother weighed her child at 0 and
+      13 to 24 starting children starved in the first season (exp012, exp013). Each starting
+      parent now holds, as a norm (§4.4, as if heard from others), the expectation a parent in a
+      running world holds before any child of its own has grown: `life.startGrownWeight`. Her
+      own grown children teach her own value from there, blended with it as any learned value.
+      - *Defaults (Claude, 2026-11-17):* 0.6, the median expectation of parents in running
+        worlds who have no grown child yet (exp014: medians 0.44–0.88 for mothers, 0.27–0.85
+        for fathers, 0.62 pooled, over the adults-only colonies of exp012 at years 20, 30, 40). Fathers
+        get it too: a starting father had the same 0. The survival chance stays on its prior
+        (`life.survivalPrior`, 3 in 4).
+    - *Defaults (Claude, 2026-11-16):* children are `agents.startChildren` (0.4) of the
+      starting population, about the share in the exp007 colonies, so 13 to a band of 20
+      adults; ages uniform from 0 to `life.matureAge` (15), infants included; each sex with
+      chance one half. Her children are at least a birth interval apart (`life.nurseAge` plus
+      `life.pregnancyDays`, the shortest the conception rule allows), so she nurses at most
+      one infant; a child for whom no woman of its band qualifies draws a new age (up to 20
+      tries) and is otherwise left out. A father is a man of the band at least
+      `life.fertile.male` years older than the child, drawn at random for each child (none if
+      no man qualifies). A child holds its share of the starter food (`agents.starterFood` ×
+      its food share) and no gourd; it shares its mother's shelter and goes with her as a
+      child born in the run does. The staggered first conceptions (above) stay as Decided;
+      a woman nursing a starting infant also waits until it is weaned, by the conception rule.
   - *Speed, Stage 6 (2026-11-06):* most planning time went to scoring every candidate stop
     by a full one-stop day, and a camp's weighing repeats that for every member at every
     site. For one gathering or drinking activity, a stop's one-stop day differs only in what
@@ -1629,6 +1664,19 @@ weight (§2, above); the rest are Claude's proposals:
     only where its carer drank. In exp005 all 22 children who died of thirst died on the same
     day as a woman of 26–45; in s1, traced, each was her child, at a camp beside water, and she
     was too hurt to drink.)
+  - **Children eat in place with their mother (Decided — Chris, 2026-11-17):** "yes children
+    should eat in place with their mother." A weaned child with its carer where she gathers
+    food (or snares, or kills) eats there from what is gathered, as she does (§2 Food and water
+    can be eaten in place). (Until 2026-11-17 only the eating-in-place half of the 11-16
+    decision was unbuilt: in exp016 and exp017, on the days a weaned child went hungry beside a
+    fed mother, she was bare-handed with her loose carry full on 1312 of 1621 days, ate her
+    gathering where she gathered it, and brought home a median 0.05 food.)
+    - *As built — Default (Claude, 2026-11-17):* what is gathered is carried first, as before;
+      what is left is eaten there by her and the weaned children with her, each up to a day's
+      food need (`eatRoom`), shared in proportion to that room when it is short. The haul of
+      children who help is eaten there the same way once her hands are full. It counts in her
+      gathering (`got`), as what the place gave. The planner still forecasts only her own
+      eating.
 - **A hurt carer puts her own recovery first, without letting her children die (Decided —
   Chris, 2026-11-16):** "injured care givers should probably prioritize their own recovery
   over their children, while not letting children die too."

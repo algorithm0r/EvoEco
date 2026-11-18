@@ -126,6 +126,47 @@ var World = class World {
         this.agents.push(a);
       }
     }
+    if (PARAMETERS.agents.startChildren > 0) this.placeChildren();
+  }
+
+  // Children at the start (ODD §5, Decided 2026-11-16): `startChildren` of the starting
+  // population, ages uniform over childhood, each with a woman of its band old enough to have
+  // borne it as mother, carer and keeper, and a random man of the band old enough as father.
+  // A mother's children are a birth interval apart, so she nurses at most one infant. No tie
+  // is made (§4.2). Numbers and the rest are Defaults.
+  placeChildren() {
+    const L = PARAMETERS.life, A = PARAMETERS.agents, Y = PARAMETERS.year.days;
+    const gap = L.nurseAge * Y + L.pregnancyDays;
+    const adults = this.agents.slice();
+    const nAdults = adults.length, want = Math.round(nAdults * A.startChildren / (1 - A.startChildren));
+    const perBand = new Map();
+    for (const a of adults) (perBand.get(a.band) || perBand.set(a.band, []).get(a.band)).push(a);
+    const bands = [...perBand.keys()];
+    // children shared among the bands by their adults
+    for (let k = 0; k < want; k++) {
+      const band = bands[Math.floor(k * bands.length / want)], here = perBand.get(band);
+      for (let tries = 0; tries < 20; tries++) {
+        const age = Math.floor(this.rng() * L.matureAge * Y);
+        const fits = (m) => m.female && m.ageDays - age >= L.fertile.female[0] * Y && m.ageDays - age <= L.fertile.female[1] * Y &&
+          m.kids.every((c) => Math.abs(c.ageDays - age) >= gap);
+        const moms = here.filter(fits);
+        if (!moms.length) continue;
+        const m = moms[this.rng.int(moms.length)];
+        const dads = here.filter((f) => !f.female && f.ageDays - age >= L.fertile.male * Y);
+        const c = new Agent(this.agents.length, m.home, this, { born: true });
+        c.ageDays = age;
+        c.mother = m; c.carer = m; c.keeper = m;
+        c.father = dads.length ? dads[this.rng.int(dads.length)] : null;
+        c.band = m.band; c.shelter = m.shelter; c.camp = null;
+        c.hold.roots = A.starterFood * foodScale(c);
+        m.charges.push(c); m.kids.push(c);
+        if (c.father) c.father.kids.push(c);
+        // starting parents value their children like normal (ODD §5, Decided 2026-11-17)
+        for (const p of [m, c.father]) if (p && p.childL.nn === 0) learnNorm(p.childL, L.startGrownWeight, 1);
+        this.agents.push(c);
+        break;
+      }
+    }
   }
 
   // ── moving camp (ODD §5, Decided — Chris, 2026-11-03) ──────────────────────────────────
@@ -814,13 +855,13 @@ var World = class World {
     else a.goodsSeen.delete(hex);
   }
   // what agent `a` takes up of `q` units of good `g` after its day: as far as it can carry, plus
-  // what it eats there; returns the units taken
+  // what it and the weaned children with it eat there (ODD §7.4, Decided 2026-11-17); returns
+  // the units taken
   takeUp(a, g, q) {
     const c = a.carried || (a.carried = carriedOf(a.store ? a.hold : newHold()));
     const kept = Math.min(q, carryRoom(a, a.hold, c, g));
-    const eaten = FOOD_SET[g] ? Math.min(q - kept, eatRoom(a, g)) : 0;
+    const eaten = eatInPlace(a, g, q - kept);
     a.hold[g] += kept; carryAdd(c, g, kept);
-    if (eaten > 0) a.need.food += eaten * foodPer(g, 0, false);
     return kept + eaten;
   }
 

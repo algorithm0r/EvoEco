@@ -367,8 +367,13 @@ generation, and growth that brings bands into competition. Design first, one que
       no counterfactual (hunger kept, the child's real inflow, death priced with dependents)
       stops the gift paying. Behaviour of the valuation, not a bug (Chris: "this might not be a
       bug and if so it's a small one")
-- [ ] The start state (Chris's call, after child survival): a hand-designed balanced age profile
-      or a burn-in. exp002: the founding cohort's age gap persists 40 years in all three seeds
+- [x] The start state (Chris's call, after child survival): children at the start, each with a
+      woman of its band old enough to be its mother (ODD §5, Decided 2026-11-16). exp012: the
+      age gap is filled; births are no steadier (2026-11-17)
+- [x] Starting parents value their children like normal (`life.startGrownWeight` 0.6, Decided
+      2026-11-17; exp013–015: first-60-day child hunger deaths 13/22/11 → 4/0/2)
+- [x] Children eat in place with their mother (ODD §7.4, Decided 2026-11-17; exp016–018:
+      hungry-beside-fed-mother days 1621 → 2)
 **Done when:** households form and dissolve on their own, and a population persists across
 several generations without scaffolding.
 
@@ -403,6 +408,10 @@ How runs are compared is a research question to settle then (ODD §4.10).
 *Planned work too small for a stage. One line each, led by its type (`fix:` / `feat:` /
 `idea:`). When a stage takes an item up, strike it: `~~item~~ → **Stage N**`.*
 - [ ] docs: check the ODD's citations (written from memory, unchecked)
+- [ ] idea: the 8 child hunger deaths left in exp018's colonies (5, 2, 1) are untraced; likely
+      hungry mothers or no mother (Chris called the leak closed, 2026-11-17)
+- [ ] idea: parents who learned from their own grown children expect ~0.1 of a grown child,
+      strongest-tie parents ~0.6 (exp014); revisit if parental weight matters to a result
 - [ ] idea: further output measures (ODD §4.10); a research question for later
 - [ ] idea: the trickle-down note (ODD open questions 2), revisit when capital is built
 - [ ] idea: water is sparse (rivers, lakes, springs only; ~6% of hexes); check against

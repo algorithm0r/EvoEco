@@ -1,5 +1,5 @@
 // Winter check with carrying (Stage 5h), and since 2026-11-13 the mothers' weighing of a child.
-//   node probes/carryprobe.mjs --exp expNNN --years 10 --seed 1 [--arm limit|free]
+//   node probes/carryprobe.mjs --exp expNNN --years 10 --seed 1 [--arm limit|free|adults]
 // One row a season: days of food held per adult (at camp and with it), camp moves and members
 // who joined another camp, goods lying in the world, gear held and known, deaths by cause,
 // fetch trips, the learned gathering return with each gear (median, agents), and each woman's
@@ -8,12 +8,15 @@
 // She counts the children she already has). "free" lifts every carrying limit (stores weigh
 // nothing).
 // Since 2026-11-14 (exp002) also births each season and the age profile (5-year bins, last 60+);
+// Since 2026-11-16 (exp012) arm "adults": carrying limits on and no children at the start
+// (agents.startChildren 0), the start before ODD §5 Children at the start.
 // --save keeps the colony every 10 years (--every N to change) as results/expNNN_<slug>/<run>_y<year>.colony.bin.
 import { loadSim, openExperiment, flag, has, colonyPath, beat } from '../exp.mjs';
 const P = loadSim();
 const years = +flag('years', 10), seed = +flag('seed', 1), arm = flag('arm', 'limit'), saveEvery = +flag('every', 10);
 P.seed = seed;
 if (arm === 'free') { P.carry.load = 1e9; P.carry.bare = { loose: 1e9, bulky: 1e9, water: 1e9 }; }
+if (arm === 'adults') P.agents.startChildren = 0;
 const { db, ex, dir } = await openExperiment('probes/carryprobe.mjs');
 const { saveColony } = has('save') ? await import('../colony.mjs') : {};
 const run = ex.run(P, { name: arm + '_s' + seed, seed, years, arm });

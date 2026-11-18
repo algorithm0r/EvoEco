@@ -4,6 +4,52 @@
 
 <!-- append new entries above this line -->
 
+## 2026-11-17 — Children at the start; starting parents value them; children eat in place with their mother
+
+**Done:**
+- *Start state (Chris's call, 2026-11-16):* children at the start, each with a woman of its band
+  old enough to be its mother (ODD §5, Decided). As built (Defaults): 0.4 of the start, ages 0–15
+  spread evenly, a mother's children at least 2.75 years apart, a random father each, no ties.
+- *exp012 (40 years, with children against adults only):* the age gap is filled in every seed;
+  births are not steadier (mixed across seeds); population at year 40 about the same. New: 13,
+  24, 13 starting children starve in the first season, mothers mostly fed. Adults-only starts
+  show the same thing in years 6–10, once the run's own children are weaned.
+- *exp013:* on day 0 every mother weighs her child at 0 (no grown child, no ties). Chris:
+  "starting mother's should value children like normal" (Decided). Built: each starting parent
+  holds `life.startGrownWeight` 0.6 as a norm, the median running-world expectation (exp014);
+  fathers too (Default). *exp015:* child hunger deaths by day 60 are 4, 0, 2 (were 13, 22, 11).
+- *exp016–017 (why the rest go hungry beside fed mothers):* she is bare-handed with her 1 kg loose
+  carry full (1312 of 1621 case-days), eats her gathering where she gathers it, and brings home
+  a median 0.05. The gift usually pays, but she has nothing to give.
+- *Children eat in place with their mother (Decided, Chris 2026-11-17):* the unbuilt half of the
+  11-16 rule. As built (Default): what is left after carrying is eaten there by her and the
+  weaned children with her, shared by each one's room; it covers the help of children 6+, snares
+  and kills (`tree.js` `eatInPlace`). *exp018:* hungry-beside-fed-mother days 1621 → 2; child
+  hunger deaths 4/0/2/7/12/5 → 0/0/0/5/2/1. Chris: closed.
+
+**Changed:**
+- *Model code:* `src/world.js` (`placeChildren`, starting parents' norm, `takeUp`), `src/tree.js`
+  (`eatersAt`, `eatRoomAll`, `eatInPlace`), `src/agent.js` (`act` takeUp and the helpers' cap),
+  `src/params.js` (`agents.startChildren`, `life.startGrownWeight`).
+- *Smoke:* starting children and mothers; starting parents' weight; children eat in place.
+- *Probes:* `carryprobe.mjs` arm `adults`; new `startweight.mjs`, `normalweight.mjs`,
+  `childhunger.mjs`, `exp012sum.py`.
+- *Docs:* ODD §5 (Children at the start; Starting parents value their children like normal),
+  §7.4 (Children eat in place with their mother).
+
+**State:**
+- *Smoke:* PASS @ v0.9.0-6-g5598170-dirty (pre-commit), 2026-11-17: 165/100 alive after the bands
+  year; first trade day 27; 1291 trusted ties.
+- *Experiments:* exp012–exp018, raw results in EXPLOG.
+- *Unexplained:* the 8 child hunger deaths left in exp018's colonies (5, 2, 1) are untraced. Its 2
+  leftover case-days are mothers holding food whose gift did not pay (the exp009–011 question).
+- exp014: parents who have learned from their own grown children expect ~0.1 of them; those
+  going by their strongest tie, ~0.6. Noted, not acted on.
+
+**Next:**
+- Winter famine clusters; the four young men dead of thirst (exp007 s1).
+- C5 (winter check with carrying), meat-share balance, planner cost; the rest of Stage 6.
+
 ## 2026-11-16 — Who dies: thirst families fixed by children's self-care; starving mothers are behaviour
 
 **Done:**

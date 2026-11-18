@@ -328,13 +328,13 @@ var Agent = class Agent {
     let kgHours = this.movedKgHours || 0;   // and what it carried moving camp this morning
     this.movedKgHours = 0;
     const walkLeg = (h) => { kgHours += (c.kg + kidKg) * h; };
-    // take up what it gathers as far as it can carry, eat what it can of the rest there, and
-    // leave the remainder: returns [carried, eaten]
+    // take up what it gathers as far as it can carry, eat what it can of the rest there with the
+    // weaned children along (ODD §7.4, Decided 2026-11-17), and leave the remainder: returns
+    // [carried, eaten]
     const takeUp = (g, q) => {
       const kept = Math.min(q, carryRoom(this, this.hold, c, g));
-      const eaten = FOOD_SET[g] ? Math.min(q - kept, eatRoom(this, g)) : 0;
+      const eaten = eatInPlace(this, g, q - kept);
       this.hold[g] += kept; carryAdd(c, g, kept);
-      if (eaten > 0) this.need.food += eaten * foodPer(g, 0, false);
       return [kept, eaten];
     };
     for (const s of this.plan) {
@@ -352,7 +352,7 @@ var Agent = class Agent {
         const good = GOOD_OF[s.act];
         // it takes up only what it can carry or eat there; the rest stays growing
         const want = frac > 0 ? gatherRate(res) * frac * mult * s.hours * workRate(this) : 0;
-        const room = carryRoom(this, this.hold, c, good) + (FOOD_SET[good] ? eatRoom(this, good) : 0);
+        const room = carryRoom(this, this.hold, c, good) + (FOOD_SET[good] ? eatRoomAll(this, good) : 0);
         const got = want > 0 ? world.take(res, s.hex, Math.min(want, room)) : 0;
         const [kept, eaten] = takeUp(good, got);
         if (IS_FORAGE[s.act] && FOOD_SET[good]) { this.dayRet.food += (kept + eaten) * G[good].restores / mult; this.dayRet.hours += s.hours; }
@@ -364,7 +364,8 @@ var Agent = class Agent {
         for (const ch of this.charges) {
           const r = workRate(ch);
           if (!(r > 0) || !(frac > 0)) continue;
-          const extra = world.take(res, s.hex, Math.min(gatherRate(res) * frac * s.hours * r, carryRoom(this, this.hold, c, good)));
+          const extra = world.take(res, s.hex, Math.min(gatherRate(res) * frac * s.hours * r,
+            carryRoom(this, this.hold, c, good) + (FOOD_SET[good] ? eatRoomAll(this, good) : 0)));
           takeUp(good, extra);
           if (extra > 0) ch.helped = true;
         }

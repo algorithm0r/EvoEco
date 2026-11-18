@@ -219,6 +219,41 @@ for (const a of bw.bandCentres) for (const b of bw.bandCentres) if (a !== b) min
 const inBand = bw.agents.every((a) => bw.grid.dist(a.home, bw.bandCentres[a.band]) <= B.radius);
 check('bands placed apart, members near their centre', bw.bandCentres.length === B.n && minSep >= B.spacing && inBand,
   bw.bandCentres.length + ' bands of ' + B.size + ', closest pair ' + minSep + ' hexes apart');
+// children at the start, each with a mother of its band old enough to have borne it (ODD §5,
+// Decided 2026-11-16)
+{
+  const L = P.life, kids = bw.agents.filter((a) => a.child), grown = bw.agents.filter((a) => !a.child);
+  const gap = L.nurseAge * Y + L.pregnancyDays;
+  const momOk = kids.every((c) => { const m = c.mother, d = m && (m.ageDays - c.ageDays) / Y;
+    return m && m.female && !m.child && m.band === c.band && c.carer === m && c.keeper === m && m.charges.includes(c) &&
+      c.shelter === m.shelter && d >= L.fertile.female[0] && d <= L.fertile.female[1]; });
+  const dadOk = kids.every((c) => !c.father || (!c.father.female && c.father.band === c.band && (c.father.ageDays - c.ageDays) / Y >= L.fertile.male && c.father.kids.includes(c)));
+  const own = (m) => m.kids.filter((c) => c.mother === m);
+  const spaced = grown.every((m) => own(m).every((c, i) => own(m).every((d, j) => i === j || Math.abs(c.ageDays - d.ageDays) >= gap)));
+  const infants = grown.map((m) => m.charges.filter(isInfant).length);
+  const ages = kids.map(ageYears), share = kids.length / bw.agents.length;
+  check('starting children each have a mother of their band old enough to have borne them; spaced; no ties',
+    Math.abs(share - P.agents.startChildren) < 0.03 && momOk && dadOk && spaced && Math.max(...infants) <= 1 &&
+    bw.agents.every((a) => a.ties.size === 0) && Math.min(...ages) < 2 && Math.max(...ages) > 13,
+    kids.length + ' children with ' + grown.length + ' adults (share ' + share.toFixed(2) + '), ages ' + Math.min(...ages).toFixed(1) + '–' + Math.max(...ages).toFixed(1) +
+    ', ' + kids.filter(isInfant).length + ' infants, ' + kids.filter((c) => c.father).length + ' with a father, ' + grown.filter((m) => own(m).length).length + ' mothers');
+  // starting parents value their children like normal (ODD §5, Decided 2026-11-17)
+  const wts = kids.flatMap((c) => [c.mother, c.father].filter(Boolean).map((p) => weightOn(p, c, bw.day)));
+  const want = L.startGrownWeight * survivalChance(kids[0].mother);
+  check('starting parents weigh their children like normal on day 0', wts.every((x) => Math.abs(x - want) < 1e-9) && want > 0,
+    wts.length + ' parent–child weights, all ' + want.toFixed(3) + ' (startGrownWeight ' + L.startGrownWeight + ' × survival prior)');
+  // weaned children eat in place with their mother (ODD §7.4, Decided 2026-11-17)
+  const mum = bw.agents.find((a) => a.charges.some((c) => !isInfant(c)) && !a.charges.some(isInfant));
+  if (mum) {
+    const eaters = eatersAt(mum), f0 = eaters.map((x) => x.need.food);
+    eaters.forEach((x) => { x.need.food = 0; });
+    const ate = eatInPlace(mum, 'greens', 1000);
+    const rose = eaters.map((x) => x.need.food);
+    eaters.forEach((x, i) => { x.need.food = f0[i]; });
+    check('weaned children eat in place with their mother', eaters.length > 1 && rose.every((x) => x > 0.5),
+      eaters.length + ' eaters, ate ' + ate.toFixed(1) + ' greens, food levels ' + rose.map((x) => x.toFixed(2)).join(' '));
+  } else check('weaned children eat in place with their mother', false, 'no mother with only weaned charges');
+}
 let chatCap = true, metSum = 0, md = 0;
 for (let d = 0; d < 60; d++) {
   bw.update();
@@ -261,7 +296,17 @@ check('price of wood falls as wood sellers outnumber buyers', sdPrice[0] > sdPri
 // bands for a year from no ties at all
 const xw = new World();
 let trades = 0, gifts = 0, maxOwed = 0, firstTrade = -1, firstGift = -1, toolTrades = 0;
+// the first gift between adults who are not parent and child: a parent's gift to its own child
+// needs no tie (ODD §7.4), the starting children have parents from day 1 (ODD §5 Children at
+// the start), and a child grown keeps the ties its parents' gifts built
+let curDay = 0, firstAdultGift = -1;
+const bookGift0 = globalThis.bookGift;
+globalThis.bookGift = function (i, j, terms, day) {
+  if (firstAdultGift < 0 && !i.child && !j.child && !isParent(i, j) && !isParent(j, i)) firstAdultGift = curDay;
+  return bookGift0(i, j, terms, day);
+};
 for (let d = 1; d <= Y; d++) {
+  curDay = d;
   xw.update();
   trades += xw.tradesToday.length; gifts += xw.giftsToday;
   for (const t of xw.tradesToday) if (/flint|axe|pick/.test(t.key)) toolTrades++;
@@ -271,8 +316,9 @@ for (let d = 1; d <= Y; d++) {
 }
 let trusted = 0;
 for (const a of xw.agents) for (const id of a.ties.keys()) if (a.trust(id, xw.day) > 2) trusted++;
-check('ties form through barter from a no-tie start', trades > 0 && gifts > 0 && trusted > 0 && firstTrade <= firstGift,
-  trades + ' trades (first day ' + firstTrade + '), ' + gifts + ' gifts (first day ' + firstGift + '), ' + trusted + ' trusted ties after a year');
+globalThis.bookGift = bookGift0;
+check('ties form through barter from a no-tie start', trades > 0 && gifts > 0 && trusted > 0 && firstAdultGift > 0 && firstTrade <= firstAdultGift,
+  trades + ' trades (first day ' + firstTrade + '), ' + gifts + ' gifts (first day ' + firstGift + '; between adults not parent and child ' + firstAdultGift + '), ' + trusted + ' trusted ties after a year');
 const tieA = new Agent(0, 0, xw), tieRec = tieA.tie(1, 0);
 tieRec.owed = 3;
 const owedLater = tieA.owedBy(1, 100);
@@ -516,7 +562,7 @@ check('food processing is discovered in the bands year', procFound > 0,
   w2.fertileFrom = 0;
   conceptionDay(lw);
   L.conceive = conceive0;
-  const sw = new World(), Ws = sw.agents.filter((a) => a.female), waits = Ws.map((a) => a.fertileFrom / Y);
+  const sw = new World(), Ws = sw.agents.filter((a) => a.female && !a.child), waits = Ws.map((a) => a.fertileFrom / Y);
   check('starting women wait a spread of times before they can first conceive; men and the born do not', waited &&
     sw.agents.every((a) => a.female || a.fertileFrom === 0) && Math.max(...waits) <= L.startWait && Math.max(...waits) - Math.min(...waits) > L.startWait / 2,
     Ws.length + ' women, waits ' + Math.min(...waits).toFixed(2) + '–' + Math.max(...waits).toFixed(2) + ' years (mean ' + (waits.reduce((x, y) => x + y, 0) / Ws.length).toFixed(2) + ')');

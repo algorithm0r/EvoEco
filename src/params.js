@@ -221,6 +221,7 @@ var PARAMETERS = {
     // households are pre-built, only nearness (ODD §5)
     bands: { n: 5, size: 20, spacing: 14, radius: 2 },
     startAge: [15, 45],   // years, uniform, at the start (ODD §5 Starting ages, Decided)
+    startChildren: 0.4,   // share of the starting population who are children, each with a mother (ODD §5 Children at the start, Decided 2026-11-16; 0.4 Default)
     // know-how at the start (ODD §5, Decided: no tech level known by default; gathering, fire
     // and the stone tools are assumptions). A variant adds levels: 'leanTo', 'pot', 'hut', 'farm'
     knowhow: ['axe', 'pick', 'hoe', 'sickle', 'spear', 'gourd'],   // the spear: ODD §2 Game, Decided 2026-11-11; the gourd: ODD §5 (made, Decided 2026-11-12)
@@ -284,6 +285,7 @@ var PARAMETERS = {
     careHours: [2, 1, 0.5],   // hours a day from the carer's rest: infant, child under helpAge, older child
     childFood: [0.4, 1],  // a child's food need as a share of an adult's, at nurseAge and at matureAge
     childRate: [0.25, 1], // a child's work rate as a share of an adult's, at helpAge and at matureAge
+    startGrownWeight: 0.6,   // a starting parent's expectation of a grown child, held as a norm (ODD §5 Starting parents value their children like normal, Decided 2026-11-17; 0.6 Default from exp014)
     survivalPrior: { died: 1, years: 52 },   // before any are seen: 1 death in 52 child-years (3 in 4 grow up)
     startWait: 3,         // years over which each starting woman's first chance to conceive is spread (ODD §5)
   },

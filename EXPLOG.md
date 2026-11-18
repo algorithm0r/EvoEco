@@ -28,6 +28,221 @@ README), and DEVLOG cites them by file name.
 
 <!-- append new entries below this line, newest first -->
 
+## exp018 — With weaned children eating in place with their mother, how many days does a weaned child go hungry beside a fed mother, and how many children die of hunger?
+**Pre-registered:** 2026-11-17
+**Script:** probes/childhunger.mjs (as exp017)
+**Code:** exp017's plus weaned children eating in place with their carer (ODD §7.4 Children eat in
+place with their mother, Decided 2026-11-17; `tree.js` `eatInPlace`), uncommitted past `5598170`.
+**Settings, seeds, length:** as exp017: fresh `s1..s3` 60 days; `exp012/adults_s{1,2,3}_y10` 365
+days. (The colonies were saved under the old rule; the run is the new rule from year 10.)
+**Measures:** exp017's. Compare against exp017: case-days (a weaned child in its mother's care
+below food level 0 after the evening, she at 0.5 or above), all weaned-child days, the food she
+holds at exchange, and child hunger deaths in the run (exp017: 4, 0, 2, 7, 12, 5).
+
+**Results (raw, 2026-11-17):** six runs complete (`results/exp018_kids-eat-in-place/`). Days:
+total / she is bare-handed / her loose carry full / both; median food she held at exchange.
+
+| run | all days | case-days | case-days: none held / held, paid / held, not paid | child hunger deaths (exp017) |
+|---|---|---|---|---|
+| s1 | 3470 / 3470 / 1359 / 1359; 0.527 | 0 | 0 / 0 / 0 | 0 (4) |
+| s2 | 3775 / 3775 / 940 / 940; 0.627 | 0 | 0 / 0 / 0 | 0 (0) |
+| s3 | 3206 / 3206 / 730 / 730; 0.846 | 0 | 0 / 0 / 0 | 0 (2) |
+| a1 | 20139 / 13859 / 6884 / 6884; 1.394 | 1 (not bare; she held 0.281, gathered 0.218; child 6.5) | 0 / 0 / 1 | 5 (7) |
+| a2 | 12200 / 5961 / 2454 / 2454; 4.115 | 1 (not bare; she held 3.643, gathered 1.084; child 6.0) | 0 / 0 / 1 | 2 (12) |
+| a3 | 21429 / 11674 / 5139 / 5139; 2.925 | 0 | 0 / 0 / 0 | 1 (5) |
+
+exp017 case-days for comparison: 414, 183, 289, 323, 211, 201.
+
+## exp017 — On the days a weaned child goes hungry beside a fed mother, is she bare-handed with her loose carry full?
+**Pre-registered:** 2026-11-17
+**Script:** probes/childhunger.mjs (exp016's, plus her carrying gear and whether her loose carry is full)
+**Code:** as exp016.
+**Settings, seeds, length:** as exp016: fresh `s1..s3` 60 days; `exp012/adults_s{1,2,3}_y10` 365 days.
+**Measures:** exp016's, plus over case-days and all weaned-child days: how many with the mother
+bare-handed (no basket or bag), with her loose carry at its capacity at exchange, and both.
+
+**Results (raw, 2026-11-17):** six runs complete (`results/exp017_fed-mother-carry/`). exp016's
+measures repeat exactly (same runs; child hunger deaths 4, 0, 2, 7, 12, 5). Days: total / she is
+bare-handed / her loose carry full / both; median food she held at exchange.
+
+| run | all days | case-days | none held | held, gift paid | held, did not pay |
+|---|---|---|---|---|---|
+| s1 | 3402 / 3402 / 1580 / 1580; 0.537 | 414 / 414 / 336 / 336; 0.05 | 49 / 49 / 0 / 0 | 236 / 236 / 207 / 207 | 129 / 129 / 129 / 129 |
+| s2 | 3775 / 3775 / 1184 / 1184; 0.765 | 183 / 183 / 111 / 111; 0.05 | 54 / 54 / 0 / 0 | 111 / 111 / 93 / 93 | 18 / 18 / 18 / 18 |
+| s3 | 3159 / 3159 / 992 / 992; 0.76 | 289 / 289 / 255 / 255; 0.05 | 16 / 16 / 0 / 0 | 265 / 265 / 248 / 248 | 8 / 8 / 7 / 7 |
+| a1 | 19194 / 12860 / 6363 / 6363; 1.662 | 323 / 323 / 311 / 311; 0.05 | 4 / 4 / 0 / 0 | 170 / 170 / 170 / 170 | 149 / 149 / 141 / 141 |
+| a2 | 10964 / 3936 / 1818 / 1818; 3.816 | 211 / 154 / 104 / 104; 0.05 | 71 / 49 / 0 / 0 | 133 / 102 / 101 / 101 | 7 / 3 / 3 / 3; 1.671 |
+| a3 | 20597 / 10290 / 4917 / 4917; 2.206 | 201 / 200 / 195 / 195; 0.05 | 3 / 3 / 0 / 0 | 158 / 158 / 156 / 156 | 40 / 39 / 39 / 39 |
+
+## exp016 — When a weaned child ends the evening hungry beside a fed mother, did she hold food at exchange, would a gift to it have paid her, and did she give?
+**Pre-registered:** 2026-11-17
+**Script:** probes/childhunger.mjs
+**Code:** as exp015 (working tree past `5598170`, uncommitted, `life.startGrownWeight` 0.6).
+**Settings:** defaults. Two sets: fresh worlds (`s1..s3`, the start); and the adults-only colonies
+of exp012 at year 10 (`exp012/adults_s{1,2,3}_y10`), where born children starved in years 6–10.
+**Seeds / reps / length:** fresh seeds 1, 2, 3, 60 days each; the three colonies, 365 days each.
+**Measures:** case-days = a weaned child in its mother's care below food level 0 after the evening,
+she at 0.5 or above. Read at the start of exchange: food she holds, the child holds (food-level
+units), what she gathered that day, whether she is out for the night, her weight on the child,
+whether her gift to it would pay her (the model's own sum, either gift size, any food she holds).
+After exchange: food to the child, food she gave in all. After evening: her level and what she
+holds. Counts and medians over case-days, split by: she held no food; held and the gift paid;
+held and it did not pay; and the same over all weaned-child days. Check that the probe does not
+change the run: child hunger deaths by day 60 in the fresh worlds should equal exp015's (4, 0, 2).
+
+**Results (raw, 2026-11-17):** six runs complete (`results/exp016_fed-mother-hunger/`). Child hunger
+deaths in the run: s1 4, s2 0, s3 2 (exp015: 4, 0, 2); a1 7, a2 12, a3 5. (A first launch was
+stopped during s1, before any save, to add the death count.) Food in food-level units; medians.
+
+| run | set | days | she held food | gift pays | gave child | she gathered none | held | gathered | to child | weight | child age | her level after |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| s1 | all | 3402 | 3259 | 2886 | 2699 | 345 | 0.537 | 0.497 | 0.145 | 0.45 | 7.1 | 0.919 |
+| s1 | cases | 414 | 365 | 236 | 159 | 0 | 0.05 | 0.479 | 0 | 0.498 | 10.7 | 0.87 |
+| s2 | all | 3775 | 3470 | 3241 | 3159 | 519 | 0.765 | 0.48 | 0.181 | 0.45 | 7.6 | 0.955 |
+| s2 | cases | 183 | 129 | 111 | 59 | 0 | 0.05 | 0.479 | 0 | 0.499 | 10.9 | 0.87 |
+| s3 | all | 3159 | 2938 | 2770 | 2649 | 371 | 0.76 | 0.483 | 0.167 | 0.45 | 7.3 | 0.955 |
+| s3 | cases | 289 | 273 | 265 | 146 | 0 | 0.05 | 0.396 | 0.038 | 0.5 | 10.8 | 0.955 |
+| a1 | all | 19194 | 18380 | 17667 | 18626 | 2327 | 1.662 | 0.584 | 0.16 | 0.307 | 4.9 | 1 |
+| a1 | cases | 323 | 319 | 170 | 153 | 5 | 0.05 | 0.573 | 0 | 0.319 | 6.5 | 0.865 |
+| a2 | all | 10964 | 10326 | 10221 | 10623 | 1052 | 3.816 | 0.681 | 0.169 | 0.401 | 5.7 | 1 |
+| a2 | cases | 211 | 140 | 133 | 84 | 8 | 0.05 | 0.537 | 0 | 0.33 | 6.8 | 0.88 |
+| a3 | all | 20597 | 20071 | 19833 | 20199 | 2179 | 2.206 | 0.745 | 0.169 | 0.405 | 5.6 | 1 |
+| a3 | cases | 201 | 198 | 158 | 88 | 3 | 0.05 | 0.553 | 0 | 0.42 | 6.5 | 0.859 |
+
+Case-days split: she held none / held and the gift paid / held and it did not pay:
+s1 49 / 236 / 129; s2 54 / 111 / 18; s3 16 / 265 / 8; a1 4 / 170 / 149; a2 71 / 133 / 7;
+a3 3 / 158 / 40. Median food she held after the evening, case-days: 0 in every run (all days:
+0, 0, 0 fresh; 1.047, 2.981, 1.32 colonies). Out for the night on case-days: 4, 1, 0, 3, 0, 0.
+
+## exp015 — With starting parents valuing their children like normal, how many weaned children have a mother at weight 0 in the first 60 days, how many are hungry, and how many die of hunger?
+**Pre-registered:** 2026-11-17
+**Script:** probes/startweight.mjs (as exp013)
+**Code:** working tree past `5598170`, uncommitted, with ODD §5 *Starting parents value their
+children like normal* (`life.startGrownWeight` 0.6) added since exp013.
+**Settings:** defaults; fresh world, no saved colony.
+**Seeds / reps / length:** seeds 1, 2, 3; one run each (`s1..s3`); 60 days. Same measures as exp013,
+for comparison with it.
+
+**Results (raw, 2026-11-17):** all three runs complete (`results/exp015_start-weight-normal/s{1,2,3}.json`).
+Rows as exp013: day: weaned, mother weight 0, mean weight | hungry (below 0), of them mother
+weight 0, median food the mother holds, median mother food level | child hunger deaths so far.
+
+| day | s1 | s2 | s3 |
+|---|---|---|---|
+| 0 | 60, 0, 0.450 \| 0 \| 0 | 63, 0, 0.450 \| 0 \| 0 | 53, 0, 0.450 \| 0 \| 0 |
+| 10 | 59, 0, 0.517 \| 8, 0, 0, 0.96 \| 0 | 63, 0, 0.586 \| 3, 0, 0, 0.88 \| 0 | 53, 0, 0.566 \| 7, 0, 0, 0.93 \| 0 |
+| 20 | 58, 0, 0.607 \| 7, 0, 0, 0.92 \| 0 | 63, 0, 0.676 \| 3, 0, 0, 0.96 \| 0 | 53, 0, 0.600 \| 10, 0, 0, 0.96 \| 0 |
+| 30 | 57, 0, 0.601 \| 17, 0, 0, 0.96 \| 0 | 63, 0, 0.662 \| 6, 0, 0, 0.83 \| 0 | 53, 0, 0.653 \| 10, 0, 0, 0.96 \| 0 |
+| 40 | 57, 0, 0.596 \| 17, 0, 0, 0.87 \| 0 | 63, 0, 0.630 \| 6, 0, 0, 0.51 \| 0 | 52, 0, 0.628 \| 8, 0, 0, 0.90 \| 2 |
+| 50 | 53, 0, 0.565 \| 5, 0, 0, 0.81 \| 4 | 63, 0, 0.603 \| 5, 0, 0, 0.73 \| 0 | 52, 0, 0.616 \| 0 \| 2 |
+| 60 | 53, 0, 0.566 \| 6, 0, 0, 0.76 \| 4 | 62, 0, 0.592 \| 5, 0, 0, 0.87 \| 0 | 52, 0, 0.594 \| 1, 0, 0, 0.82 \| 2 |
+
+## exp014 — What weight do parents in a running world put on their children (grown-child expectation, survival chance, product), by mothers and fathers?
+**Pre-registered:** 2026-11-17
+**Script:** probes/normalweight.mjs
+**Code:** working tree past `5598170`, uncommitted (as exp013).
+**Settings:** defaults; reads saved colonies, does not step them: exp012 `adults_s{1,2,3}_y{20,30,40}`
+(the adults-only start, so no starting children's parents are among them).
+**Seeds / reps / length:** 9 colonies, one read each.
+**Measures:** over living parents of a living child, mothers and fathers apart: quartiles and mean
+of the expected weight of a grown child (`grown`), of the survival chance, and of their product;
+how many have `grown` learned from their own grown children, and `grown` quartiles for the
+learned and the strongest-tie parents apart.
+
+**Results (raw, 2026-11-17):** nine reads complete (`results/exp014_normal-weight/`). Medians;
+n = parents; learned = n with `grown` learned (median of theirs); tie = median `grown` of the rest.
+
+| colony | mothers n | grown | tie | learned | survival | weight | fathers n | grown | tie | learned | survival | weight |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| s1 y20 | 20 | 0.560 | 0.560 | 0 (–) | 0.418 | 0.215 | 23 | 0.318 | 0.334 | 4 (0.040) | 0.418 | 0.111 |
+| s1 y30 | 18 | 0.642 | 0.653 | 3 (0.101) | 0.674 | 0.447 | 15 | 0.232 | 0.595 | 7 (0.098) | 0.481 | 0.073 |
+| s1 y40 | 16 | 0.417 | 0.459 | 3 (0.114) | 0.557 | 0.224 | 13 | 0.626 | 0.672 | 3 (0) | 0.516 | 0.327 |
+| s2 y20 | 8 | 0.463 | 0.499 | 3 (0.121) | 0.407 | 0.188 | 12 | 0.319 | 0.397 | 4 (0.157) | 0.346 | 0.096 |
+| s2 y30 | 15 | 0.590 | 0.663 | 3 (0.109) | 0.733 | 0.412 | 15 | 0.353 | 0.854 | 7 (0.132) | 0.513 | 0.181 |
+| s2 y40 | 11 | 0.338 | 0.441 | 4 (0.150) | 0.484 | 0.182 | 8 | 0.653 | 0.662 | 2 (0) | 0.440 | 0.283 |
+| s3 y20 | 12 | 0.418 | 0.541 | 5 (0.120) | 0.700 | 0.137 | 15 | 0.223 | 0.266 | 8 (0.063) | 0.370 | 0.077 |
+| s3 y30 | 18 | 0.864 | 0.875 | 2 (0.131) | 0.897 | 0.675 | 20 | 0.237 | 0.832 | 10 (0) | 0.878 | 0.092 |
+| s3 y40 | 10 | 0.637 | 0.727 | 2 (0.097) | 0.476 | 0.210 | 19 | 0.208 | 0.635 | 9 (0) | 0.502 | 0.072 |
+
+## exp013 — In the first 60 days with children at the start, how many weaned children have a mother whose weight on them is 0, and do the hungry ones have mothers at weight 0, or fed mothers holding food?
+**Pre-registered:** 2026-11-17
+**Script:** probes/startweight.mjs
+**Code:** as exp012 (working tree past `5598170`, uncommitted).
+**Settings:** defaults (children at the start, 0.4); fresh world, no saved colony.
+**Seeds / reps / length:** seeds 1, 2, 3; one run each (`s1..s3`); 60 days.
+**Measures:** every 10 days, after the day's update, over weaned children whose mother is alive:
+the count; those whose mother's weight on them (`weightOn`) is 0; the mean weight; those below
+food level 0, and of them: mother at weight 0, the median food the mother holds (food-level units)
+and her median food level; child hunger deaths so far.
+
+**Results (raw, 2026-11-17):** all three runs complete (`results/exp013_start-weight/s{1,2,3}.json`).
+Rows: day: weaned, mother weight 0, mean weight | hungry (below 0), of them mother weight 0,
+median food the mother holds, median mother food level | child hunger deaths so far.
+
+| day | s1 | s2 | s3 |
+|---|---|---|---|
+| 0 | 60, 60, 0 \| 0 \| 0 | 63, 63, 0 \| 0 \| 0 | 53, 53, 0 \| 0 \| 0 |
+| 10 | 59, 14, 0.375 \| 13, 5, 0, 0.93 \| 0 | 63, 15, 0.437 \| 8, 6, 0.15, 1 \| 0 | 53, 18, 0.349 \| 16, 7, 0, 0.93 \| 0 |
+| 20 | 58, 10, 0.557 \| 29, 10, 0, 0.96 \| 0 | 63, 7, 0.621 \| 21, 7, 0, 0.96 \| 0 | 53, 7, 0.573 \| 24, 7, 0, 0.96 \| 0 |
+| 30 | 57, 9, 0.553 \| 30, 9, 0, 0.88 \| 0 | 62, 7, 0.644 \| 25, 7, 0, 0.85 \| 1 | 51, 7, 0.635 \| 21, 7, 0, 0.96 \| 2 |
+| 40 | 53, 9, 0.508 \| 19, 9, 0, 0.96 \| 4 | 60, 7, 0.615 \| 32, 7, 0, 0.83 \| 3 | 46, 7, 0.655 \| 16, 7, 0, 0.83 \| 5 |
+| 50 | 48, 4, 0.526 \| 17, 4, 0, 0.84 \| 9 | 48, 4, 0.585 \| 19, 4, 0, 0.82 \| 15 | 43, 4, 0.671 \| 7, 4, 0, 0.96 \| 7 |
+| 60 | 44, 1, 0.551 \| 4, 1, 0, 0.90 \| 13 | 40, 1, 0.624 \| 11, 1, 0, 0.80 \| 22 | 39, 0, 0.743 \| 1, 0, 0, 0.83 \| 11 |
+
+## exp012 — With children at the start (each with a mother old enough to have borne it), does the birth/death wave of a founding cohort flatten over 40 years, against an adults-only start on the same rules?
+**Pre-registered:** 2026-11-17
+**Script:** probes/carryprobe.mjs (arm `adults` added 2026-11-16: `agents.startChildren` 0)
+**Code:** working tree past `5598170` (uncommitted): starting children (`World.placeChildren`,
+ODD §5 Children at the start, Decided 2026-11-16).
+**Settings:** fresh worlds, no saved colony. Arm `limit`: defaults (100 adults ages 15–45, and
+children 0.4 of the population, ages 0–15, each with a mother). Arm `adults`: the same with
+`agents.startChildren` 0 (the exp002 start, on today's rules). `--save`: colony every 10 years.
+**Seeds / reps / length:** seeds 1, 2, 3; one run of each arm (`limit_s1..3`, `adults_s1..3`);
+40 years.
+**Measures:** as exp002: the season rows, births per season, the age profile (5-year bins, last
+60+) and the child hunger trace. Read: by 5-year span, alive/adults, births, child and adult
+hunger deaths, other deaths; children alive at year end; the age profile at years 10–40.
+
+**Results (raw, 2026-11-17):** all six runs complete (`results/exp012_founding-children/{limit,adults}_s{1,2,3}.json`,
+colonies `<run>_y{10,20,30,40}.colony.bin`). Summed by `probes/exp012sum.py`.
+
+By 5-year span: alive/adults at its end, births, child hunger deaths, adult hunger deaths, other deaths.
+
+| years | limit s1 | limit s2 | limit s3 | adults s1 | adults s2 | adults s3 |
+|---|---|---|---|---|---|---|
+| 1–5 | 167/95, 56, 44, 6, 6 | 157/96, 49, 53, 0, 6 | 177/100, 56, 36, 5, 5 | 151/95, 59, 2, 2, 4 | 152/97, 55, 0, 0, 3 | 161/96, 65, 0, 0, 4 |
+| 6–10 | 169/79, 52, 32, 10, 8 | 156/81, 39, 24, 11, 5 | 122/64, 34, 51, 33, 5 | 169/82, 58, 27, 9, 4 | 133/53, 57, 31, 37, 8 | 172/77, 49, 19, 11, 8 |
+| 11–15 | 183/74, 34, 13, 2, 5 | 147/67, 23, 16, 10, 6 | 112/62, 15, 18, 2, 5 | 142/68, 26, 38, 9, 6 | 87/38, 13, 44, 9, 6 | 153/65, 32, 38, 8, 5 |
+| 16–20 | 162/88, 24, 33, 5, 7 | 125/78, 19, 31, 5, 5 | 105/66, 12, 7, 0, 12 | 131/68, 21, 19, 6, 7 | 74/50, 6, 15, 0, 4 | 106/63, 16, 37, 17, 9 |
+| 21–25 | 177/95, 43, 11, 7, 10 | 129/77, 25, 6, 5, 10 | 107/64, 21, 6, 4, 9 | 116/73, 19, 24, 2, 8 | 90/57, 21, 2, 0, 3 | 109/65, 17, 4, 3, 7 |
+| 26–30 | 183/94, 42, 16, 6, 14 | 86/52, 15, 26, 24, 8 | 111/68, 17, 6, 2, 5 | 123/72, 23, 3, 0, 13 | 94/53, 20, 5, 3, 8 | 120/71, 24, 4, 1, 8 |
+| 31–35 | 170/82, 44, 37, 16, 4 | 81/48, 11, 5, 4, 7 | 104/62, 14, 7, 4, 10 | 121/69, 25, 15, 5, 7 | 75/37, 15, 17, 11, 6 | 111/56, 31, 17, 17, 6 |
+| 36–40 | 156/78, 38, 34, 10, 8 | 73/49, 11, 8, 3, 8 | 102/62, 25, 13, 7, 7 | 114/61, 25, 18, 4, 10 | 72/38, 16, 12, 2, 5 | 89/51, 20, 26, 11, 5 |
+
+Births a year, mean / sd / cv, years 1–40 and 11–40: limit s1 8.3/3.7/0.44, 7.5/2.4/0.32; s2
+4.8/3.7/0.77, 3.5/2.2/0.64; s3 4.8/4.0/0.82, 3.5/2.0/0.57. adults s1 6.4/4.1/0.64, 4.6/1.8/0.38;
+s2 5.1/4.4/0.88, 3.0/1.7/0.55; s3 6.3/4.4/0.69, 4.7/2.1/0.44.
+
+Children at year end, low (year) / high (year) / year 40: limit s1 47 (1) / 109 (15) / 78; s2 23
+(39) / 80 (15) / 24; s3 34 (21) / 84 (7) / 40. adults s1 0 (1) / 96 (9) / 53; s2 0 (1) / 93 (9) /
+34; s3 1 (1) / 100 (9) / 38.
+
+Age profile (5-year bins, last 60+), years 10 and 40:
+
+| run | year 10 | year 40 |
+|---|---|---|
+| limit s1 | 46 41 3 2 5 14 12 17 13 11 5 0 0 | 32 26 20 14 8 12 7 14 1 0 5 7 10 |
+| limit s2 | 33 38 4 1 1 9 13 13 15 17 12 0 0 | 9 9 6 12 5 4 6 10 0 0 1 1 10 |
+| limit s3 | 18 35 5 2 5 5 11 12 14 6 9 0 0 | 21 10 9 11 6 8 8 10 3 2 1 2 11 |
+| adults s1 | 53 34 0 0 0 22 13 15 14 9 9 0 0 | 23 20 10 6 9 7 10 7 0 0 0 8 14 |
+| adults s2 | 35 45 0 0 0 6 10 8 7 13 9 0 0 | 15 10 9 7 0 3 6 11 0 0 0 3 8 |
+| adults s3 | 43 52 0 0 0 11 18 16 14 5 13 0 0 | 17 12 9 9 5 4 6 12 0 0 0 4 11 |
+
+Child hunger deaths by season, year 1 (limit): s1 15, 0, 0, 0; s2 24, 0, 0, 0; s3 13, 0, 0, 0
+(first season of year 2: 9, 6, 1, and s3 1 more in its last season; first season of year 3: 4, 13, 11; none in the other seasons of years 2–3). The first twelve traced in each
+run: none infants, every carer the mother, carer food level 0.04–1 (most 0.8–1), carer food-days
+held 0–0.7.
+
 ## exp011 — Does a hungry mother's gift to her neediest weaned child still pay her if her own death in her projection is priced as the injury forecast prices it, with her weights on her dependents?
 **Pre-registered:** 2026-11-17
 **Script:** probes/mothergift.mjs (since exp011 it also computes her cost with `WORST_NEED_COST`

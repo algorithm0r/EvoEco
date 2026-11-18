@@ -239,3 +239,21 @@ function eatRoom(a, g) {
   const N = PARAMETERS.needs, per = foodPer(g, 0, false);
   return per > 0 ? Math.max(0, 1 + N.foodDecay * foodScale(a) - a.need.food) / per : 0;
 }
+// who eats where `a` gathers: it and the weaned children with it (ODD §7.4 Children eat in
+// place with their mother, Decided 2026-11-17)
+function eatersAt(a) {
+  const e = [a];
+  for (const c of a.charges || []) if (c.alive && c.child && !isInfant(c)) e.push(c);
+  return e;
+}
+function eatRoomAll(a, g) { return eatersAt(a).reduce((s, x) => s + eatRoom(x, g), 0); }
+// eat up to `q` of food `g` there, shared in proportion to each one's room (Default); returns
+// the units eaten
+function eatInPlace(a, g, q) {
+  if (!FOOD_SET[g] || !(q > 0)) return 0;
+  const E = eatersAt(a), rooms = E.map((x) => eatRoom(x, g)), tot = rooms.reduce((s, r) => s + r, 0);
+  if (!(tot > 0)) return 0;
+  const eaten = Math.min(q, tot), per = foodPer(g, 0, false);
+  E.forEach((x, i) => { if (rooms[i] > 0) x.need.food += eaten * rooms[i] / tot * per; });
+  return eaten;
+}
